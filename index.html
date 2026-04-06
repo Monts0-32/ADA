@@ -1,0 +1,144 @@
+<html style="background:#0d1117" onload="updateHeader()">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="veiwport" content="width=device-width, initial-scale=1.0">
+        <title>Andrew Dingle Archive</title>
+        <style>
+            .container {
+                display: flex;
+                align-items: center;
+            }
+            .container img {
+                margin-right: 20px;
+            }
+            .header-container {
+                background-color: #0d1117; /* Matching your dark theme */
+                display: flex;
+                justify-content: space-between; /* This pushes items to opposite ends */
+                align-items: center;           /* Keeps everything centered vertically */
+                padding: 10px 20px;
+                border-bottom: 1px solid #30363d;
+            }
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .header-right {
+                display: flex;
+                align-items: center;
+                gap: 20px; /* Space between each button/link on the right */
+            }
+
+/* Optional: Styling for a link on the right */
+            .nav-link {
+                color: #f0f6fc;
+                text-decoration: none;
+                font-family: sans-serif;
+                font-size: 14px;
+            }
+
+            .nav-link:hover {
+                color: #58a6ff;
+            }
+            .custom-button {
+  /* 1. THE GREEN COLOR PALETTE */
+                --bg-color: #238636;       /* Bright green from your image */
+                --border-color: #2ea043;   /* Slightly lighter green border */
+                --text-color: #ffffff;     /* Crisp white text */
+                --hover-bg: #2ea043;       /* Lighter green on hover */
+                --corner-radius: 6px;      /* Sharper, more professional corners */
+
+  /* 2. THE BUTTON STYLING */
+                background-color: var(--bg-color);
+                border: 1px solid rgba(240, 246, 252, 0.1); /* Very subtle overlay border */
+                border-radius: var(--corner-radius);
+                color: var(--text-color);
+  
+  /* 3. SIZE & FONT */
+                padding: 8px 16px;         /* Balanced space around the text */
+                font-size: 14px;           /* Standard UI font size */
+                font-weight: 600;          /* Makes 'Sign in' slightly bold like the image */
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  
+  /* 4. BEHAVIOR */
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                display: block;
+                width: 100%;               /* Makes it match the width of your inputs */
+                max-width: 400px;
+                margin: 20px 0;            /* Keeps it to the left */
+                text-align: center;
+            }
+
+            .custom-button:hover {
+                background-color: var(--hover-bg);
+                border-color: #8b949e;   /* Optional: Subtle border change on hover */
+            }
+
+            .custom-button:active {
+                transform: scale(0.98);
+            }
+
+        </style>
+    </head>
+    <body style="font-family:arial">
+        <header class="header-container">
+            <div class="header-left">
+                <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
+                <h2 style="color: white; margin: 0;">Andrew Dingle Archive</h2>
+            </div>
+
+            <div class="header-right">
+                <a href="#" class="nav-link">About</a>
+                <a href="#" class="nav-link">Support</a>
+                <div class="header-right" id="auth-area">
+                    <button class="custom-button" style="margin: 0; padding: 5px 12px;" onclick="gotologin()" id="login-button">Sign In</button>
+                    <script>
+                        function gotologin() {
+                            window.location.href = "login.html";
+                        }
+                        function updateHeader() {
+                            const authArea = document.getElementById("auth-area");
+                            const user = localStorage.getItem("loggedUser");
+
+                            if (user) {
+        // If user is found, replace the button with Name + Exit Icon
+                                authArea.innerHTML = `
+                                    <span style="color: white; font-family: sans-serif; font-size: 14px;">${user}</span>
+                                    <button onclick="logout()" class="exit-btn">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
+                                    </button>
+                                `;
+                            }
+                        }
+
+                        function logout() {
+                            localStorage.removeItem("loggedUser"); // Empty the chest
+                            window.location.href = "login.html";    // Go back to login
+                        }
+
+// Run this as soon as the page loads
+                        updateHeader();
+                    </script>
+                </div>
+            </div>
+        </header>
+        <center style="color:white">
+            <H1>Welcome!</H1> 
+            <H4>Here at andrew dingle archive we are dedicated in reasearching the lore of the andrew dingle universe.</H4>
+            <p>To continue to the archive please sign in.</p>
+        </center>
+        <button onclick="clearCache()">Clear Cache</button>
+        <p style="color:white" id="message"></p>
+        <script>
+            function clearCache() {
+                let message = document.getElementById("message");
+                localStorage.clear();
+                message.innerHTML = "action done!"
+            }
+        </script>
+    </body>
+</html>

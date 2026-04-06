@@ -1,0 +1,187 @@
+<html style="background:#0d1117">
+    <head>
+        <title>Dashboard</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        
+        <style>
+            .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
+            .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
+            .nav-link { color: #f0f6fc; text-decoration: none; font-family: sans-serif; font-size: 14px; }
+            
+            .project-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+            .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; max-width: 450px; }
+            
+            .custom-button-2 {
+                background-color: #0d1117;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                color: #ffffff;
+                padding: 12px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                flex-grow: 1;
+                transition: all 0.2s;
+            }
+
+            .custom-button-2:hover { background-color: #1c2430; border-color: #8b949e; }
+            .custom-button-2.locked { color: #8b949e; border-color: #21262d; cursor: not-allowed; }
+
+            .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; padding: 8px; display: flex; align-items: center; border-radius: 6px; }
+            .dots-btn:hover { background-color: #30363d; color: white; }
+
+            .dropdown-menu {
+                display: none;
+                position: absolute;
+                right: -130px;
+                top: 0;
+                background: #161b22;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                z-index: 10;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                width: 140px;
+            }
+
+            .dropdown-menu button {
+                display: block; width: 100%; padding: 10px 15px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 13px;
+            }
+            .dropdown-menu button:hover { background: #30363d; }
+            #admin-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-top: 20px; color: #58a6ff; display: none; }
+        </style>
+    </head>
+    <body style="font-family:Arial; padding: 20px; color: white;">
+
+        <header class="header-container">
+            <div class="header-left">
+                <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
+                <h2 style="margin: 0;">Andrew Dingle Archive</h2>
+            </div>
+            <div class="header-right">
+                <span class="material-symbols-outlined" style="cursor:pointer;" onclick="location.href='login.html'">logout</span>
+            </div>
+        </header>
+
+        <div id="admin-panel">
+            <strong style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined">shield</span> Admin Mode</strong>
+        </div>
+
+        <h1>Welcome to the archive!</h1>
+
+        <div class="project-list">
+            <div class="project-item-container">
+                <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
+                    <span id="lock-max_lore" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
+                    Max Lore Archive
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-max_lore')">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <div id="menu-max_lore" class="dropdown-menu">
+                        <button onclick="dbToggleLock('max_lore')">Toggle Lock State</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="project-item-container">
+                <button id="btn-chan_doc" class="custom-button-2" onclick="handleProjectClick('chan_doc', 'chan.html')">
+                    <span id="lock-chan_doc" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
+                    Chan Documentary
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-chan_doc')">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <div id="menu-chan_doc" class="dropdown-menu">
+                        <button onclick="dbToggleLock('chan_doc')">Toggle Lock State</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            const userIsAdmin = localStorage.getItem("isAdmin") === "true";
+            let lockStates = { max_lore: false, chan_doc: false };
+
+            async function init() {
+                if (userIsAdmin) {
+                    document.getElementById('admin-panel').style.display = 'block';
+                    document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
+                }
+
+                // Initial fetch for all controls
+                const { data } = await _supabase.from('page_controls').select('page_name, lock_status');
+                
+                if (data) {
+                    data.forEach(row => {
+                        lockStates[row.page_name] = row.lock_status;
+                    });
+                    updateUI();
+                }
+
+                // Realtime Sub for all controls
+                _supabase.channel('page-updates').on('postgres_changes', { 
+                    event: '*', schema: 'public', table: 'page_controls' 
+                }, payload => {
+                    const { page_name, lock_status } = payload.new;
+                    lockStates[page_name] = lock_status;
+                    updateUI();
+                }).subscribe();
+            }
+
+            function updateUI() {
+                for (const page in lockStates) {
+                    const btn = document.getElementById(`btn-${page}`);
+                    const icon = document.getElementById(`lock-${page}`);
+                    if (btn && icon) {
+                        btn.classList.toggle('locked', lockStates[page]);
+                        icon.style.display = lockStates[page] ? 'inline-block' : 'none';
+                    }
+                }
+            }
+
+            async function dbToggleLock(pageName) {
+                const { error } = await _supabase
+                    .from('page_controls')
+                    .upsert({ 
+                        page_name: pageName, 
+                        lock_status: !lockStates[pageName],
+                        created_by: localStorage.getItem("loggedUser") || "Admin" 
+                    }, { onConflict: 'page_name' });
+
+                if (error) alert("Error: " + error.message);
+                closeAllMenus();
+            }
+
+            function handleProjectClick(pageName, url) {
+                if (lockStates[pageName] && !userIsAdmin) {
+                    alert("This section is currently locked.");
+                } else {
+                    window.location.href = url;
+                }
+            }
+
+            function toggleMenu(e, menuId) {
+                e.stopPropagation();
+                closeAllMenus();
+                const menu = document.getElementById(menuId);
+                menu.style.display = 'block';
+            }
+
+            function closeAllMenus() {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+            }
+
+            window.onclick = closeAllMenus;
+            init();
+        </script>
+    </body>
+</html>

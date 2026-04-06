@@ -1,0 +1,249 @@
+<html style="background:#0d1117">
+    <head>
+        <title>Max Lore</title>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+        <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+        
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                background: #0d1117;
+                color: white;
+                font-family: sans-serif;
+            }
+
+            .wiki-header {
+                height: 60px;
+                background: #222;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 20px;
+                border-bottom: 2px solid #444;
+            }
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+            }
+
+            /* View Mode Styling */
+            #view-container {
+                padding: 40px;
+                max-width: 900px;
+                margin: 0 auto;
+                line-height: 1.6;
+                overflow-y: auto;
+                height: calc(100vh - 140px);
+            }
+
+            /* Editor Styling */
+            #editor-wrapper {
+                display: none; 
+            }
+
+            #editor-container, #html-editor {
+                height: calc(100vh - 120px);
+                width: 100%;
+                border: none;
+            }
+
+            .ql-editor {
+                color: white !important;
+                background: #0d1117;
+                font-size: 18px;
+            }
+
+            #html-editor {
+                background: #1e1e1e;
+                color: #ffffff;
+                font-family: 'Courier New', monospace;
+                padding: 20px;
+                display: none;
+                width: 100%;
+                outline: none;
+                resize: none;
+            }
+
+            .ql-toolbar.ql-snow {
+                background: #f3f3f3;
+                border: none !important;
+            }
+
+            button {
+                padding: 8px 15px;
+                cursor: pointer;
+                background: #444;
+                color: white;
+                border: 1px solid #666;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+
+            button:hover { background: #555; }
+            
+            .back-btn {
+                background: #333;
+                border-color: #555;
+            }
+
+            #save-btn { background: #28a745; border-color: #218838; }
+
+            /* Redacted/Cleared State Styling */
+            .cleared-message {
+                text-align: center;
+                margin-top: 100px;
+                color: #8b949e;
+            }
+        </style>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    </head>
+    <body>
+        <div class="wiki-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.location.href='dash.html'">← BACK TO DASH</button>
+                <div class="logo" style="font-weight: bold; letter-spacing: 1px;">MAX LORE</div>
+            </div>
+
+            <div class="actions">
+                <div id="view-actions">
+                    <button onclick="enterEditMode()">EDIT PAGE</button>
+                </div>
+                <div id="edit-actions" style="display: none;">
+                    <button id="html-toggle" onclick="toggleHTMLView()">VIEW SOURCE</button>
+                    <button onclick="exitEditMode()">CANCEL</button>
+                    <button id="save-btn" onclick="saveWikiContent()">PUBLISH PAGE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-container">Loading lore...</div>
+
+        <div id="editor-wrapper">
+            <div id="editor-container"></div>
+            <textarea id="html-editor"></textarea>
+        </div>
+
+        <script>
+            const supabaseUrl = 'https://ljydseeyirvmtzgkuppo.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
+            const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+            window.Quill = Quill;
+            let quill;
+            let isHTMLMode = false;
+
+            window.onload = function() {
+                quill = new Quill('#editor-container', {
+                    modules: {
+                        imageResize: { displaySize: true },
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'align': [] }],
+                            ['link', 'image', 'video'],
+                            ['clean']
+                        ]            
+                    },
+                    theme: 'snow'
+                });
+
+                loadWikiContent();
+            };
+
+            async function loadWikiContent() {
+                const { data, error } = await _supabase
+                    .from('wiki_pages')
+                    .select('html_content, is_cleared')
+                    .eq('slug', 'main-wiki')
+                    .maybeSingle();
+
+                if (data) {
+                    const userIsAdmin = localStorage.getItem("isAdmin") === "true";
+                    
+                    // If page is cleared and visitor is NOT an admin, show redaction message
+                    if (data.is_cleared && !userIsAdmin) {
+                        document.getElementById('view-container').innerHTML = `
+                            <div class="cleared-message">
+                                <span class="material-symbols-outlined" style="font-size:64px;">visibility_off</span>
+                                <h1>ARCHIVE CLEARED</h1>
+                                <p>This entry has been redacted by an administrator.</p>
+                            </div>`;
+                        // Hide edit button for non-admins when cleared
+                        document.getElementById('view-actions').style.display = 'none';
+                        return;
+                    }
+
+                    // Otherwise, load content normally
+                    document.getElementById('view-container').innerHTML = data.html_content || "No lore found.";
+                    quill.root.innerHTML = data.html_content || "";
+                } else {
+                    document.getElementById('view-container').innerHTML = "No lore found. Be the first to write some!";
+                    quill.format('color', 'white');
+                }
+            }
+
+            function enterEditMode() {
+                document.getElementById('view-container').style.display = 'none';
+                document.getElementById('view-actions').style.display = 'none';
+                document.getElementById('editor-wrapper').style.display = 'block';
+                document.getElementById('edit-actions').style.display = 'block';
+            }
+
+            function exitEditMode() {
+                if(confirm("Discard unsaved changes?")) {
+                    location.reload(); 
+                }
+            }
+
+            function toggleHTMLView() {
+                const htmlEditor = document.getElementById('html-editor');
+                const quillEditor = document.getElementById('editor-container');
+                const toggleBtn = document.getElementById('html-toggle');
+
+                if (!isHTMLMode) {
+                    htmlEditor.value = quill.root.innerHTML;
+                    quillEditor.style.display = 'none';
+                    htmlEditor.style.display = 'block';
+                    toggleBtn.innerText = "VIEW VISUAL";
+                    isHTMLMode = true;
+                } else {
+                    quill.root.innerHTML = htmlEditor.value;
+                    htmlEditor.style.display = 'none';
+                    quillEditor.style.display = 'block';
+                    toggleBtn.innerText = "VIEW SOURCE";
+                    isHTMLMode = false;
+                }
+            }
+
+            async function saveWikiContent() {
+                const finalContent = isHTMLMode ? 
+                    document.getElementById('html-editor').value : 
+                    quill.root.innerHTML;
+
+                const cleanContent = finalContent.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "");
+
+                const { error } = await _supabase
+                    .from('wiki_pages')
+                    .upsert({ 
+                        slug: 'main-wiki', 
+                        html_content: cleanContent, 
+                        updated_by: localStorage.getItem("loggedUser") || "Guest"
+                    });
+
+                if (!error) {
+                    alert("Wiki Published!");
+                    location.reload(); 
+                } else {
+                    alert("Error: " + error.message);
+                }
+            }
+        </script>
+    </body>
+</html>

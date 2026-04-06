@@ -1,0 +1,88 @@
+<html style="background:#0d1117">
+    <head>
+        <title>Login - ADA</title>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <style>
+            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; }
+            .login-card { background: #161b22; padding: 40px; border-radius: 8px; border: 1px solid #30363d; width: 300px; text-align: center; }
+            input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #238636; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+            button:hover { background: #2ea043; }
+            #message { margin-top: 15px; font-size: 14px; min-height: 20px; }
+            .back-link { display: block; margin-top: 20px; color: #58a6ff; text-decoration: none; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="login-card">
+            <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 50px; margin-bottom: 20px;">
+            <h2>Sign In</h2>
+            <input type="text" id="username" placeholder="Email (e.g. user@ada.com)">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="signIn()">Sign In</button>
+            
+            <p id="message"></p>
+            
+            <a href="index.html" class="back-link">Return to Home</a>
+            <button onclick="clearCache()" style="background:none; color:#8b949e; font-size:10px; border:1px solid #30363d; margin-top:30px;">Clear local storage</button>
+        </div>
+
+        <script>
+            const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            async function signIn() {
+                const userInput = document.getElementById('username').value;
+                const passwordInput = document.getElementById('password').value;
+                const messageElement = document.getElementById('message');
+
+                messageElement.style.color = "white";
+                messageElement.innerHTML = "Authenticating...";
+
+                // 1. Authenticate with Supabase Auth
+                const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
+                    email: userInput,
+                    password: passwordInput,
+                });
+
+                if (authError) {
+                    console.error("Auth Error:", authError.message);
+                    messageElement.style.color = "#ff7b72";
+                    messageElement.innerHTML = "Error: " + authError.message;
+                    return;
+                }
+
+                // 2. Auth successful, now fetch the Admin status from 'profiles' table
+                const { data: profileData, error: profileError } = await _supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', authData.user.id)
+                    .maybeSingle();
+
+                if (profileError) {
+                    console.error("Profile Fetch Error:", profileError);
+                }
+
+                // 3. Set LocalStorage for the session
+                // If profileData is missing or is_admin is null, default to false
+                const adminStatus = profileData ? profileData.is_admin : false;
+
+                localStorage.setItem("loggedUser", userInput);
+                localStorage.setItem("isAdmin", adminStatus.toString());
+
+                messageElement.style.color = "#7ee787";
+                messageElement.innerHTML = "Success! Redirecting...";
+
+                setTimeout(() => {
+                    window.location.href = "dash.html";
+                }, 800);
+            }
+
+            function clearCache() {
+                localStorage.clear();
+                alert("Cache cleared.");
+                location.reload();
+            }
+        </script>
+    </body>        
+</html>
