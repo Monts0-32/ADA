@@ -1,7 +1,6 @@
 <html style="background:#0d1117">
     <head>
         <title>Dashboard</title>
-        <link rel="icon" href="image/icon.png">
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         
@@ -10,7 +9,7 @@
             .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
             .nav-link { color: #f0f6fc; text-decoration: none; font-family: sans-serif; font-size: 14px; }
             
-            .project-list { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+            .project-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
             .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; max-width: 450px; }
             
             .custom-button-2 {
@@ -79,12 +78,8 @@
                     Max Lore Archive
                 </button>
                 <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-max_lore')">
-                        <span class="material-symbols-outlined">more_vert</span>
-                    </button>
-                    <div id="menu-max_lore" class="dropdown-menu">
-                        <button onclick="dbToggleLock('max_lore')">Toggle Lock State</button>
-                    </div>
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-max_lore')"><span class="material-symbols-outlined">more_vert</span></button>
+                    <div id="menu-max_lore" class="dropdown-menu"><button onclick="dbToggleLock('max_lore')">Toggle Lock</button></div>
                 </div>
             </div>
 
@@ -94,12 +89,30 @@
                     Chan Documentary
                 </button>
                 <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-chan_doc')">
-                        <span class="material-symbols-outlined">more_vert</span>
-                    </button>
-                    <div id="menu-chan_doc" class="dropdown-menu">
-                        <button onclick="dbToggleLock('chan_doc')">Toggle Lock State</button>
-                    </div>
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-chan_doc')"><span class="material-symbols-outlined">more_vert</span></button>
+                    <div id="menu-chan_doc" class="dropdown-menu"><button onclick="dbToggleLock('chan_doc')">Toggle Lock</button></div>
+                </div>
+            </div>
+
+            <div class="project-item-container">
+                <button id="btn-cool_page" class="custom-button-2" onclick="handleProjectClick('cool_page', 'cool.html')">
+                    <span id="lock-cool_page" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
+                    Cool Content
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-cool_page')"><span class="material-symbols-outlined">more_vert</span></button>
+                    <div id="menu-cool_page" class="dropdown-menu"><button onclick="dbToggleLock('cool_page')">Toggle Lock</button></div>
+                </div>
+            </div>
+
+            <div class="project-item-container">
+                <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
+                    <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
+                    Site Directory
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-site_list')"><span class="material-symbols-outlined">more_vert</span></button>
+                    <div id="menu-site_list" class="dropdown-menu"><button onclick="dbToggleLock('site_list')">Toggle Lock</button></div>
                 </div>
             </div>
         </div>
@@ -110,7 +123,7 @@
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
             const userIsAdmin = localStorage.getItem("isAdmin") === "true";
-            let lockStates = { max_lore: false, chan_doc: false };
+            let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
 
             async function init() {
                 if (userIsAdmin) {
@@ -118,23 +131,19 @@
                     document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
                 }
 
-                // Initial fetch for all controls
                 const { data } = await _supabase.from('page_controls').select('page_name, lock_status');
-                
                 if (data) {
-                    data.forEach(row => {
-                        lockStates[row.page_name] = row.lock_status;
-                    });
+                    data.forEach(row => { lockStates[row.page_name] = row.lock_status; });
                     updateUI();
                 }
 
-                // Realtime Sub for all controls
                 _supabase.channel('page-updates').on('postgres_changes', { 
                     event: '*', schema: 'public', table: 'page_controls' 
                 }, payload => {
-                    const { page_name, lock_status } = payload.new;
-                    lockStates[page_name] = lock_status;
-                    updateUI();
+                    if(payload.new) {
+                        lockStates[payload.new.page_name] = payload.new.lock_status;
+                        updateUI();
+                    }
                 }).subscribe();
             }
 
@@ -173,8 +182,7 @@
             function toggleMenu(e, menuId) {
                 e.stopPropagation();
                 closeAllMenus();
-                const menu = document.getElementById(menuId);
-                menu.style.display = 'block';
+                document.getElementById(menuId).style.display = 'block';
             }
 
             function closeAllMenus() {
