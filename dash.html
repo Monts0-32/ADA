@@ -7,8 +7,27 @@
         <style>
             .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
             .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
-            .nav-link { color: #f0f6fc; text-decoration: none; font-family: sans-serif; font-size: 14px; }
             
+            /* User Pill Styling */
+            .user-pill {
+                background: #161b22;
+                border: 1px solid #30363d;
+                padding: 5px 12px;
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: white;
+            }
+
+            .logout-link {
+                color: #f0f6fc;
+                text-decoration: none;
+                font-size: 14px;
+                cursor: pointer;
+            }
+            .logout-link:hover { color: #ff7b72; }
+
             .project-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
             .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; max-width: 450px; }
             
@@ -51,32 +70,20 @@
             }
             .dropdown-menu button:hover { background: #30363d; }
             #admin-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-top: 20px; color: #58a6ff; display: none; }
+            #log24Message { font-size: 12px; color: #7ee787; position: absolute; top: 70px; left: 20px; }
         </style>
     </head>
     <body style="font-family:Arial; padding: 20px; color: white;">
+        
         <p id="log24Message"></p>
-        <script>
-            function log24Check() {
-                let check = localStorage.getItem("log24")
-                let message = document.getElementById("log24Message")
-                if (check === "true") {
-                    message.innerHTML = "log24 check complete no errors found."
-                    setTimeout(function() {
-                        message.innerHTML = ""
-                    }, 1000);
-                } else {
-                    window.location.href = "log24Fail.html"
-                }
-            }
-            log24Check()
-        </script>
+
         <header class="header-container">
             <div class="header-left">
                 <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
-                <h2 style="margin: 0;">Andrew Dingle Archive</h2>
+                <h2 style="margin: 0; font-size: 18px;">Andrew Dingle Archive</h2>
             </div>
-            <div class="header-right">
-                <span class="material-symbols-outlined" style="cursor:pointer;" onclick="logoutAction()">logout</span>
+            <div class="header-right" id="auth-zone">
+                <span class="material-symbols-outlined logout-link" onclick="logoutAction()">logout</span>
             </div>
         </header>
 
@@ -131,13 +138,29 @@
                 </div>
             </div>
         </div>
+
         <script>
-            function logoutAction() {
-                localStorage.clear()
-                window.location.href = "index.html"
+            // 1. YOUR LOG24 SECURITY CHECK
+            function log24Check() {
+                let check = localStorage.getItem("log24")
+                let message = document.getElementById("log24Message")
+                if (check === "true") {
+                    message.innerHTML = "log24 check complete no errors found."
+                    setTimeout(function() {
+                        message.innerHTML = ""
+                    }, 1500);
+                } else {
+                    window.location.href = "log24Fail.html"
+                }
             }
-        </script>
-        <script>
+
+            // 2. UPDATED LOGOUT
+            function logoutAction() {
+                localStorage.clear();
+                window.location.href = "index.html";
+            }
+
+            // 3. SUPABASE CONFIG
             const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -146,17 +169,35 @@
             let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
 
             async function init() {
+                // Run security check first
+                log24Check();
+
+                // Inject User Pill UI
+                const userEmail = localStorage.getItem("loggedUser");
+                if (userEmail) {
+                    const authZone = document.getElementById("auth-zone");
+                    authZone.innerHTML = `
+                        <div class="user-pill">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: #7ee787;">account_circle</span>
+                            <span style="font-size: 13px; font-family: sans-serif;">${userEmail}</span>
+                        </div>
+                        <span class="material-symbols-outlined logout-link" title="Logout" onclick="logoutAction()">logout</span>
+                    `;
+                }
+
                 if (userIsAdmin) {
                     document.getElementById('admin-panel').style.display = 'block';
                     document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
                 }
 
+                // Fetch database states
                 const { data } = await _supabase.from('page_controls').select('page_name, lock_status');
                 if (data) {
                     data.forEach(row => { lockStates[row.page_name] = row.lock_status; });
                     updateUI();
                 }
 
+                // Realtime updates
                 _supabase.channel('page-updates').on('postgres_changes', { 
                     event: '*', schema: 'public', table: 'page_controls' 
                 }, payload => {
@@ -212,6 +253,5 @@
             window.onclick = closeAllMenus;
             init();
         </script>
-        
     </body>
 </html>
