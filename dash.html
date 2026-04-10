@@ -26,11 +26,27 @@
         .chat-msg.is-me { align-self: flex-end; background: #238636; border-color: #2ea043; }
         .chat-msg b { display: block; font-size: 10px; margin-bottom: 4px; color: #7ee787; }
 
-        /* BUTTONS */
-        .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; padding: 12px 16px; width: 100%; text-align: left; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; }
+        /* BUTTONS & ADMIN */
+        .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; margin-bottom: 10px; }
+        .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; padding: 12px 16px; flex-grow: 1; text-align: left; cursor: pointer; display: flex; align-items: center; }
         .custom-button-2.locked { color: #8b949e; opacity: 0.6; cursor: not-allowed; }
         #admin-panel { background: #161b22; border: 1px solid #30363d; padding: 10px; margin-bottom: 15px; color: #58a6ff; display: none; border-radius: 8px; }
-        .dropdown-menu { display: none; position: absolute; background: #161b22; border: 1px solid #30363d; z-index: 100; border-radius: 6px; }
+        
+        .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 20px; padding: 0 10px; }
+        .dropdown-menu { 
+            display: none; 
+            position: absolute; 
+            right: -130px; 
+            top: 0; 
+            background: #161b22; 
+            border: 1px solid #30363d; 
+            z-index: 100; 
+            border-radius: 6px; 
+            width: 140px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .dropdown-menu button { display: block; width: 100%; padding: 10px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 12px; }
+        .dropdown-menu button:hover { background: #21262d; }
     </style>
 </head>
 <body>
@@ -47,21 +63,45 @@
             <div id="admin-panel"><strong>Admin Mode Active</strong></div>
             <h1 style="margin-top: 0;">Welcome!</h1>
             
-            <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
-                <span id="lock-max_lore" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Max Lore Archive
-            </button>
+            <div class="project-item-container">
+                <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
+                    <span id="lock-max_lore" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Max Lore Archive
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-max_lore')">⋮</button>
+                    <div id="menu-max_lore" class="dropdown-menu"><button onclick="dbToggleLock('max_lore')">Toggle Lock</button></div>
+                </div>
+            </div>
 
-            <button id="btn-chan_doc" class="custom-button-2" onclick="handleProjectClick('chan_doc', 'chan.html')">
-                <span id="lock-chan_doc" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Chan Documentary
-            </button>
+            <div class="project-item-container">
+                <button id="btn-chan_doc" class="custom-button-2" onclick="handleProjectClick('chan_doc', 'chan.html')">
+                    <span id="lock-chan_doc" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Chan Documentary
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-chan_doc')">⋮</button>
+                    <div id="menu-chan_doc" class="dropdown-menu"><button onclick="dbToggleLock('chan_doc')">Toggle Lock</button></div>
+                </div>
+            </div>
 
-            <button id="btn-cool_page" class="custom-button-2" onclick="handleProjectClick('cool_page', 'cool.html')">
-                <span id="lock-cool_page" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Cool Content
-            </button>
+            <div class="project-item-container">
+                <button id="btn-cool_page" class="custom-button-2" onclick="handleProjectClick('cool_page', 'cool.html')">
+                    <span id="lock-cool_page" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Cool Content
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-cool_page')">⋮</button>
+                    <div id="menu-cool_page" class="dropdown-menu"><button onclick="dbToggleLock('cool_page')">Toggle Lock</button></div>
+                </div>
+            </div>
 
-            <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
-                <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Site Directory
-            </button>
+            <div class="project-item-container">
+                <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
+                    <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Site Directory
+                </button>
+                <div class="admin-controls" style="display:none;">
+                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-site_list')">⋮</button>
+                    <div id="menu-site_list" class="dropdown-menu"><button onclick="dbToggleLock('site_list')">Toggle Lock</button></div>
+                </div>
+            </div>
         </div>
 
         <div class="chat-panel">
@@ -75,7 +115,6 @@
     </div>
 
     <script>
-        console.log("DEBUG: Script starting...");
         const userEmail = localStorage.getItem("loggedUser") || "Guest";
         const userIsAdmin = localStorage.getItem("isAdmin") === "true";
         const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
@@ -85,40 +124,34 @@
         let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
 
         async function init() {
-            try {
-                if (localStorage.getItem("log24") !== "true") {
-                    window.location.href = "log24Fail.html";
-                    return;
-                }
-
-                // Setup Pill
-                document.getElementById("auth-zone").innerHTML = `
-                    <div class="user-pill">
-                        <span class="material-symbols-outlined" style="color:#7ee787;">account_circle</span>
-                        <span>${userEmail}</span>
-                        <span class="material-symbols-outlined logout-icon" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>
-                    </div>`;
-
-                if (userIsAdmin) document.getElementById('admin-panel').style.display = 'block';
-
-                // Load Data
-                const { data: pageData } = await _supabase.from('page_controls').select('*');
-                if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
-
-                const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
-                if (chatData) chatData.forEach(appendMsg);
-
-                // Realtime
-                _supabase.channel('dash').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, p => {
-                    if(p.new) { lockStates[p.new.page_name] = p.new.lock_status; updateUI(); }
-                }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
-                    appendMsg(p.new);
-                }).subscribe();
-
-                console.log("DEBUG: Init complete");
-            } catch (e) {
-                console.error("DEBUG: Init failed", e);
+            if (localStorage.getItem("log24") !== "true") {
+                window.location.href = "log24Fail.html";
+                return;
             }
+
+            document.getElementById("auth-zone").innerHTML = `
+                <div class="user-pill">
+                    <span class="material-symbols-outlined" style="color:#7ee787;">account_circle</span>
+                    <span>${userEmail}</span>
+                    <span class="material-symbols-outlined logout-icon" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>
+                </div>`;
+
+            if (userIsAdmin) {
+                document.getElementById('admin-panel').style.display = 'block';
+                document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
+            }
+
+            const { data: pageData } = await _supabase.from('page_controls').select('*');
+            if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
+
+            const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
+            if (chatData) chatData.forEach(appendMsg);
+
+            _supabase.channel('dash').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, p => {
+                if(p.new) { lockStates[p.new.page_name] = p.new.lock_status; updateUI(); }
+            }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
+                appendMsg(p.new);
+            }).subscribe();
         }
 
         function updateUI() {
@@ -128,6 +161,15 @@
                 if (btn) btn.classList.toggle('locked', lockStates[page]);
                 if (icon) icon.style.display = lockStates[page] ? 'inline-block' : 'none';
             }
+        }
+
+        async function dbToggleLock(page) {
+            await _supabase.from('page_controls').upsert({ 
+                page_name: page, 
+                lock_status: !lockStates[page], 
+                created_by: userEmail 
+            }, { onConflict: 'page_name' });
+            closeAllMenus();
         }
 
         async function handleSendMessage() {
@@ -153,6 +195,17 @@
             else window.location.href = url;
         }
 
+        function toggleMenu(e, id) {
+            e.stopPropagation();
+            closeAllMenus();
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function closeAllMenus() {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        }
+
+        window.onclick = closeAllMenus;
         init();
     </script>
 </body>
