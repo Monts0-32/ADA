@@ -13,17 +13,17 @@
             .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
             .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
             .user-pill { background: #161b22; border: 1px solid #30363d; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
-            .logout-icon { color: #8b949e; cursor: pointer; }
+            .logout-icon { color: #8b949e; cursor: pointer; transition: color 0.2s; }
             .logout-icon:hover { color: #ff7b72; }
 
             /* Compact Chat */
             .chat-panel { flex: 0 0 380px; background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; height: 550px; }
             .chat-header { padding: 12px; border-bottom: 1px solid #30363d; background: #0d1117; color: #58a6ff; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-            #chatMessages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth; }
+            #chatMessages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
             .chat-input-area { padding: 10px; border-top: 1px solid #30363d; display: flex; gap: 8px; }
             .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 4px; font-size: 13px; }
             .chat-msg { background: #21262d; padding: 8px; border-radius: 6px; font-size: 13px; border: 1px solid #30363d; }
-            .chat-msg b { color: #7ee787; display: block; font-size: 11px; margin-bottom: 2px; }
+            .chat-msg b { color: #7ee787; display: block; font-size: 10px; }
 
             /* Buttons & Admin */
             .project-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
@@ -31,7 +31,7 @@
             .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #ffffff; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; flex-grow: 1; text-align: left; }
             .custom-button-2.locked { color: #8b949e; border-color: #21262d; cursor: not-allowed; }
             #admin-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-bottom: 20px; color: #58a6ff; display: none; }
-            .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 20px; }
+            .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 20px; padding: 0 10px; }
             .dropdown-menu { display: none; position: absolute; right: -130px; top: 0; background: #161b22; border: 1px solid #30363d; border-radius: 6px; z-index: 10; width: 140px; }
             .dropdown-menu button { display: block; width: 100%; padding: 10px; background: none; border: none; color: white; text-align: left; cursor: pointer; }
         </style>
@@ -90,47 +90,48 @@
         </div>
 
         <script>
-            // CONFIG & AUTH
+            // 1. GLOBAL VARIABLES
             const userEmail = localStorage.getItem("loggedUser") || "Guest";
             const userIsAdmin = localStorage.getItem("isAdmin") === "true";
             const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
             let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
 
-            // INITIALIZE
+            // 2. INITIALIZATION
             async function init() {
+                // Security check
                 if (localStorage.getItem("log24") !== "true") window.location.href = "log24Fail.html";
                 document.getElementById("log24Message").innerText = "log24 check complete no errors found.";
                 setTimeout(() => document.getElementById("log24Message").innerText = "", 2000);
 
-                // Setup Header
+                // Setup User Pill
                 document.getElementById("auth-zone").innerHTML = `
                     <div class="user-pill"><span class="material-symbols-outlined" style="color:#7ee787; font-size:18px;">account_circle</span><span>${userEmail}</span></div>
-                    <span class="material-symbols-outlined logout-icon" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>`;
+                    <span class="material-symbols-outlined logout-icon" title="Logout" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>`;
 
                 if (userIsAdmin) {
                     document.getElementById('admin-panel').style.display = 'block';
                     document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
                 }
 
-                // Load Data
+                // Load Lock States
                 const { data: pageData } = await _supabase.from('page_controls').select('*');
                 if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
 
+                // Load Recent Chat
                 const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
                 if (chatData) chatData.forEach(appendMsg);
 
-                // Realtime listeners
-                _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, payload => {
+                // Realtime Subscriptions
+                _supabase.channel('room1').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, payload => {
                     if(payload.new) { lockStates[payload.new.page_name] = payload.new.lock_status; updateUI(); }
                 }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
                     appendMsg(payload.new);
                 }).subscribe();
             }
 
-            // UI HELPERS
+            // 3. UI SYNC
             function updateUI() {
                 for (const page in lockStates) {
                     const btn = document.getElementById(`btn-${page}`);
@@ -145,7 +146,7 @@
                 else window.location.href = url;
             }
 
-            // CHAT FUNCTIONS
+            // 4. CHAT LOGIC
             async function handleSendMessage() {
                 const input = document.getElementById('chatInput');
                 const val = input.value.trim();
@@ -164,13 +165,19 @@
                 container.scrollTop = container.scrollHeight;
             }
 
-            // ADMIN FUNCTIONS
+            // 5. ADMIN TOOLS (Locking)
             async function dbToggleLock(page) {
+                // We send 'created_by' here to satisfy the database NOT NULL constraint
                 const { error } = await _supabase.from('page_controls').upsert({ 
                     page_name: page, 
-                    lock_status: !lockStates[page] 
+                    lock_status: !lockStates[page],
+                    created_by: userEmail 
                 }, { onConflict: 'page_name' });
-                if (error) console.error("Lock error:", error);
+                
+                if (error) {
+                    console.error("Lock error:", error);
+                    alert("Database Error: " + error.message);
+                }
                 closeAllMenus();
             }
 
