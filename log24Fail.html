@@ -1,0 +1,34 @@
+<html style="background:#0d1117; font-family:arial; color:white">
+    <head>
+        <title>Login Fail</title>
+        <style>
+            .fade-image {
+                opacity: 0;
+                transition: opacity 5s ease-in-out; /* 2 seconds to fully fade in */
+            }
+
+            .visible {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <H1>Uh oh!</H1>
+        <p>You attempted to access a restricted page please sign in to acces it!</p>
+        <HR>
+        <p><b>You will be redirected in 15 secconds</b></p>
+        <img src="https://image2url.com/r2/default/images/1775814656189-5c466995-70f0-4673-ac80-09f78f8ca76b.png" id="max" class="fade-image" style="width:175px">
+        <script>
+            function fadeInMonster(elementId) {
+                const img = document.getElementById(elementId);
+                img.classList.add('visible');
+            }
+            setTimeout(function() {
+                fadeInMonster('max')
+            }, 10000);
+            setTimeout(function(){
+                window.location.href = "login.html"
+            }, 15000)
+        </script>
+    </body>
+</html>
