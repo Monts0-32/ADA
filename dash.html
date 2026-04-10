@@ -25,7 +25,7 @@
             .chat-msg { background: #21262d; padding: 8px; border-radius: 6px; font-size: 13px; border: 1px solid #30363d; }
             .chat-msg b { display: block; font-size: 10px; margin-bottom: 2px; }
 
-            /* Buttons & Admin */
+            /* Project Buttons */
             .project-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
             .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; }
             .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #ffffff; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; flex-grow: 1; text-align: left; }
@@ -50,7 +50,7 @@
             <div class="left-panel">
                 <p id="log24Message" style="color: #7ee787; font-size: 12px; height: 15px;"></p>
                 <div id="admin-panel"><strong>Admin Mode Active</strong></div>
-                <h1 style="margin-top: 0;">Welcome!</h1>
+                <h1>Welcome!</h1>
                 <div class="project-list">
                     <div class="project-item-container">
                         <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
@@ -90,6 +90,7 @@
         </div>
 
         <script>
+            // 1. CONFIG & AUTH
             const userEmail = localStorage.getItem("loggedUser") || "Guest";
             const userIsAdmin = localStorage.getItem("isAdmin") === "true";
             const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
@@ -97,37 +98,40 @@
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
             let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
-            let myHexColor = "#7ee787"; // Default Green
+            let userHexColor = "#7ee787"; // Default Green
 
             async function init() {
                 if (localStorage.getItem("log24") !== "true") window.location.href = "log24Fail.html";
                 
-                // 1. Fetch User Color from Supabase
-                const { data: userData } = await _supabase.from('users').select('user_color').eq('email', userEmail).single();
-                if (userData && userData.user_color) {
-                    myHexColor = userData.user_color;
+                // Fetch user-specific color from the 'users' table
+                const { data: profile } = await _supabase.from('users').select('user_color').eq('email', userEmail).single();
+                if (profile && profile.user_color) {
+                    userHexColor = profile.user_color;
                 }
 
-                // 2. Setup Header with custom color
+                // Inject Header with custom icon color
                 document.getElementById("auth-zone").innerHTML = `
-                    <div class="user-pill"><span class="material-symbols-outlined" style="color:${myHexColor}; font-size:18px;">account_circle</span><span>${userEmail}</span></div>
-                    <span class="material-symbols-outlined logout-icon" title="Logout" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>`;
+                    <div class="user-pill">
+                        <span class="material-symbols-outlined" style="color:${userHexColor}; font-size:18px;">account_circle</span>
+                        <span>${userEmail}</span>
+                    </div>
+                    <span class="material-symbols-outlined logout-icon" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>
+                `;
 
                 if (userIsAdmin) {
                     document.getElementById('admin-panel').style.display = 'block';
                     document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
                 }
 
-                // Load Lock States
+                // Load Data
                 const { data: pageData } = await _supabase.from('page_controls').select('*');
                 if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
 
-                // Load Chat (Make sure your chat table has a 'color' column too!)
                 const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
                 if (chatData) chatData.forEach(appendMsg);
 
                 // Realtime
-                _supabase.channel('main').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, payload => {
+                _supabase.channel('dash').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, payload => {
                     if(payload.new) { lockStates[payload.new.page_name] = payload.new.lock_status; updateUI(); }
                 }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, payload => {
                     appendMsg(payload.new);
@@ -144,42 +148,42 @@
             }
 
             function handleProjectClick(page, url) {
-                if (lockStates[page] && !userIsAdmin) alert("This section is currently locked.");
+                if (lockStates[page] && !userIsAdmin) alert("Locked.");
                 else window.location.href = url;
             }
 
-            // CHAT LOGIC WITH COLORS
+            // CHAT LOGIC
             async function handleSendMessage() {
                 const input = document.getElementById('chatInput');
                 const val = input.value.trim();
                 if (!val) return;
                 input.value = '';
                 
-                // We send the message AND our hex color so others see it correctly
-                const { error } = await _supabase.from('chat_messages').insert([
-                    { user_email: userEmail, message: val, user_color: myHexColor }
-                ]);
-                if (error) console.error("Chat error:", error);
+                // Include user_color in the insert so everyone sees your color
+                await _supabase.from('chat_messages').insert([{ 
+                    user_email: userEmail, 
+                    message: val, 
+                    user_color: userHexColor 
+                }]);
             }
 
             function appendMsg(msg) {
                 const container = document.getElementById('chatMessages');
                 const div = document.createElement('div');
                 div.className = 'chat-msg';
-                // Use the color saved in the message row, fallback to default green
-                const displayColor = msg.user_color || "#7ee787";
-                div.innerHTML = `<b style="color:${displayColor}">${msg.user_email}</b> ${msg.message}`;
+                // Fallback to green if msg.user_color is missing
+                const msgColor = msg.user_color || "#7ee787";
+                div.innerHTML = `<b style="color:${msgColor}">${msg.user_email}</b> ${msg.message}`;
                 container.appendChild(div);
                 container.scrollTop = container.scrollHeight;
             }
 
             async function dbToggleLock(page) {
-                const { error } = await _supabase.from('page_controls').upsert({ 
+                await _supabase.from('page_controls').upsert({ 
                     page_name: page, 
                     lock_status: !lockStates[page],
                     created_by: userEmail 
                 }, { onConflict: 'page_name' });
-                if (error) alert(error.message);
                 closeAllMenus();
             }
 
