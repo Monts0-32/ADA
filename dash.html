@@ -1,105 +1,159 @@
-<style>
-    /* ... existing body and layout styles ... */
-
-    /* CUSTOM SCROLLBAR (Theme Matched) */
-    #chatMessages::-webkit-scrollbar {
-        width: 8px;
-    }
-    #chatMessages::-webkit-scrollbar-track {
-        background: #0d1117;
-    }
-    #chatMessages::-webkit-scrollbar-thumb {
-        background: #30363d;
-        border-radius: 10px;
-    }
-    #chatMessages::-webkit-scrollbar-thumb:hover {
-        background: #484f58;
-    }
-
-    /* CHAT PANEL REFINEMENT */
-    .chat-panel { 
-        flex: 0 0 380px; 
-        background-color: #161b22; 
-        border: 1px solid #30363d; 
-        border-radius: 8px; 
-        display: flex; 
-        flex-direction: column; 
-        height: 550px; 
-        overflow: hidden;
-    }
-
-    #chatMessages { 
-        flex: 1; 
-        padding: 15px; 
-        overflow-y: auto; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 12px; /* Space between bubbles */
-        background-color: #0d1117; /* Slightly darker for contrast */
-    }
-
-    /* CHAT BUBBLES */
-    .chat-msg { 
-        max-width: 85%;
-        padding: 10px 14px; 
-        border-radius: 18px; 
-        font-size: 13px; 
-        line-height: 1.4;
-        position: relative;
-        background: #21262d; 
-        border: 1px solid #30363d;
-        align-self: flex-start; /* Messages stay left */
-        color: #e6edf3;
-        word-wrap: break-word;
-    }
-
-    /* Style for YOUR messages (Optional - aligns them to the right) */
-    .chat-msg.is-me {
-        align-self: flex-end;
-        background: #238636; /* Success green */
-        border-color: #2ea043;
-        color: white;
-    }
-
-    .chat-msg b { 
-        display: block; 
-        font-size: 10px; 
-        margin-bottom: 4px; 
-        color: #7ee787; 
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .chat-msg.is-me b {
-        color: #aff5b4;
-        text-align: right;
-    }
-</style>
-
-<script>
-    /* ... existing init and handleSendMessage functions ... */
-
-    function appendMsg(msg) {
-        const container = document.getElementById('chatMessages');
-        const div = document.createElement('div');
+<!DOCTYPE html>
+<html style="background:#0d1117">
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; color: white; background-color: #0d1117; min-height: 100vh; }
+        .main-layout { display: flex; gap: 30px; padding: 20px; align-items: flex-start; justify-content: center; }
+        .left-panel { flex: 0 0 400px; }
         
-        // Check if the message is from the current user
-        const isMe = msg.user_email === userEmail;
-        
-        div.className = isMe ? 'chat-msg is-me' : 'chat-msg';
-        
-        // Construct the bubble
-        div.innerHTML = `
-            <b>${isMe ? 'You' : msg.user_email}</b> 
-            <span>${msg.message}</span>
-        `;
-        
-        container.appendChild(div);
-        
-        // Smooth scroll to bottom
-        container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-        });
-    }
-</script>
+        /* THEME SCROLLBAR */
+        #chatMessages::-webkit-scrollbar { width: 8px; }
+        #chatMessages::-webkit-scrollbar-track { background: #0d1117; }
+        #chatMessages::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
+        #chatMessages::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+        .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
+        .user-pill { background: #161b22; border: 1px solid #30363d; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
+        .logout-icon { color: #8b949e; cursor: pointer; margin-left: 10px; }
+
+        /* CHAT BUBBLES */
+        .chat-panel { flex: 0 0 380px; background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        #chatMessages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-color: #0d1117; }
+        .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 13px; background: #21262d; border: 1px solid #30363d; align-self: flex-start; }
+        .chat-msg.is-me { align-self: flex-end; background: #238636; border-color: #2ea043; }
+        .chat-msg b { display: block; font-size: 10px; margin-bottom: 4px; color: #7ee787; }
+
+        /* BUTTONS */
+        .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; padding: 12px 16px; width: 100%; text-align: left; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; }
+        .custom-button-2.locked { color: #8b949e; opacity: 0.6; cursor: not-allowed; }
+        #admin-panel { background: #161b22; border: 1px solid #30363d; padding: 10px; margin-bottom: 15px; color: #58a6ff; display: none; border-radius: 8px; }
+        .dropdown-menu { display: none; position: absolute; background: #161b22; border: 1px solid #30363d; z-index: 100; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <header class="header-container">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
+            <h2 style="margin: 0; font-size: 18px;">Andrew Dingle Archive</h2>
+        </div>
+        <div id="auth-zone"></div>
+    </header>
+
+    <div class="main-layout">
+        <div class="left-panel">
+            <div id="admin-panel"><strong>Admin Mode Active</strong></div>
+            <h1 style="margin-top: 0;">Welcome!</h1>
+            
+            <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
+                <span id="lock-max_lore" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Max Lore Archive
+            </button>
+
+            <button id="btn-chan_doc" class="custom-button-2" onclick="handleProjectClick('chan_doc', 'chan.html')">
+                <span id="lock-chan_doc" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Chan Documentary
+            </button>
+
+            <button id="btn-cool_page" class="custom-button-2" onclick="handleProjectClick('cool_page', 'cool.html')">
+                <span id="lock-cool_page" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Cool Content
+            </button>
+
+            <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
+                <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Site Directory
+            </button>
+        </div>
+
+        <div class="chat-panel">
+            <div style="padding:12px; border-bottom:1px solid #30363d; font-weight:bold; color:#58a6ff;">Global Chat</div>
+            <div id="chatMessages"></div>
+            <div style="padding:10px; display:flex; gap:8px;">
+                <input type="text" id="chatInput" style="flex:1; background:#0d1117; border:1px solid #30363d; color:white; padding:8px; border-radius:4px;" placeholder="Message..." onkeypress="if(event.key==='Enter')handleSendMessage()">
+                <button onclick="handleSendMessage()" style="background:#238636; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log("DEBUG: Script starting...");
+        const userEmail = localStorage.getItem("loggedUser") || "Guest";
+        const userIsAdmin = localStorage.getItem("isAdmin") === "true";
+        const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
+
+        async function init() {
+            try {
+                if (localStorage.getItem("log24") !== "true") {
+                    window.location.href = "log24Fail.html";
+                    return;
+                }
+
+                // Setup Pill
+                document.getElementById("auth-zone").innerHTML = `
+                    <div class="user-pill">
+                        <span class="material-symbols-outlined" style="color:#7ee787;">account_circle</span>
+                        <span>${userEmail}</span>
+                        <span class="material-symbols-outlined logout-icon" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>
+                    </div>`;
+
+                if (userIsAdmin) document.getElementById('admin-panel').style.display = 'block';
+
+                // Load Data
+                const { data: pageData } = await _supabase.from('page_controls').select('*');
+                if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
+
+                const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
+                if (chatData) chatData.forEach(appendMsg);
+
+                // Realtime
+                _supabase.channel('dash').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, p => {
+                    if(p.new) { lockStates[p.new.page_name] = p.new.lock_status; updateUI(); }
+                }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
+                    appendMsg(p.new);
+                }).subscribe();
+
+                console.log("DEBUG: Init complete");
+            } catch (e) {
+                console.error("DEBUG: Init failed", e);
+            }
+        }
+
+        function updateUI() {
+            for (const page in lockStates) {
+                const btn = document.getElementById(`btn-${page}`);
+                const icon = document.getElementById(`lock-${page}`);
+                if (btn) btn.classList.toggle('locked', lockStates[page]);
+                if (icon) icon.style.display = lockStates[page] ? 'inline-block' : 'none';
+            }
+        }
+
+        async function handleSendMessage() {
+            const input = document.getElementById('chatInput');
+            const val = input.value.trim();
+            if (!val) return;
+            input.value = '';
+            await _supabase.from('chat_messages').insert([{ user_email: userEmail, message: val }]);
+        }
+
+        function appendMsg(msg) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            const isMe = msg.user_email === userEmail;
+            div.className = isMe ? 'chat-msg is-me' : 'chat-msg';
+            div.innerHTML = `<b>${isMe ? 'You' : msg.user_email}</b><span>${msg.message}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleProjectClick(page, url) {
+            if (lockStates[page] && !userIsAdmin) alert("Locked.");
+            else window.location.href = url;
+        }
+
+        init();
+    </script>
+</body>
+</html>
