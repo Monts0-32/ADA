@@ -67,7 +67,8 @@
                 // 3. Set LocalStorage for the session
                 // If profileData is missing or is_admin is null, default to false
                 const adminStatus = profileData ? profileData.is_admin : false;
-
+                
+                localStorage.setItem("log24", "true");
                 localStorage.setItem("loggedUser", userInput);
                 localStorage.setItem("isAdmin", adminStatus.toString());
 
