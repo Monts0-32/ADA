@@ -1,132 +1,30 @@
 <html style="background:#0d1117">
     <head>
-        <title>Dashboard</title>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <title>Login - ADA</title>
+        <link rel="icon" href="image/icon.png">
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        
         <style>
-            .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
-            .header-left, .header-right { display: flex; align-items: center; gap: 15px; }
-            .nav-link { color: #f0f6fc; text-decoration: none; font-family: sans-serif; font-size: 14px; }
-            
-            .project-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-            .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; max-width: 450px; }
-            
-            .custom-button-2 {
-                background-color: #0d1117;
-                border: 1px solid #30363d;
-                border-radius: 6px;
-                color: #ffffff;
-                padding: 12px 16px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                flex-grow: 1;
-                transition: all 0.2s;
-            }
-
-            .custom-button-2:hover { background-color: #1c2430; border-color: #8b949e; }
-            .custom-button-2.locked { color: #8b949e; border-color: #21262d; cursor: not-allowed; }
-
-            .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; padding: 8px; display: flex; align-items: center; border-radius: 6px; }
-            .dots-btn:hover { background-color: #30363d; color: white; }
-
-            .dropdown-menu {
-                display: none;
-                position: absolute;
-                right: -130px;
-                top: 0;
-                background: #161b22;
-                border: 1px solid #30363d;
-                border-radius: 6px;
-                z-index: 10;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                width: 140px;
-            }
-
-            .dropdown-menu button {
-                display: block; width: 100%; padding: 10px 15px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 13px;
-            }
-            .dropdown-menu button:hover { background: #30363d; }
-            #admin-panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-top: 20px; color: #58a6ff; display: none; }
+            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; }
+            .login-card { background: #161b22; padding: 40px; border-radius: 8px; border: 1px solid #30363d; width: 300px; text-align: center; }
+            input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #30363d; background: #0d1117; color: white; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #238636; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+            button:hover { background: #2ea043; }
+            #message { margin-top: 15px; font-size: 14px; min-height: 20px; }
+            .back-link { display: block; margin-top: 20px; color: #58a6ff; text-decoration: none; font-size: 12px; }
         </style>
     </head>
-    <body style="font-family:Arial; padding: 20px; color: white;">
-        <p id="log24Message"></p>
-        <script>
-            function log24Check() {
-                let check = localStorage.getItem("log24")
-                let message = document.getElementById("log24Message")
-                if (check === "true") {
-                    message.innerHTML = "log24 check complete no errors found."
-                } else {
-                    window.location.href = "log24Fail.html"
-                }
-            }
-            log24Check()
-        </script>
-        <header class="header-container">
-            <div class="header-left">
-                <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
-                <h2 style="margin: 0;">Andrew Dingle Archive</h2>
-            </div>
-            <div class="header-right">
-                <span class="material-symbols-outlined" style="cursor:pointer;" onclick="location.href='login.html'">logout</span>
-            </div>
-        </header>
-
-        <div id="admin-panel">
-            <strong style="display:flex; align-items:center; gap:8px;"><span class="material-symbols-outlined">shield</span> Admin Mode</strong>
-        </div>
-
-        <h1>Welcome to the archive!</h1>
-
-        <div class="project-list">
-            <div class="project-item-container">
-                <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
-                    <span id="lock-max_lore" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
-                    Max Lore Archive
-                </button>
-                <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-max_lore')"><span class="material-symbols-outlined">more_vert</span></button>
-                    <div id="menu-max_lore" class="dropdown-menu"><button onclick="dbToggleLock('max_lore')">Toggle Lock</button></div>
-                </div>
-            </div>
-
-            <div class="project-item-container">
-                <button id="btn-chan_doc" class="custom-button-2" onclick="handleProjectClick('chan_doc', 'chan.html')">
-                    <span id="lock-chan_doc" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
-                    Chan Documentary
-                </button>
-                <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-chan_doc')"><span class="material-symbols-outlined">more_vert</span></button>
-                    <div id="menu-chan_doc" class="dropdown-menu"><button onclick="dbToggleLock('chan_doc')">Toggle Lock</button></div>
-                </div>
-            </div>
-
-            <div class="project-item-container">
-                <button id="btn-cool_page" class="custom-button-2" onclick="handleProjectClick('cool_page', 'cool.html')">
-                    <span id="lock-cool_page" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
-                    Cool Content
-                </button>
-                <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-cool_page')"><span class="material-symbols-outlined">more_vert</span></button>
-                    <div id="menu-cool_page" class="dropdown-menu"><button onclick="dbToggleLock('cool_page')">Toggle Lock</button></div>
-                </div>
-            </div>
-
-            <div class="project-item-container">
-                <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
-                    <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; font-size: 18px; display:none;">lock</span>
-                    Site Directory
-                </button>
-                <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-site_list')"><span class="material-symbols-outlined">more_vert</span></button>
-                    <div id="menu-site_list" class="dropdown-menu"><button onclick="dbToggleLock('site_list')">Toggle Lock</button></div>
-                </div>
-            </div>
+    <body>
+        <div class="login-card">
+            <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 50px; margin-bottom: 20px;">
+            <h2>Sign In</h2>
+            <input type="text" id="username" placeholder="Email (e.g. user@ada.com)">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="signIn()">Sign In</button>
+            
+            <p id="message"></p>
+            
+            <a href="index.html" class="back-link">Return to Home</a>
+            <button onclick="clearCache()" style="background:none; color:#8b949e; font-size:10px; border:1px solid #30363d; margin-top:30px;">Clear local storage</button>
         </div>
 
         <script>
@@ -134,76 +32,59 @@
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            const userIsAdmin = localStorage.getItem("isAdmin") === "true";
-            let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
+            async function signIn() {
+                const userInput = document.getElementById('username').value;
+                const passwordInput = document.getElementById('password').value;
+                const messageElement = document.getElementById('message');
 
-            async function init() {
-                if (userIsAdmin) {
-                    document.getElementById('admin-panel').style.display = 'block';
-                    document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
+                messageElement.style.color = "white";
+                messageElement.innerHTML = "Authenticating...";
+
+                // 1. Authenticate with Supabase Auth
+                const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
+                    email: userInput,
+                    password: passwordInput,
+                });
+
+                if (authError) {
+                    console.error("Auth Error:", authError.message);
+                    messageElement.style.color = "#ff7b72";
+                    messageElement.innerHTML = "Error: " + authError.message;
+                    return;
                 }
 
-                const { data } = await _supabase.from('page_controls').select('page_name, lock_status');
-                if (data) {
-                    data.forEach(row => { lockStates[row.page_name] = row.lock_status; });
-                    updateUI();
+                // 2. Auth successful, now fetch the Admin status from 'profiles' table
+                const { data: profileData, error: profileError } = await _supabase
+                    .from('profiles')
+                    .select('is_admin')
+                    .eq('id', authData.user.id)
+                    .maybeSingle();
+
+                if (profileError) {
+                    console.error("Profile Fetch Error:", profileError);
                 }
 
-                _supabase.channel('page-updates').on('postgres_changes', { 
-                    event: '*', schema: 'public', table: 'page_controls' 
-                }, payload => {
-                    if(payload.new) {
-                        lockStates[payload.new.page_name] = payload.new.lock_status;
-                        updateUI();
-                    }
-                }).subscribe();
+                // 3. Set LocalStorage for the session
+                // If profileData is missing or is_admin is null, default to false
+                const adminStatus = profileData ? profileData.is_admin : false;
+                
+                localStorage.setItem("log24", "true");
+                localStorage.setItem("loggedUser", userInput);
+                localStorage.setItem("isAdmin", adminStatus.toString());
+
+                messageElement.style.color = "#7ee787";
+                messageElement.innerHTML = "Success! Redirecting...";
+
+                setTimeout(() => {
+                    window.location.href = "dash.html";
+                }, 800);
             }
 
-            function updateUI() {
-                for (const page in lockStates) {
-                    const btn = document.getElementById(`btn-${page}`);
-                    const icon = document.getElementById(`lock-${page}`);
-                    if (btn && icon) {
-                        btn.classList.toggle('locked', lockStates[page]);
-                        icon.style.display = lockStates[page] ? 'inline-block' : 'none';
-                    }
-                }
+            function clearCache() {
+                localStorage.clear();
+                alert("Cache cleared.");
+                location.reload();
             }
-
-            async function dbToggleLock(pageName) {
-                const { error } = await _supabase
-                    .from('page_controls')
-                    .upsert({ 
-                        page_name: pageName, 
-                        lock_status: !lockStates[pageName],
-                        created_by: localStorage.getItem("loggedUser") || "Admin" 
-                    }, { onConflict: 'page_name' });
-
-                if (error) alert("Error: " + error.message);
-                closeAllMenus();
-            }
-
-            function handleProjectClick(pageName, url) {
-                if (lockStates[pageName] && !userIsAdmin) {
-                    alert("This section is currently locked.");
-                } else {
-                    window.location.href = url;
-                }
-            }
-
-            function toggleMenu(e, menuId) {
-                e.stopPropagation();
-                closeAllMenus();
-                document.getElementById(menuId).style.display = 'block';
-            }
-
-            function closeAllMenus() {
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
-            }
-
-            window.onclick = closeAllMenus;
-            init();
         </script>
-        
-    </body>
+    </body>        
 </html>
