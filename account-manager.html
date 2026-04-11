@@ -6,38 +6,38 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; font-family: Arial, sans-serif; color: white; background-color: #0d1117; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 900px; margin: 0 auto; }
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
         th { text-align: left; padding: 12px; background: #0d1117; border-bottom: 1px solid #30363d; color: #8b949e; font-size: 13px; }
         td { padding: 12px; border-bottom: 1px solid #30363d; font-size: 14px; }
-        .btn-action { background: #21262d; border: 1px solid #30363d; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-action { background: #21262d; border: 1px solid #30363d; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; }
         .btn-action:hover { background: #30363d; }
-        .btn-delete { color: #ff7b72; border-color: #f8514933; }
-        .btn-delete:hover { background: #f851491a; }
-        .badge { padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: bold; }
-        .badge-admin { background: #23863633; color: #3fb950; border: 1px solid #23863666; }
+        .btn-delete { color: #ff7b72; border-color: rgba(248, 81, 73, 0.3); }
+        .btn-delete:hover { background: rgba(248, 81, 73, 0.15); border-color: #f85149; }
+        .status-blocked { color: #ff7b72; font-weight: bold; }
+        .status-active { color: #3fb950; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h2 style="display:flex; align-items:center; gap:10px;">
-                <span class="material-symbols-outlined">group</span> Account Manager
+                <span class="material-symbols-outlined">manage_accounts</span> Account Manager
             </h2>
-            <button class="btn-action" onclick="window.location.href='dash.html'">Back to Dash</button>
+            <button class="btn-action" onclick="window.location.href='dash.html'">Back to Dashboard</button>
         </div>
 
         <table id="userTable">
             <thead>
                 <tr>
-                    <th>Email / Username</th>
+                    <th>Email / ID</th>
                     <th>Role</th>
-                    <th>Actions</th>
+                    <th>Dashboard Status</th>
+                    <th style="text-align:right;">Actions</th>
                 </tr>
             </thead>
-            <tbody id="userList">
-                </tbody>
+            <tbody id="userList"></tbody>
         </table>
     </div>
 
@@ -53,16 +53,29 @@
             const list = document.getElementById('userList');
             list.innerHTML = '';
             data.forEach(user => {
+                const isBlocked = user.has_dashboard_access === false;
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${user.email}</td>
-                    <td>${user.is_admin ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge">User</span>'}</td>
-                    <td style="display:flex; gap:10px;">
+                    <td style="font-family: monospace;">${user.email}</td>
+                    <td>${user.is_admin ? '<b style="color:#58a6ff">Admin</b>' : 'User'}</td>
+                    <td class="${isBlocked ? 'status-blocked' : 'status-active'}">
+                        ${isBlocked ? 'Blocked' : 'Active'}
+                    </td>
+                    <td style="text-align:right; display:flex; gap:8px; justify-content:flex-end;">
+                        <button class="btn-action" onclick="toggleBlock('${user.id}', ${user.has_dashboard_access})">
+                            ${isBlocked ? 'Unblock' : 'Block Access'}
+                        </button>
                         <button class="btn-action" onclick="toggleAdmin('${user.id}', ${user.is_admin})">Toggle Admin</button>
+                        <button class="btn-action btn-delete" onclick="deleteUser('${user.id}')">Delete</button>
                     </td>
                 `;
                 list.appendChild(row);
             });
+        }
+
+        async function toggleBlock(id, currentAccess) {
+            await _supabase.from('profiles').update({ has_dashboard_access: !currentAccess }).eq('id', id);
+            loadUsers();
         }
 
         async function toggleAdmin(id, currentStatus) {
@@ -70,9 +83,14 @@
             loadUsers();
         }
 
-        // Security check
+        async function deleteUser(id) {
+            if (confirm("Are you sure? This will delete the profile row. (Note: You must manually delete the login from the Auth tab in Supabase too).")) {
+                await _supabase.from('profiles').delete().eq('id', id);
+                loadUsers();
+            }
+        }
+
         if (localStorage.getItem("isAdmin") !== "true") window.location.href = "index.html";
-        
         loadUsers();
     </script>
 </body>
