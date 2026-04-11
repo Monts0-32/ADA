@@ -66,7 +66,6 @@
                         <span class="material-symbols-outlined" style="margin-right:8px; font-size: 20px;">person_add</span>
                         Account Creator
                     </button>
-
                     <button class="custom-button-2" onclick="window.location.href='account-manager.html'" style="background-color: #21262d; border-color: #30363d; flex: 1;">
                         <span class="material-symbols-outlined" style="margin-right:8px; font-size: 20px;">admin_panel_settings</span>
                         Account Manager
@@ -129,11 +128,25 @@
         let lockStates = { max_lore: false, chan_doc: false, cool_page: false };
 
         async function init() {
+            // 1. Check if logged in locally
             if (localStorage.getItem("log24") !== "true") {
                 window.location.href = "index.html";
                 return;
             }
 
+            // 2. CHECK DATABASE FOR ACCESS BLOCK
+            const { data: profile } = await _supabase
+                .from('profiles')
+                .select('has_dashboard_access')
+                .eq('email', userEmail)
+                .single();
+
+            if (profile && profile.has_dashboard_access === false) {
+                window.location.href = 'blocked.html';
+                return;
+            }
+
+            // 3. Setup UI
             document.getElementById("auth-zone").innerHTML = `
                 <div class="user-pill">
                     <span class="material-symbols-outlined" style="color:#7ee787; font-size:18px;">account_circle</span>
@@ -147,12 +160,15 @@
                 document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
             }
 
+            // 4. Load Page Locks
             const { data: pageData } = await _supabase.from('page_controls').select('*');
             if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
 
+            // 5. Load Chat
             const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
             if (chatData) chatData.forEach(appendMsg);
 
+            // 6. Listen for Realtime Updates
             _supabase.channel('dash_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, p => {
                 if(p.new) { lockStates[p.new.page_name] = p.new.lock_status; updateUI(); }
             }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
