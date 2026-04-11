@@ -36,7 +36,7 @@
         input:focus { border-color: #58a6ff; }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-size: 14px; cursor: pointer; }
-        .checkbox-group input { cursor: pointer; }
+        .checkbox-group input { cursor: pointer; width: 18px; height: 18px; }
 
         .btn-create {
             width: 100%;
@@ -62,7 +62,7 @@
         }
         .btn-back:hover { color: white; }
 
-        #statusMsg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 1.2em; }
+        #statusMsg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 1.2em; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -70,33 +70,32 @@
     <div class="creator-card">
         <div class="header">
             <span class="material-symbols-outlined">person_add</span>
-            <h2>Create Account</h2>
+            <h2>Account Creator</h2>
         </div>
 
         <div class="form-group">
-            <label>Email Address</label>
-            <input type="text" id="newEmail" placeholder="example@mail.com">
+            <label>User Email</label>
+            <input type="text" id="newEmail" placeholder="user@example.com">
         </div>
 
         <div class="form-group">
-            <label>Password</label>
+            <label>Password (Min 6 chars)</label>
             <input type="password" id="newPassword" placeholder="••••••••">
         </div>
 
         <label class="checkbox-group">
             <input type="checkbox" id="isAdmin">
-            Grant Admin Privileges
+            <span>Set as Administrator</span>
         </label>
 
-        <button class="btn-create" onclick="handleCreate()">Create Account</button>
+        <button class="btn-create" onclick="handleCreate()">Create Auth Account</button>
         
         <div id="statusMsg"></div>
 
-        <a href="dash.html" class="btn-back">Cancel and Return</a>
+        <a href="dash.html" class="btn-back">Return to Dashboard</a>
     </div>
 
     <script>
-        // Use the same Supabase credentials from your dashboard
         const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -107,51 +106,67 @@
             const isAdmin = document.getElementById('isAdmin').checked;
             const status = document.getElementById('statusMsg');
 
-            if (!email || !pass) {
+            if (!email || pass.length < 6) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Please fill in all fields.";
+                status.innerText = "Error: Invalid email or password too short.";
                 return;
             }
 
             status.style.color = "#8b949e";
-            status.innerText = "Processing...";
+            status.innerText = "Registering in Supabase Auth...";
 
-            // Insert into the profiles table
-            const { error } = await _supabase
-                .from('profiles')
-                .insert([
-                    { 
-                        email: email, 
-                        password: pass, 
-                        is_admin: isAdmin 
-                    }
-                ]);
+            // Step 1: Create the User in Supabase Auth
+            const { data, error: authError } = await _supabase.auth.signUp({
+                email: email,
+                password: pass
+            });
 
-            if (error) {
+            if (authError) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Error: " + error.message;
+                status.innerText = "Auth Error: " + authError.message;
+                return;
+            }
+
+            // Step 2: Handle Admin Status
+            // Since the SQL trigger automatically creates the profile row,
+            // we just need to update it if they are an admin.
+            if (isAdmin) {
+                status.innerText = "Auth user created. Setting permissions...";
+                
+                // Give the trigger a small delay to finish the database insert
+                setTimeout(async () => {
+                    const { error: dbError } = await _supabase
+                        .from('profiles')
+                        .update({ is_admin: true })
+                        .eq('email', email);
+
+                    if (dbError) {
+                        status.style.color = "#ffa657";
+                        status.innerText = "Auth created, but failed to set Admin: " + dbError.message;
+                    } else {
+                        status.style.color = "#7ee787";
+                        status.innerText = "Success! Admin account created.";
+                    }
+                }, 1500);
             } else {
                 status.style.color = "#7ee787";
-                status.innerText = "Account successfully created!";
-                
-                // Clear inputs
-                document.getElementById('newEmail').value = "";
-                document.getElementById('newPassword').value = "";
-                document.getElementById('isAdmin').checked = false;
+                status.innerText = "Success! Standard account created.";
             }
+
+            // Clear inputs on success
+            document.getElementById('newEmail').value = "";
+            document.getElementById('newPassword').value = "";
+            document.getElementById('isAdmin').checked = false;
         }
 
-        // Security: Only allow users who are ALREADY logged in as Admin to see this page
+        // Security check: Back to index if not an admin
         function checkAccess() {
             const isLogged = localStorage.getItem("log24") === "true";
             const isAdmin = localStorage.getItem("isAdmin") === "true";
-
             if (!isLogged || !isAdmin) {
-                alert("Unauthorized Access.");
                 window.location.href = "index.html";
             }
         }
-
         checkAccess();
     </script>
 </body>
