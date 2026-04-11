@@ -7,37 +7,38 @@
     <style>
         body { margin: 0; font-family: Arial, sans-serif; color: white; background-color: #0d1117; min-height: 100vh; }
         .main-layout { display: flex; gap: 30px; padding: 20px; align-items: flex-start; justify-content: center; }
-        .left-panel { flex: 0 0 400px; }
+        .left-panel { flex: 0 0 420px; }
         
-        /* CUSTOM THEME SCROLLBAR */
+        /* SCROLLBAR */
         #chatMessages::-webkit-scrollbar { width: 8px; }
         #chatMessages::-webkit-scrollbar-track { background: #0d1117; }
         #chatMessages::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
-        #chatMessages::-webkit-scrollbar-thumb:hover { background: #484f58; }
 
-        /* HEADER & AUTH PILL */
+        /* HEADER */
         .header-container { background-color: #0d1117; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #30363d; }
         .user-pill { background: #161b22; border: 1px solid #30363d; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
         .logout-icon { color: #8b949e; cursor: pointer; margin-left: 10px; font-size: 20px; }
         .logout-icon:hover { color: #ff7b72; }
 
-        /* CHAT INTERFACE */
-        .chat-panel { flex: 0 0 380px; background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; height: 550px; overflow: hidden; }
+        /* ADMIN TOOLS SECTION */
+        #admin-panel-badge { background: #23863633; border: 1px solid #23863666; padding: 8px; margin-bottom: 15px; color: #3fb950; display: none; border-radius: 8px; font-size: 13px; font-weight: bold; text-align: center; }
+        #admin-only-tools { display: none; margin-bottom: 25px; border-bottom: 1px solid #30363d; padding-bottom: 20px; }
+        .admin-btn-row { display: flex; gap: 10px; }
+
+        /* BUTTONS */
+        .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; margin-bottom: 10px; }
+        .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; padding: 12px 16px; flex-grow: 1; text-align: left; cursor: pointer; display: flex; align-items: center; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        .custom-button-2:hover { background-color: #1c2128; border-color: #8b949e; }
+        .custom-button-2.locked { color: #8b949e; opacity: 0.6; cursor: not-allowed; }
+        
+        /* CHAT */
+        .chat-panel { flex: 0 0 380px; background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; display: flex; flex-direction: column; height: 580px; overflow: hidden; }
         #chatMessages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-color: #0d1117; }
         .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 13px; background: #21262d; border: 1px solid #30363d; align-self: flex-start; color: #e6edf3; }
         .chat-msg.is-me { align-self: flex-end; background: #238636; border-color: #2ea043; color: white; }
         .chat-msg b { display: block; font-size: 10px; margin-bottom: 4px; color: #7ee787; }
-        .chat-msg.is-me b { color: #aff5b4; text-align: right; }
 
-        /* BUTTONS & ADMIN TOOLS */
-        .project-item-container { display: flex; align-items: center; gap: 10px; position: relative; margin-bottom: 10px; }
-        .custom-button-2 { background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; padding: 12px 16px; flex-grow: 1; text-align: left; cursor: pointer; display: flex; align-items: center; font-weight: 600; }
-        .custom-button-2:hover { background-color: #1c2128; }
-        .custom-button-2.locked { color: #8b949e; opacity: 0.6; cursor: not-allowed; }
-        
-        #admin-panel { background: #161b22; border: 1px solid #30363d; padding: 12px; margin-bottom: 15px; color: #58a6ff; display: none; border-radius: 8px; font-size: 14px; }
-        #admin-only-tools { display: none; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 20px; }
-        
+        /* DOTS MENU */
         .dots-btn { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 20px; padding: 0 10px; }
         .dropdown-menu { display: none; position: absolute; right: -130px; top: 0; background: #161b22; border: 1px solid #30363d; z-index: 100; border-radius: 6px; width: 140px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .dropdown-menu button { display: block; width: 100%; padding: 10px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 12px; }
@@ -48,24 +49,32 @@
 
     <header class="header-container">
         <div style="display:flex; align-items:center; gap:15px;">
-            <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 40px;">
-            <h2 style="margin: 0; font-size: 18px;">Andrew Dingle Archive</h2>
+            <img src="https://image2url.com/r2/default/images/1775466030837-0229b739-ab59-47e4-82b7-978befb5b488.png" style="height: 35px;">
+            <h2 style="margin: 0; font-size: 16px; letter-spacing: 0.5px;">Andrew Dingle Archive</h2>
         </div>
         <div id="auth-zone"></div>
     </header>
 
     <div class="main-layout">
         <div class="left-panel">
-            <div id="admin-panel"><strong>Admin Mode Active</strong></div>
+            
+            <div id="admin-panel-badge">ADMINISTRATOR ACCESS GRANTED</div>
             
             <div id="admin-only-tools">
-                <button class="custom-button-2" onclick="window.location.href='create-account.html'" style="background-color: #1f6feb; border-color: #388bfd;">
-                    <span class="material-symbols-outlined" style="margin-right:10px;">person_add</span>
-                    Account Creator
-                </button>
+                <div class="admin-btn-row">
+                    <button class="custom-button-2" onclick="window.location.href='create-account.html'" style="background-color: #1f6feb; border-color: #388bfd; flex: 1;">
+                        <span class="material-symbols-outlined" style="margin-right:8px; font-size: 20px;">person_add</span>
+                        Account Creator
+                    </button>
+
+                    <button class="custom-button-2" onclick="window.location.href='account-manager.html'" style="background-color: #21262d; border-color: #30363d; flex: 1;">
+                        <span class="material-symbols-outlined" style="margin-right:8px; font-size: 20px;">admin_panel_settings</span>
+                        Account Manager
+                    </button>
+                </div>
             </div>
 
-            <h1 style="margin-top: 0;">Welcome!</h1>
+            <h1 style="margin-top: 0; font-size: 24px;">Dashboard</h1>
             
             <div class="project-item-container">
                 <button id="btn-max_lore" class="custom-button-2" onclick="handleProjectClick('max_lore', 'max_lore.html')">
@@ -96,16 +105,6 @@
                     <div id="menu-cool_page" class="dropdown-menu"><button onclick="dbToggleLock('cool_page')">Toggle Lock</button></div>
                 </div>
             </div>
-
-            <div class="project-item-container">
-                <button id="btn-site_list" class="custom-button-2" onclick="handleProjectClick('site_list', 'site-list.html')">
-                    <span id="lock-site_list" class="material-symbols-outlined" style="margin-right:10px; display:none;">lock</span> Site Directory
-                </button>
-                <div class="admin-controls" style="display:none;">
-                    <button class="dots-btn" onclick="toggleMenu(event, 'menu-site_list')">⋮</button>
-                    <div id="menu-site_list" class="dropdown-menu"><button onclick="dbToggleLock('site_list')">Toggle Lock</button></div>
-                </div>
-            </div>
         </div>
 
         <div class="chat-panel">
@@ -113,9 +112,9 @@
                 <span class="material-symbols-outlined" style="font-size:18px;">forum</span> Global Chat
             </div>
             <div id="chatMessages"></div>
-            <div style="padding:10px; display:flex; gap:8px; border-top: 1px solid #30363d;">
-                <input type="text" id="chatInput" style="flex:1; background:#0d1117; border:1px solid #30363d; color:white; padding:8px; border-radius:4px;" placeholder="Message..." onkeypress="if(event.key==='Enter')handleSendMessage()">
-                <button onclick="handleSendMessage()" style="background:#238636; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:600;">Send</button>
+            <div style="padding:12px; display:flex; gap:8px; border-top: 1px solid #30363d;">
+                <input type="text" id="chatInput" style="flex:1; background:#0d1117; border:1px solid #30363d; color:white; padding:10px; border-radius:6px;" placeholder="Say something..." onkeypress="if(event.key==='Enter')handleSendMessage()">
+                <button onclick="handleSendMessage()" style="background:#238636; color:white; border:none; padding:0 15px; border-radius:6px; cursor:pointer; font-weight:600;">Send</button>
             </div>
         </div>
     </div>
@@ -127,38 +126,33 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let lockStates = { max_lore: false, chan_doc: false, cool_page: false, site_list: false };
+        let lockStates = { max_lore: false, chan_doc: false, cool_page: false };
 
         async function init() {
-            // AUTH CHECK
             if (localStorage.getItem("log24") !== "true") {
-                window.location.href = "log24Fail.html";
+                window.location.href = "index.html";
                 return;
             }
 
-            // SETUP TOP UI
             document.getElementById("auth-zone").innerHTML = `
                 <div class="user-pill">
                     <span class="material-symbols-outlined" style="color:#7ee787; font-size:18px;">account_circle</span>
-                    <span>${userEmail}</span>
+                    <span style="font-size: 13px;">${userEmail}</span>
                     <span class="material-symbols-outlined logout-icon" title="Logout" onclick="localStorage.clear(); window.location.href='index.html'">logout</span>
                 </div>`;
 
-            // ADMIN ACTIVATION
             if (userIsAdmin) {
-                document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('admin-panel-badge').style.display = 'block';
                 document.getElementById('admin-only-tools').style.display = 'block';
                 document.querySelectorAll('.admin-controls').forEach(el => el.style.display = 'block');
             }
 
-            // LOAD DATA
             const { data: pageData } = await _supabase.from('page_controls').select('*');
             if (pageData) { pageData.forEach(row => lockStates[row.page_name] = row.lock_status); updateUI(); }
 
             const { data: chatData } = await _supabase.from('chat_messages').select('*').order('id', {ascending: true}).limit(50);
             if (chatData) chatData.forEach(appendMsg);
 
-            // REALTIME
             _supabase.channel('dash_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'page_controls' }, p => {
                 if(p.new) { lockStates[p.new.page_name] = p.new.lock_status; updateUI(); }
             }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, p => {
@@ -176,20 +170,15 @@
         }
 
         async function dbToggleLock(page) {
-            await _supabase.from('page_controls').upsert({ 
-                page_name: page, 
-                lock_status: !lockStates[page], 
-                created_by: userEmail 
-            }, { onConflict: 'page_name' });
+            await _supabase.from('page_controls').upsert({ page_name: page, lock_status: !lockStates[page] }, { onConflict: 'page_name' });
             closeAllMenus();
         }
 
         async function handleSendMessage() {
             const input = document.getElementById('chatInput');
-            const val = input.value.trim();
-            if (!val) return;
+            if (!input.value.trim()) return;
+            await _supabase.from('chat_messages').insert([{ user_email: userEmail, message: input.value.trim() }]);
             input.value = '';
-            await _supabase.from('chat_messages').insert([{ user_email: userEmail, message: val }]);
         }
 
         function appendMsg(msg) {
@@ -203,7 +192,7 @@
         }
 
         function handleProjectClick(page, url) {
-            if (lockStates[page] && !userIsAdmin) alert("This section is currently locked.");
+            if (lockStates[page] && !userIsAdmin) alert("Access Denied: This section is currently locked.");
             else window.location.href = url;
         }
 
