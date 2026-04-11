@@ -6,63 +6,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; font-family: Arial, sans-serif; color: white; background-color: #0d1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        
-        .creator-card {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 30px;
-            width: 350px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-        }
-
+        .creator-card { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 30px; width: 350px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         .header { display: flex; align-items: center; gap: 10px; margin-bottom: 25px; color: #58a6ff; }
         .header h2 { margin: 0; font-size: 20px; }
-
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 13px; margin-bottom: 5px; color: #8b949e; }
-        
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: white;
-            box-sizing: border-box;
-            outline: none;
-        }
-
+        input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; box-sizing: border-box; outline: none; }
         input:focus { border-color: #58a6ff; }
-
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-size: 14px; cursor: pointer; }
-        .checkbox-group input { cursor: pointer; width: 18px; height: 18px; }
-
-        .btn-create {
-            width: 100%;
-            padding: 12px;
-            background-color: #1f6feb;
-            color: white;
-            border: 1px solid #388bfd;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
+        .btn-create { width: 100%; padding: 12px; background-color: #1f6feb; color: white; border: 1px solid #388bfd; border-radius: 6px; font-weight: 600; cursor: pointer; }
         .btn-create:hover { background-color: #388bfd; }
-
-        .btn-back {
-            display: block;
-            text-align: center;
-            margin-top: 15px;
-            color: #8b949e;
-            text-decoration: none;
-            font-size: 13px;
-        }
-        .btn-back:hover { color: white; }
-
-        #statusMsg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 1.2em; line-height: 1.4; }
+        .btn-back { display: block; text-align: center; margin-top: 15px; color: #8b949e; text-decoration: none; font-size: 13px; }
+        #statusMsg { margin-top: 15px; font-size: 12px; text-align: center; min-height: 1.2em; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -84,21 +39,27 @@
         </div>
 
         <label class="checkbox-group">
-            <input type="checkbox" id="isAdmin">
+            <input type="checkbox" id="isAdmin" style="width:18px; height:18px;">
             <span>Set as Administrator</span>
         </label>
 
         <button class="btn-create" onclick="handleCreate()">Create Auth Account</button>
-        
         <div id="statusMsg"></div>
-
         <a href="dash.html" class="btn-back">Return to Dashboard</a>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Initialize client with explicit Auth storage disabled for this page 
+        // so it doesn't log the Admin out when creating a new user.
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false
+            }
+        });
 
         async function handleCreate() {
             const email = document.getElementById('newEmail').value.trim();
@@ -108,14 +69,14 @@
 
             if (!email || pass.length < 6) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Error: Invalid email or password too short.";
+                status.innerText = "Error: Valid email and 6-char password required.";
                 return;
             }
 
             status.style.color = "#8b949e";
-            status.innerText = "Registering in Supabase Auth...";
+            status.innerText = "Connecting to Supabase Auth...";
 
-            // Step 1: Create the User in Supabase Auth
+            // Step 1: Create the User
             const { data, error: authError } = await _supabase.auth.signUp({
                 email: email,
                 password: pass
@@ -123,17 +84,16 @@
 
             if (authError) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Auth Error: " + authError.message;
+                status.innerText = "Error: " + authError.message;
+                console.error("Auth Failure:", authError);
                 return;
             }
 
-            // Step 2: Handle Admin Status
-            // Since the SQL trigger automatically creates the profile row,
-            // we just need to update it if they are an admin.
-            if (isAdmin) {
-                status.innerText = "Auth user created. Setting permissions...";
+            // Step 2: Set Admin Status if checked
+            if (isAdmin && data.user) {
+                status.innerText = "User created. Finalizing permissions...";
                 
-                // Give the trigger a small delay to finish the database insert
+                // Small delay to ensure the SQL trigger finished inserting the profile row
                 setTimeout(async () => {
                     const { error: dbError } = await _supabase
                         .from('profiles')
@@ -142,32 +102,30 @@
 
                     if (dbError) {
                         status.style.color = "#ffa657";
-                        status.innerText = "Auth created, but failed to set Admin: " + dbError.message;
+                        status.innerText = "Account created, but admin role failed. Manually update in DB.";
                     } else {
                         status.style.color = "#7ee787";
-                        status.innerText = "Success! Admin account created.";
+                        status.innerText = "Success! Admin account is live.";
+                        resetForm();
                     }
-                }, 1500);
+                }, 2000);
             } else {
                 status.style.color = "#7ee787";
                 status.innerText = "Success! Standard account created.";
+                resetForm();
             }
+        }
 
-            // Clear inputs on success
+        function resetForm() {
             document.getElementById('newEmail').value = "";
             document.getElementById('newPassword').value = "";
             document.getElementById('isAdmin').checked = false;
         }
 
-        // Security check: Back to index if not an admin
-        function checkAccess() {
-            const isLogged = localStorage.getItem("log24") === "true";
-            const isAdmin = localStorage.getItem("isAdmin") === "true";
-            if (!isLogged || !isAdmin) {
-                window.location.href = "index.html";
-            }
+        // Basic security check
+        if (localStorage.getItem("isAdmin") !== "true") {
+            window.location.href = "index.html";
         }
-        checkAccess();
     </script>
 </body>
 </html>
