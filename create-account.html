@@ -6,18 +6,63 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { margin: 0; font-family: Arial, sans-serif; color: white; background-color: #0d1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .creator-card { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 30px; width: 350px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        
+        .creator-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 30px;
+            width: 350px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
         .header { display: flex; align-items: center; gap: 10px; margin-bottom: 25px; color: #58a6ff; }
         .header h2 { margin: 0; font-size: 20px; }
+
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 13px; margin-bottom: 5px; color: #8b949e; }
-        input { width: 100%; padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: white; box-sizing: border-box; outline: none; }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+        }
+
         input:focus { border-color: #58a6ff; }
+
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 20px 0; font-size: 14px; cursor: pointer; }
-        .btn-create { width: 100%; padding: 12px; background-color: #1f6feb; color: white; border: 1px solid #388bfd; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
+
+        .btn-create {
+            width: 100%;
+            padding: 12px;
+            background-color: #1f6feb;
+            color: white;
+            border: 1px solid #388bfd;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
         .btn-create:hover { background-color: #388bfd; }
-        .btn-back { display: block; text-align: center; margin-top: 15px; color: #8b949e; text-decoration: none; font-size: 13px; }
-        #statusMsg { margin-top: 15px; font-size: 12px; text-align: center; min-height: 1.2em; word-break: break-word; }
+
+        .btn-back {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .btn-back:hover { color: white; }
+
+        #statusMsg { margin-top: 15px; font-size: 13px; text-align: center; min-height: 1.2em; line-height: 1.4; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -29,7 +74,7 @@
         </div>
 
         <div class="form-group">
-            <label>User Email</label>
+            <label>New User Email</label>
             <input type="text" id="newEmail" placeholder="user@example.com">
         </div>
 
@@ -39,21 +84,23 @@
         </div>
 
         <label class="checkbox-group">
-            <input type="checkbox" id="isAdmin" style="width:18px; height:18px;">
+            <input type="checkbox" id="isAdmin">
             <span>Set as Administrator</span>
         </label>
 
-        <button class="btn-create" onclick="handleCreate()">Create Auth Account</button>
+        <button class="btn-create" id="submitBtn" onclick="handleCreate()">Create Auth Account</button>
+        
         <div id="statusMsg"></div>
-        <a href="dash.html" class="btn-back">Return to Dashboard</a>
+
+        <a href="dash.html" class="btn-back">Cancel & Return</a>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://ljydseeyirvmtzgkuppo.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeWRzZWV5aXJ2bXR6Z2t1cHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzM4NzYsImV4cCI6MjA5MTA0OTg3Nn0.CmI1TfhskGOeWQlfkKSBkuytJkfWZijqt2ht-RIun3E';
         
-        // Initialize client with explicit Auth storage disabled for this page 
-        // so it doesn't log the Admin out when creating a new user.
+        // IMPORTANT: We use persistSession: false so creating a user 
+        // doesn't overwrite YOUR admin session in the browser.
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             auth: {
                 persistSession: false,
@@ -66,17 +113,20 @@
             const pass = document.getElementById('newPassword').value.trim();
             const isAdmin = document.getElementById('isAdmin').checked;
             const status = document.getElementById('statusMsg');
+            const btn = document.getElementById('submitBtn');
 
             if (!email || pass.length < 6) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Error: Valid email and 6-char password required.";
+                status.innerText = "Valid email and 6-char password required.";
                 return;
             }
 
             status.style.color = "#8b949e";
-            status.innerText = "Connecting to Supabase Auth...";
+            status.innerText = "Creating Auth record...";
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
 
-            // Step 1: Create the User
+            // 1. Sign up the user in Supabase Auth
             const { data, error: authError } = await _supabase.auth.signUp({
                 email: email,
                 password: pass
@@ -84,35 +134,41 @@
 
             if (authError) {
                 status.style.color = "#ff7b72";
-                status.innerText = "Error: " + authError.message;
-                console.error("Auth Failure:", authError);
+                status.innerText = "Auth Error: " + authError.message;
+                btn.disabled = false;
+                btn.style.opacity = "1";
                 return;
             }
 
-            // Step 2: Set Admin Status if checked
+            // 2. Handle Admin Role
             if (isAdmin && data.user) {
-                status.innerText = "User created. Finalizing permissions...";
+                status.innerText = "Auth record created. Linking permissions...";
                 
-                // Small delay to ensure the SQL trigger finished inserting the profile row
+                // We wait 3 seconds to ensure the SQL trigger has finished 
+                // inserting the row into the profiles table.
                 setTimeout(async () => {
                     const { error: dbError } = await _supabase
                         .from('profiles')
                         .update({ is_admin: true })
-                        .eq('email', email);
+                        .eq('id', data.user.id);
 
                     if (dbError) {
                         status.style.color = "#ffa657";
-                        status.innerText = "Account created, but admin role failed. Manually update in DB.";
+                        status.innerText = "User created, but Admin role failed: " + dbError.message;
                     } else {
                         status.style.color = "#7ee787";
-                        status.innerText = "Success! Admin account is live.";
+                        status.innerText = "Success! Admin user created.";
                         resetForm();
                     }
-                }, 2000);
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                }, 3000);
             } else {
                 status.style.color = "#7ee787";
-                status.innerText = "Success! Standard account created.";
+                status.innerText = "Success! Standard user created.";
                 resetForm();
+                btn.disabled = false;
+                btn.style.opacity = "1";
             }
         }
 
@@ -122,7 +178,7 @@
             document.getElementById('isAdmin').checked = false;
         }
 
-        // Basic security check
+        // Basic check: Keep non-admins away from this page
         if (localStorage.getItem("isAdmin") !== "true") {
             window.location.href = "index.html";
         }
