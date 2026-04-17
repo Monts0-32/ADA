@@ -12,44 +12,47 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 50px;
+            padding-top: 60px;
         }
-        .auth-container {
+        .logo { font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #f0f6fc; text-decoration: none; }
+        .box {
             width: 300px;
             background-color: #161b22;
             border: 1px solid #30363d;
             border-radius: 6px;
             padding: 20px;
-            margin-top: 20px;
         }
-        .logo { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; text-align: left; }
         input {
             width: 100%;
-            padding: 6px 12px;
+            padding: 5px 12px;
             margin-bottom: 16px;
             background-color: #0d1117;
             border: 1px solid #30363d;
             border-radius: 6px;
             color: white;
             box-sizing: border-box;
+            outline: none;
         }
-        .btn-submit {
+        input:focus { border-color: #58a6ff; ring: 1px solid #58a6ff; }
+        .btn-go {
             width: 100%;
             background-color: #238636;
             color: white;
             padding: 8px;
             border: none;
             border-radius: 6px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
         }
+        .btn-go:hover { background-color: #2ea043; }
+        #msg { color: #f85149; font-size: 13px; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="logo">ADA</div>
-<div class="auth-container">
+<a href="/" class="logo">ADA</a>
+<div class="box">
     <form id="login-form">
         <label>Email address</label>
         <input type="email" id="email" required>
@@ -57,36 +60,42 @@
         <label>Password</label>
         <input type="password" id="password" required>
         
-        <button type="submit" class="btn-submit">Sign in</button>
+        <button type="submit" class="btn-go">Sign in</button>
     </form>
+    <div id="msg"></div>
 </div>
 
 <script>
     const form = document.getElementById('login-form');
+    const msg = document.getElementById('msg');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        msg.innerText = "Verifying...";
     
         const email = document.getElementById('email').value;
         const pass = document.getElementById('password').value;
 
-    // We point to our own internal worker endpoint
-        const response = await fetch('ada-relay.andrewdinglearchive.workers.dev', {
-            method: 'POST',
-            body: JSON.stringify({ email, pass }),
-            headers: { 'Content-Type': 'application/json' }
-        });
+        try {
+            // FIXED URL: Added https:// to make it an absolute path
+            const response = await fetch('https://ada-relay.andrewdinglearchive.workers.dev', {
+                method: 'POST',
+                body: JSON.stringify({ email, pass }),
+                headers: { 'Content-Type': 'application/json' }
+            });
 
-        const result = await response.json();
+            const result = await response.json();
 
-        if (result.success) {
-            // Store session locally
-            localStorage.setItem('ada_session', 'active');
-            localStorage.setItem('ada_user_email', result.email);
-        // Redirect to main archive
-            window.location.href = '/index.html';
-        } else {
-            alert('Invalid credentials. Access denied.');
+            if (result.success) {
+                localStorage.setItem('ada_session', 'active');
+                localStorage.setItem('ada_user_email', result.email);
+                window.location.href = '/index.html';
+            } else {
+                msg.innerText = 'Invalid email or password.';
+            }
+        } catch (err) {
+            msg.innerText = 'Connection error. Try again.';
+            console.error(err);
         }
     });
 </script>
