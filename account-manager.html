@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Account Manager</title>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; }
+        th, td { padding: 12px; border: 1px solid #30363d; text-align: left; }
+        .btn-red { background: #da3633; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-blue { background: #1f6feb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .nav { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav"><a href="/dash.html" style="color:#58a6ff; text-decoration:none;">← Return to Dashboard</a></div>
+        <h2>Account Management</h2>
+        <table id="user-table">
+            <thead><tr><th>Email</th><th>Role</th><th>Controls</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+
+        async function loadUsers() {
+            const res = await fetch(`${API}/admin/list-users`);
+            const users = await res.json();
+            document.querySelector('tbody').innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.email}</td>
+                    <td>${u.is_admin ? 'Admin' : 'User'}</td>
+                    <td>
+                        <button class="btn-red" onclick="del(${u.id})">Delete</button>
+                        <button class="btn-blue" onclick="block('${u.email}')">Set Restriction</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function del(id) {
+            if(confirm('Confirm deletion?')) {
+                await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
+                loadUsers();
+            }
+        }
+
+        async function block(email) {
+            const path = prompt("Enter path to block (dash.html, login.html) or 'ALL':");
+            if(path) {
+                await fetch(`${API}/admin/block-user`, { method: 'POST', body: JSON.stringify({ email, path }) });
+                alert('Restriction Applied.');
+            }
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>
