@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Archive Wiki</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
+        
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
+
+        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 10px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
+        .toolbar button, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .toolbar button:hover { background: #30363d; }
+
+        .editor-container { max-width: 1000px; margin: 30px auto; padding: 40px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; min-height: 600px; }
+        #editor { outline: none; line-height: 1.6; min-height: 500px; }
+        
+        /* Resizable Image Styling */
+        #editor img { 
+            max-width: 100%; 
+            resize: both; 
+            overflow: auto; 
+            display: inline-block; 
+            border: 2px solid transparent;
+            vertical-align: top;
+        }
+        #editor img:hover { border-color: #58a6ff; cursor: move; }
+
+        .status-bar { max-width: 1000px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; }
+        .btn-save { background: var(--btn-green) !important; font-weight: bold; border: none !important; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/dash.html" class="logo">ADA Wiki</a>
+    <div id="user-info" style="font-size: 12px; opacity: 0.8;"></div>
+</header>
+
+<div class="toolbar">
+    <button onclick="exec('bold')"><b>B</b></button>
+    <button onclick="exec('italic')"><i>I</i></button>
+    <button onclick="exec('underline')"><u>U</u></button>
+    <button onclick="exec('strikeThrough')"><s>S</s></button>
+    <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
+    <button onclick="exec('formatBlock', 'h1')">H1</button>
+    <button onclick="exec('formatBlock', 'h2')">H2</button>
+    <button onclick="exec('insertUnorderedList')">• List</button>
+    <button onclick="insertImage()">🖼 Insert Image</button>
+    <div style="flex-grow: 1;"></div>
+    <button class="btn-save" onclick="saveWiki()">Save Changes</button>
+</div>
+
+<div class="status-bar">
+    <span id="last-edited">Loading content...</span>
+    <a href="/dash.html" style="color: #58a6ff; text-decoration: none;">Exit Editor</a>
+</div>
+
+<div class="editor-container">
+    <div id="editor" contenteditable="true"></div>
+</div>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const userEmail = localStorage.getItem('ada_user_email');
+    if (!userEmail) window.location.href = '/login.html';
+
+    document.getElementById('user-info').innerText = `Logged in as: ${userEmail}`;
+
+    // Load Wiki Content
+    async function loadWiki() {
+        const res = await fetch(`${API}/wiki/load`);
+        const data = await res.json();
+        document.getElementById('editor').innerHTML = data.content;
+        document.getElementById('last-edited').innerText = `Last updated by ${data.last_user} at ${new Date(data.updated_at).toLocaleString()}`;
+    }
+
+    // Save Wiki Content
+    async function saveWiki() {
+        const content = document.getElementById('editor').innerHTML;
+        const res = await fetch(`${API}/wiki/save`, {
+            method: 'POST',
+            body: JSON.stringify({ content, user: userEmail }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert("Wiki saved successfully!");
+            loadWiki();
+        }
+    }
+
+    // Text Formatting commands
+    function exec(cmd, val = null) {
+        document.execCommand(cmd, false, val);
+    }
+
+    // Image handling
+    function insertImage() {
+        const url = prompt("Enter image URL:");
+        if (url) {
+            const img = `<img src="${url}" style="width:200px; height:auto;">`;
+            exec('insertHTML', img);
+        }
+    }
+
+    // Make images "draggable" and "resizable" simply
+    // Native browser contentEditable allows basic resizing in many browsers.
+    // For moving, standard drag-and-drop is enabled by contentEditable="true".
+
+    loadWiki();
+</script>
+</body>
+</html>
