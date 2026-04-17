@@ -33,9 +33,12 @@
                 <tr>
                     <td>${u.email}</td>
                     <td>${u.is_admin ? 'Admin' : 'User'}</td>
+                    <td style="color: #f85149; font-size: 11px;">
+                        ${u.blocked_paths.length > 0 ? u.blocked_paths.join(', ') : 'None'}
+                    </td>
                     <td>
                         <button class="btn-red" onclick="del(${u.id})">Delete</button>
-                        <button class="btn-blue" onclick="block('${u.email}')">Set Restriction</button>
+                        <button class="btn-blue" onclick="block('${u.email}')">Block Path</button>
                     </td>
                 </tr>
             `).join('');
