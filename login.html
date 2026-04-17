@@ -89,7 +89,8 @@
             if (result.success) {
                 localStorage.setItem('ada_session', 'active');
                 localStorage.setItem('ada_user_email', result.email);
-                window.location.href = '/index.html';
+                localStorage.setItem('ada_admin', result.admin); // Store admin status
+                window.location.href = '/dash.html'; // Redirect to dashboard
             } else {
                 msg.innerText = 'Invalid email or password.';
             }
