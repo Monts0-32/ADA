@@ -78,7 +78,7 @@
 
         try {
             // FIXED URL: Added https:// to make it an absolute path
-            const response = await fetch('https://ada-relay.andrewdinglearchive.workers.dev', {
+            const response = await fetch('https://ada-relay.andrewdinglearchive.workers.dev/auth', {
                 method: 'POST',
                 body: JSON.stringify({ email, pass }),
                 headers: { 'Content-Type': 'application/json' }
