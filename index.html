@@ -3,88 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andrew Dingle Archive | ADA</title>
+    <title>ADA | Andrew Dingle Archive</title>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --header-bg: #161b22;
-            --border-color: #30363d;
-            --text-main: #c9d1d9;
+            --bg: #0d1117;
+            --header: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
             --btn-green: #238636;
-            --btn-hover: #2ea043;
         }
         body {
+            background-color: var(--bg);
+            color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
             margin: 0;
         }
         header {
-            background-color: var(--header-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 16px 32px;
+            background-color: var(--header);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
-        .nav-left { display: flex; align-items: center; gap: 16px; }
-        .logo { font-weight: 600; font-size: 16px; color: #f0f6fc; text-decoration: none; }
-        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .logo-area { font-weight: 600; font-size: 14px; color: #f0f6fc; text-decoration: none; }
         
+        nav { display: flex; align-items: center; gap: 12px; }
+
+        /* The User Pill */
         .user-pill {
             background: #21262d;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             padding: 4px 12px;
-            border-radius: 2em;
+            border-radius: 20px;
             font-size: 12px;
-            display: none; /* Hidden by default */
+            color: var(--text);
+            display: none; /* Hidden unless logged in */
         }
+
         .btn {
-            padding: 5px 16px;
             font-size: 14px;
             font-weight: 500;
+            padding: 5px 16px;
             border-radius: 6px;
             cursor: pointer;
             text-decoration: none;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
+            transition: 0.2s;
         }
         .btn-auth { background-color: var(--btn-green); color: white; border: none; }
-        .btn-auth:hover { background-color: var(--btn-hover); }
-        
-        main { padding: 40px; max-width: 1012px; margin: 0 auto; }
-        h1 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .btn-auth:hover { background-color: #2ea043; }
+        .btn-out { background-color: transparent; color: #f85149; border-color: rgba(248,81,73,0.4); }
+        .btn-out:hover { background-color: #b62324; color: white; }
+
+        main { padding: 40px; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+        .hero { border-bottom: 1px solid var(--border); margin-bottom: 24px; padding-bottom: 12px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="nav-left">
-        <a href="/" class="logo">ADA</a>
-    </div>
-    <nav class="nav-right" id="nav-controls">
-        <div id="user-display" class="user-pill"></div>
-        <a href="/login.html" id="auth-btn" class="btn btn-auth">Sign in</a>
+    <a href="/" class="logo-area">Andrew Dingle Archive</a>
+    <nav>
+        <div id="pill" class="user-pill"></div>
+        <a href="/login.html" id="auth-link" class="btn btn-auth">Sign in</a>
     </nav>
 </header>
 
 <main>
-    <h1>Andrew Dingle Archive</h1>
-    <p>Welcome to the secure archive. Please log in to access the full records.</p>
+    <div class="hero">
+        <h1>Welcome to ADA</h1>
+        <p>A secure digital repository for the Andrew Dingle Archive.</p>
+    </div>
+    <div id="content-status">
+        <p>Please authenticate to view protected records.</p>
+    </div>
 </main>
 
 <script>
-    // Check local session state
-    const sessionToken = localStorage.getItem('ada_session');
-    const userDisplay = document.getElementById('user-display');
-    const authBtn = document.getElementById('auth-btn');
+    const userPill = document.getElementById('pill');
+    const authLink = document.getElementById('auth-link');
+    const statusText = document.getElementById('content-status');
 
-    if (sessionToken) {
-        // User is logged in
-        userDisplay.style.display = 'block';
-        userDisplay.innerText = localStorage.getItem('ada_user_email');
-        authBtn.innerText = 'Sign out';
-        authBtn.href = '#';
-        authBtn.onclick = () => {
+    // Check if user is logged in
+    const activeSession = localStorage.getItem('ada_session');
+    const userEmail = localStorage.getItem('ada_user_email');
+
+    if (activeSession === 'active') {
+        // Update UI for logged in state
+        userPill.innerText = userEmail;
+        userPill.style.display = 'block';
+        
+        authLink.innerText = 'Sign out';
+        authLink.classList.remove('btn-auth');
+        authLink.classList.add('btn-out');
+        authLink.href = '#';
+        
+        statusText.innerHTML = `<p style="color: #238636;">● System Online. You have full archive access.</p>`;
+
+        // Sign out logic
+        authLink.onclick = () => {
             localStorage.clear();
             window.location.reload();
         };
