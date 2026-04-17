@@ -1,109 +1,129 @@
-<!-- Add this inside your <style> block -->
-.admin-modal {
-    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: var(--header); border: 1px solid var(--border); border-radius: 6px; padding: 20px;
-    z-index: 100; width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-.overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 99; }
-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 10px; }
-th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Dashboard</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
+        .container { display: flex; flex: 1; overflow: hidden; }
+        .gallery { flex: 2; padding: 24px; overflow-y: auto; border-right: 1px solid var(--border); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 16px; position: relative; }
+        .card img { width: 100%; height: 120px; border-radius: 4px; object-fit: cover; background: #0d1117; margin-bottom: 12px; }
+        .lock-badge { position: absolute; top: 10px; right: 10px; font-size: 11px; color: #f85149; display: none; background: rgba(248,81,73,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid #f85149; }
+        .chat-panel { flex: 1; display: flex; flex-direction: column; width: 350px; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; word-wrap: break-word; }
+        .msg.other { background: #21262d; align-self: flex-start; border: 1px solid var(--border); }
+        .msg.me { background: #238636; color: white; align-self: flex-end; }
+        .chat-input-area { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+        input#chat-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; color: white; padding: 8px; }
+        .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 12px; text-decoration: none; }
+        .btn-green { background: var(--btn-green); border: none; }
+        .admin-controls { display: none; gap: 8px; }
+    </style>
+</head>
+<body>
 
-<!-- Add these buttons in your <header> inside the admin-only div -->
-<div class="admin-only" style="display:none; margin-right: 15px;">
-    <button class="btn" onclick="openModal('creator-modal')">Account Creator</button>
-    <button class="btn" onclick="openModal('manager-modal'); loadUserList();">Account Manager</button>
-</div>
+<header>
+    <div style="display:flex; align-items:center; gap:20px;">
+        <a href="/" class="logo">ADA Archive</a>
+        <div id="admin-tools" class="admin-controls">
+            <a href="/account-creator.html" class="btn">Account Creator</a>
+            <a href="/account-manager.html" class="btn">Account Manager</a>
+        </div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <span id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:2px 8px; border-radius:10px;"></span>
+        <button class="btn" onclick="logout()">Logout</button>
+    </div>
+</header>
 
-<!-- Modals -->
-<div class="overlay" id="overlay" onclick="closeModals()"></div>
+<div class="container">
+    <div class="gallery">
+        <h2>Archive Content</h2>
+        <div class="grid">
+            <div class="card">
+                <span class="lock-badge" id="lock-page1">🔒 Locked</span>
+                <img src="https://via.placeholder.com/200x120" alt="Archive 1">
+                <h3>Visual Logs</h3>
+                <button class="btn btn-green" onclick="navTo('page1')">View Gallery</button>
+            </div>
+            <div class="card">
+                <span class="lock-badge" id="lock-page2">🔒 Locked</span>
+                <img src="https://via.placeholder.com/200x120" alt="Archive 2">
+                <h3>Document Leak</h3>
+                <button class="btn btn-green" onclick="navTo('page2')">Read Docs</button>
+            </div>
+            <div class="card">
+                <span class="lock-badge" id="lock-page3">🔒 Locked</span>
+                <img src="https://via.placeholder.com/200x120" alt="Archive 3">
+                <h3>System Core</h3>
+                <button class="btn btn-green" onclick="navTo('page3')">Access Core</button>
+            </div>
+        </div>
+    </div>
 
-<div class="admin-modal" id="creator-modal">
-    <h3>Create New Account</h3>
-    <input type="email" id="new-email" placeholder="Email" class="btn" style="width:90%; margin-bottom:10px;">
-    <input type="text" id="new-pass" placeholder="Password" class="btn" style="width:90%; margin-bottom:10px;">
-    <label><input type="checkbox" id="new-is-admin"> Admin Privileges</label>
-    <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="createUser()">Submit to Database</button>
-</div>
-
-<div class="admin-modal" id="manager-modal" style="width: 600px;">
-    <h3>User Management</h3>
-    <div id="user-list-container" style="max-height: 300px; overflow-y: auto;">
-        <table id="user-table">
-            <thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div class="chat-panel">
+        <div id="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Comms...">
+            <button class="btn btn-green" onclick="sendMessage()">Send</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- UPDATED SYNC LOGIC ---
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const email = localStorage.getItem('ada_user_email');
+    const isAdmin = localStorage.getItem('ada_admin') === '1';
+
+    if (!email) window.location.href = '/login.html';
+    document.getElementById('user-pill').innerText = email;
+
+    if (isAdmin) document.getElementById('admin-tools').style.display = 'flex';
+
     async function loadData() {
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         const res = await fetch(`${API}/sync?email=${email}`);
         const data = await res.json();
         
-        // CHECK BLOCKS
+        // Handle User Blocks
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         if (data.blocks.includes(currentPage) || data.blocks.includes('ALL')) {
             window.location.href = '/blocked.html';
             return;
         }
 
-        // Render Chat & Locks (Same as before...)
+        // Render Chat
         const chatBox = document.getElementById('chat-messages');
         chatBox.innerHTML = data.messages.map(m => `
             <div class="msg ${m.user_email === email ? 'me' : 'other'}">
-                <span class="msg-user">${m.user_email}</span>${m.content}
+                <span style="font-size:9px; opacity:0.6; display:block;">${m.user_email}</span>
+                ${m.content}
             </div>`).join('');
-    }
 
-    // --- ADMIN ACTIONS ---
-    function openModal(id) { 
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById(id).style.display = 'block';
-    }
-    function closeModals() { 
-        document.querySelectorAll('.admin-modal, .overlay').forEach(el => el.style.display = 'none');
-    }
-
-    async function createUser() {
-        const emailInput = document.getElementById('new-email').value;
-        const passInput = document.getElementById('new-pass').value;
-        const isAdmin = document.getElementById('new-is-admin').checked;
-        await fetch(`${API}/admin/create-user`, {
-            method: 'POST',
-            body: JSON.stringify({ email: emailInput, pass: passInput, isAdmin })
+        // Render Page Locks
+        data.locks.forEach(l => {
+            const el = document.getElementById(`lock-${l.page_id}`);
+            if (el) el.style.display = l.is_locked ? 'block' : 'none';
         });
-        alert('User Created'); closeModals();
     }
 
-    async function loadUserList() {
-        const res = await fetch(`${API}/admin/list-users`);
-        const users = await res.json();
-        const tbody = document.querySelector('#user-table tbody');
-        tbody.innerHTML = users.map(u => `
-            <tr>
-                <td>${u.email}</td>
-                <td>${u.is_admin ? 'Admin' : 'User'}</td>
-                <td>
-                    <button onclick="deleteUser(${u.id})">Delete</button>
-                    <button onclick="blockPrompt('${u.email}')">Block</button>
-                </td>
-            </tr>
-        `).join('');
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        if (!input.value) return;
+        await fetch(`${API}/chat`, { method: 'POST', body: JSON.stringify({ email, content: input.value }) });
+        input.value = '';
+        loadData();
     }
 
-    async function deleteUser(id) {
-        if(confirm('Delete user?')) {
-            await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
-            loadUserList();
-        }
-    }
-
-    async function blockPrompt(targetEmail) {
-        const path = prompt("Enter endpoint to block (e.g. dash.html) or type 'ALL' to ban completely:");
-        if(path) {
-            await fetch(`${API}/admin/block-user`, { method: 'POST', body: JSON.stringify({ email: targetEmail, path }) });
-            alert('Block applied');
-        }
-    }
+    function navTo(page) { window.location.href = `/${page}.html`; }
+    function logout() { localStorage.clear(); window.location.href = '/login.html'; }
+    setInterval(loadData, 3000);
+    loadData();
 </script>
+</body>
+</html>
