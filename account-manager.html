@@ -5,20 +5,34 @@
     <title>ADA | Account Manager</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; }
+        .container { max-width: 900px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; margin-top: 20px; }
         th, td { padding: 12px; border: 1px solid #30363d; text-align: left; }
+        th { background: #0d1117; }
         .btn-red { background: #da3633; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
         .btn-blue { background: #1f6feb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .nav { margin-bottom: 20px; }
+        .block-pill { 
+            display: inline-flex; align-items: center; background: rgba(248,81,73,0.1); 
+            color: #f85149; border: 1px solid rgba(248,81,73,0.4); 
+            padding: 2px 8px; border-radius: 12px; font-size: 11px; margin: 2px;
+        }
+        .remove-x { margin-left: 5px; cursor: pointer; font-weight: bold; }
+        .remove-x:hover { color: white; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="nav"><a href="/dash.html" style="color:#58a6ff; text-decoration:none;">← Return to Dashboard</a></div>
+        <a href="/dash.html" style="color:#58a6ff; text-decoration:none;">← Return to Dashboard</a>
         <h2>Account Management</h2>
         <table id="user-table">
-            <thead><tr><th>Email</th><th>Role</th><th>Controls</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Blocked Access</th>
+                    <th>Controls</th>
+                </tr>
+            </thead>
             <tbody></tbody>
         </table>
     </div>
@@ -29,15 +43,21 @@
         async function loadUsers() {
             const res = await fetch(`${API}/admin/list-users`);
             const users = await res.json();
+            
             document.querySelector('tbody').innerHTML = users.map(u => `
                 <tr>
                     <td>${u.email}</td>
                     <td>${u.is_admin ? 'Admin' : 'User'}</td>
-                    <td style="color: #f85149; font-size: 11px;">
-                        ${u.blocked_paths.length > 0 ? u.blocked_paths.join(', ') : 'None'}
+                    <td>
+                        ${u.blocked_paths.map(path => `
+                            <span class="block-pill">
+                                ${path} 
+                                <span class="remove-x" onclick="removeBlock('${u.email}', '${path}')">×</span>
+                            </span>
+                        `).join('') || '<span style="opacity:0.4">None</span>'}
                     </td>
                     <td>
-                        <button class="btn-red" onclick="del(${u.id})">Delete</button>
+                        <button class="btn-red" onclick="del(${u.id})">Delete Account</button>
                         <button class="btn-blue" onclick="block('${u.email}')">Block Path</button>
                     </td>
                 </tr>
@@ -45,17 +65,27 @@
         }
 
         async function del(id) {
-            if(confirm('Confirm deletion?')) {
+            if(confirm('Permanently delete this account?')) {
                 await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
                 loadUsers();
             }
         }
 
         async function block(email) {
-            const path = prompt("Enter path to block (dash.html, login.html) or 'ALL':");
+            const path = prompt("Enter filename to block (e.g., dash.html) or type 'ALL':");
             if(path) {
                 await fetch(`${API}/admin/block-user`, { method: 'POST', body: JSON.stringify({ email, path }) });
-                alert('Restriction Applied.');
+                loadUsers();
+            }
+        }
+
+        async function removeBlock(email, path) {
+            if(confirm(`Remove block for ${path}?`)) {
+                await fetch(`${API}/admin/remove-block`, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ email, path }) 
+                });
+                loadUsers();
             }
         }
 
