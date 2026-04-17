@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Account Creator</title>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; display: flex; justify-content: center; padding-top: 100px; }
+        .box { background: #161b22; border: 1px solid #30363d; padding: 30px; border-radius: 6px; width: 350px; }
+        input { width: 100%; padding: 8px; margin: 10px 0; background: #0d1117; border: 1px solid #30363d; color: white; box-sizing: border-box; }
+        .btn { width: 100%; padding: 10px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .back { color: #8b949e; text-decoration: none; font-size: 12px; display: block; margin-top: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h3>System Account Creator</h3>
+        <input type="email" id="email" placeholder="New User Email">
+        <input type="text" id="pass" placeholder="Initial Password">
+        <label style="font-size: 13px;"><input type="checkbox" id="admin"> Grant Admin Privileges</label>
+        <button class="btn" style="margin-top: 20px;" onclick="saveUser()">Create Account</button>
+        <a href="/dash.html" class="back">← Back to Dashboard</a>
+    </div>
+
+    <script>
+        async function saveUser() {
+            const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+            await fetch(`${API}/admin/create-user`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('email').value,
+                    pass: document.getElementById('pass').value,
+                    isAdmin: document.getElementById('admin').checked
+                })
+            });
+            alert('User successfully added to database.');
+            window.location.href = '/account-manager.html';
+        }
+    </script>
+</body>
+</html>
