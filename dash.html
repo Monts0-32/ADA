@@ -48,21 +48,24 @@
         <div class="grid">
             <div class="card">
                 <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120" alt="Archive 1">
-                <h3>Visual Logs</h3>
+                <img src="..." alt="Archive 1">
+                <h3>Max Lore</h3>
                 <button class="btn btn-green" onclick="navTo('page1')">View Gallery</button>
+                <button class="btn admin-controls" style="margin-top:5px; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
             <div class="card">
-                <span class="lock-badge" id="lock-page2">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120" alt="Archive 2">
-                <h3>Document Leak</h3>
-                <button class="btn btn-green" onclick="navTo('page2')">Read Docs</button>
+                <span class="lock-badge" id="lock-page1">🔒 Locked</span>
+                <img src="..." alt="Archive 1">
+                <h3>Internal Content</h3>
+                <button class="btn btn-green" onclick="navTo('page1')">View Gallery</button>
+                <button class="btn admin-controls" style="margin-top:5px; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
             <div class="card">
-                <span class="lock-badge" id="lock-page3">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120" alt="Archive 3">
-                <h3>System Core</h3>
-                <button class="btn btn-green" onclick="navTo('page3')">Access Core</button>
+                <span class="lock-badge" id="lock-page1">🔒 Locked</span>
+                <img src="..." alt="Archive 1">
+                <h3>Comming Soon...</h3>
+                <button class="btn btn-green" onclick="navTo('page1')">View Gallery</button>
+                <button class="btn admin-controls" style="margin-top:5px; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
         </div>
     </div>
@@ -87,17 +90,18 @@
     if (isAdmin) document.getElementById('admin-tools').style.display = 'flex';
 
     async function loadData() {
-        const res = await fetch(`${API}/sync?email=${email}`);
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         
-        // Handle User Blocks
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        if (data.blocks.includes(currentPage) || data.blocks.includes('ALL')) {
-            window.location.href = '/blocked.html';
+        // --- THE BLOCK CHECK ---
+        // Checks if current filename is in the blocked list
+        const path = window.location.pathname.split("/").pop() || "index.html";
+        if (data.blocks.includes(path) || data.blocks.includes("ALL")) {
+            window.location.href = "/blocked.html";
             return;
         }
 
-        // Render Chat
+        // Render Chat...
         const chatBox = document.getElementById('chat-messages');
         chatBox.innerHTML = data.messages.map(m => `
             <div class="msg ${m.user_email === email ? 'me' : 'other'}">
@@ -112,12 +116,14 @@
         });
     }
 
-    async function sendMessage() {
-        const input = document.getElementById('chat-input');
-        if (!input.value) return;
-        await fetch(`${API}/chat`, { method: 'POST', body: JSON.stringify({ email, content: input.value }) });
-        input.value = '';
-        loadData();
+    // --- RESTORED TOGGLE LOCK FUNCTION ---
+    async function toggleLock(pageId) {
+        if (!isAdmin) return;
+        await fetch(`${API}/admin/lock`, {
+            method: 'POST',
+            body: JSON.stringify({ page_id: pageId })
+        });
+        loadData(); // Refresh UI
     }
 
     function navTo(page) { window.location.href = `/${page}.html`; }
