@@ -5,110 +5,150 @@
     <title>ADA | Archive Wiki</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
         
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
 
-        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 10px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; }
-        .toolbar button, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 8px; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+        .toolbar button, .toolbar label { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; }
         .toolbar button:hover { background: #30363d; }
-
-        .editor-container { max-width: 1000px; margin: 30px auto; padding: 40px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; min-height: 600px; }
-        #editor { outline: none; line-height: 1.6; min-height: 500px; }
         
-        /* Resizable Image Styling */
-        #editor img { 
+        /* Layout */
+        .editor-container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
+        #visual-editor, #source-editor { 
+            width: 100%; min-height: 600px; padding: 20px; 
+            background: #0d1117; border: 1px solid var(--border); 
+            border-radius: 6px; box-sizing: border-box; outline: none; 
+            color: var(--text); font-family: inherit; line-height: 1.6;
+        }
+        #source-editor { font-family: 'Courier New', monospace; display: none; white-space: pre-wrap; resize: vertical; }
+
+        /* Image Styling */
+        #visual-editor img { 
             max-width: 100%; 
             resize: both; 
             overflow: auto; 
             display: inline-block; 
-            border: 2px solid transparent;
-            vertical-align: top;
+            border: 2px solid transparent; 
+            cursor: move;
         }
-        #editor img:hover { border-color: #58a6ff; cursor: move; }
+        #visual-editor img:active { border-color: #58a6ff; }
 
-        .status-bar { max-width: 1000px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; }
-        .btn-save { background: var(--btn-green) !important; font-weight: bold; border: none !important; }
+        .status-bar { max-width: 1000px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; padding: 0 20px; }
+        .btn-save { background: var(--btn-green) !important; font-weight: bold; border: none !important; margin-left: auto; }
+        .toggle-btn.active { background: #58a6ff; color: white; border-color: #58a6ff; }
+        
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/dash.html" class="logo">ADA Wiki</a>
-    <div id="user-info" style="font-size: 12px; opacity: 0.8;"></div>
+    <a href="/dash.html" class="logo">ADA Wiki Editor</a>
+    <div id="user-info" style="font-size: 11px; opacity: 0.7;"></div>
 </header>
 
 <div class="toolbar">
-    <button onclick="exec('bold')"><b>B</b></button>
-    <button onclick="exec('italic')"><i>I</i></button>
-    <button onclick="exec('underline')"><u>U</u></button>
-    <button onclick="exec('strikeThrough')"><s>S</s></button>
-    <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
-    <button onclick="exec('formatBlock', 'h1')">H1</button>
-    <button onclick="exec('formatBlock', 'h2')">H2</button>
-    <button onclick="exec('insertUnorderedList')">• List</button>
-    <button onclick="insertImage()">🖼 Insert Image</button>
-    <div style="flex-grow: 1;"></div>
-    <button class="btn-save" onclick="saveWiki()">Save Changes</button>
+    <button onclick="exec('bold')" title="Bold"><b>B</b></button>
+    <button onclick="exec('italic')" title="Italic"><i>I</i></button>
+    <button onclick="exec('underline')" title="Underline"><u>U</u></button>
+    <div style="width: 1px; background: var(--border); margin: 0 5px;"></div>
+    
+    <label for="img-upload">🖼 Upload Image</label>
+    <input type="file" id="img-upload" accept="image/*" onchange="handleImage(this)">
+    
+    <div style="width: 1px; background: var(--border); margin: 0 5px;"></div>
+    
+    <button onclick="toggleEditor()" id="source-toggle" class="toggle-btn">HTML Source</button>
+    
+    <button class="btn-save" onclick="saveWiki()">Save to Archive</button>
 </div>
 
 <div class="status-bar">
-    <span id="last-edited">Loading content...</span>
-    <a href="/dash.html" style="color: #58a6ff; text-decoration: none;">Exit Editor</a>
+    <span id="last-edited">Loading...</span>
+    <span>Drag images to move • Resize via bottom-right handle</span>
 </div>
 
 <div class="editor-container">
-    <div id="editor" contenteditable="true"></div>
+    <!-- Rich Text View -->
+    <div id="visual-editor" contenteditable="true"></div>
+    <!-- Code View -->
+    <textarea id="source-editor"></textarea>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const userEmail = localStorage.getItem('ada_user_email');
+    const visual = document.getElementById('visual-editor');
+    const source = document.getElementById('source-editor');
+    let isSourceMode = false;
+
     if (!userEmail) window.location.href = '/login.html';
+    document.getElementById('user-info').innerText = userEmail;
 
-    document.getElementById('user-info').innerText = `Logged in as: ${userEmail}`;
-
-    // Load Wiki Content
+    // Load Data
     async function loadWiki() {
         const res = await fetch(`${API}/wiki/load`);
         const data = await res.json();
-        document.getElementById('editor').innerHTML = data.content;
-        document.getElementById('last-edited').innerText = `Last updated by ${data.last_user} at ${new Date(data.updated_at).toLocaleString()}`;
+        visual.innerHTML = data.content;
+        source.value = data.content;
+        document.getElementById('last-edited').innerText = `Last saved by: ${data.last_user}`;
     }
 
-    // Save Wiki Content
+    // Toggle between Visual and Source
+    function toggleEditor() {
+        if (!isSourceMode) {
+            source.value = visual.innerHTML;
+            visual.style.display = 'none';
+            source.style.display = 'block';
+            document.getElementById('source-toggle').classList.add('active');
+        } else {
+            visual.innerHTML = source.value;
+            source.style.display = 'none';
+            visual.style.display = 'block';
+            document.getElementById('source-toggle').classList.remove('active');
+        }
+        isSourceMode = !isSourceMode;
+    }
+
+    // Handle Image Upload (Local File)
+    function handleImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Create image with resize style
+                const imgHtml = `<img src="${e.target.result}" style="width:300px; height:auto; display:inline-block;">`;
+                if (isSourceMode) {
+                    source.value += imgHtml;
+                } else {
+                    visual.focus();
+                    document.execCommand('insertHTML', false, imgHtml);
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Formatting
+    function exec(cmd) {
+        if (isSourceMode) return; // Disable formatting in code view
+        document.execCommand(cmd, false, null);
+    }
+
+    // Save Data
     async function saveWiki() {
-        const content = document.getElementById('editor').innerHTML;
+        const finalContent = isSourceMode ? source.value : visual.innerHTML;
         const res = await fetch(`${API}/wiki/save`, {
             method: 'POST',
-            body: JSON.stringify({ content, user: userEmail }),
+            body: JSON.stringify({ content: finalContent, user: userEmail }),
             headers: { 'Content-Type': 'application/json' }
         });
-        const result = await res.json();
-        if (result.success) {
-            alert("Wiki saved successfully!");
+        if (res.ok) {
+            alert("Archive Updated Successfully.");
             loadWiki();
         }
     }
-
-    // Text Formatting commands
-    function exec(cmd, val = null) {
-        document.execCommand(cmd, false, val);
-    }
-
-    // Image handling
-    function insertImage() {
-        const url = prompt("Enter image URL:");
-        if (url) {
-            const img = `<img src="${url}" style="width:200px; height:auto;">`;
-            exec('insertHTML', img);
-        }
-    }
-
-    // Make images "draggable" and "resizable" simply
-    // Native browser contentEditable allows basic resizing in many browsers.
-    // For moving, standard drag-and-drop is enabled by contentEditable="true".
 
     loadWiki();
 </script>
