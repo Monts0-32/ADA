@@ -5,30 +5,32 @@
     <title>ADA | Archive Editor</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
-        
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; overflow-x: hidden; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         
         .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 8px; position: sticky; top: 0; z-index: 1000; align-items: center; flex-wrap: wrap; }
-        .toolbar button, .toolbar select, .toolbar label, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; display: flex; align-items: center; }
-        
-        .editor-wrap { max-width: 1100px; margin: 40px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; min-height: 85vh; position: relative; overflow: hidden; }
-        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; }
-        #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; }
+        .toolbar button, .toolbar select, .toolbar label, .toolbar input[type="color"] { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; display: flex; align-items: center; box-sizing: border-box; }
+        .toolbar button:hover { background: #30363d; }
 
-        /* ADVANCED IMAGE HANDLING */
-        .img-container { position: absolute; display: inline-block; cursor: move; user-select: none; line-height: 0; border: 2px solid transparent; }
-        .img-container img { width: 100%; height: 100%; display: block; pointer-events: none; }
-        .img-container.active { border-color: var(--blue); }
+        .editor-wrap { max-width: 1100px; margin: 40px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; min-height: 85vh; position: relative; }
         
-        .resize-handle { position: absolute; width: 12px; height: 12px; background: var(--blue); bottom: -6px; right: -6px; cursor: nwse-resize; display: none; border-radius: 50%; }
-        .delete-btn { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; top: -10px; right: -10px; cursor: pointer; display: none; border-radius: 50%; font-size: 12px; font-weight: bold; align-items: center; justify-content: center; line-height: 1; border: 2px solid var(--bg); }
+        /* The Canvas */
+        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; overflow: visible; }
+        #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; resize: none; outline: none; }
+
+        /* Robust Image System */
+        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; }
+        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; }
+        .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); }
         
-        .img-container.active .resize-handle, .img-container.active .delete-btn { display: flex; }
+        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; display: none; }
+        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid var(--bg); }
+        
+        .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
 
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
     </style>
@@ -37,28 +39,29 @@
 
 <header>
     <a href="/wikiselector.html" style="color:var(--blue); text-decoration:none; font-size:14px;">← Back to Selector</a>
-    <div id="p-label" style="font-weight:600;">Loading...</div>
+    <div id="p-label" style="font-weight:600;">Partition Editor</div>
 </header>
 
-<div id="main-ui" style="display:none;">
-    <div class="toolbar">
-        <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
-            <option value="" disabled selected>Heading</option>
-            <option value="H1">H1</option><option value="H2">H2</option><option value="P">P</option>
-        </select>
-        <button onclick="exec('bold')">B</button>
-        <input type="color" onchange="exec('foreColor', this.value)">
-        <button onclick="exec('justifyCenter')">Center</button>
-        <label for="img-upload">🖼 Upload Image</label>
-        <input type="file" id="img-upload" accept="image/*" onchange="uploadImg(this)" style="display:none">
-        <button onclick="toggleSource()">Source</button>
-        <button class="btn-save" onclick="saveWiki()">Sync Partition</button>
-    </div>
+<div class="toolbar">
+    <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
+        <option value="" disabled selected>Heading</option>
+        <option value="H1">H1</option><option value="H2">H2</option><option value="P">P</option>
+    </select>
+    <button onclick="exec('bold')">B</button>
+    <button onclick="exec('italic')">I</button>
+    <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
+    <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
+    <button onclick="exec('justifyLeft')">L</button>
+    <button onclick="exec('justifyCenter')">C</button>
+    <label for="img-up">🖼 Add Image</label>
+    <input type="file" id="img-up" accept="image/*" onchange="insertImg(this)" style="display:none">
+    <button onclick="toggleSource()" id="st-btn">HTML Source</button>
+    <button class="btn-save" onclick="save()">Sync Partition</button>
+</div>
 
-    <div class="editor-wrap">
-        <div id="visual-editor" contenteditable="true"></div>
-        <textarea id="source-editor"></textarea>
-    </div>
+<div class="editor-wrap">
+    <div id="visual-editor" contenteditable="true"></div>
+    <textarea id="source-editor"></textarea>
 </div>
 
 <script>
@@ -67,86 +70,87 @@
     const wikiId = urlParams.get('id') || 'wiki1';
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
+    let isSource = false;
 
-    async function init() {
-        const email = localStorage.getItem('ada_user_email');
-        if(!email) { window.location.href='/login.html'; return; }
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const d = await res.json();
-        if(!d.user.is_admin && !d.permissions.includes('wiki_access')) { window.location.href = '/blocked.html'; return; }
-        document.getElementById('main-ui').style.display = 'block';
-        document.getElementById('p-label').innerText = `Partition: ${wikiId.toUpperCase()}`;
-        loadWiki();
-    }
-
-    async function loadWiki() {
+    async function load() {
         const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
         const data = await res.json();
         visual.innerHTML = data.content.content;
-        attachImageLogic();
-    }
-
-    async function saveWiki() {
-        // Clean up UI elements before saving
-        document.querySelectorAll('.img-container').forEach(el => el.classList.remove('active'));
-        await fetch(`${API}/wiki/save`, {
-            method: 'POST',
-            body: JSON.stringify({ id: wikiId, content: visual.innerHTML, user: localStorage.getItem('ada_user_email') })
-        });
-        alert("Sector Synced.");
-    }
-
-    function uploadImg(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const container = document.createElement('div');
-                container.className = 'img-container';
-                container.style.left = '50px'; container.style.top = '50px'; container.style.width = '200px';
-                container.innerHTML = `<img src="${e.target.result}"><div class="resize-handle"></div><div class="delete-btn">×</div>`;
-                visual.appendChild(container);
-                attachImageLogic();
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function attachImageLogic() {
-        visual.querySelectorAll('.img-container').forEach(el => {
-            el.onmousedown = (e) => {
-                if (e.target.className === 'delete-btn') { el.remove(); return; }
-                
-                document.querySelectorAll('.img-container').forEach(c => c.classList.remove('active'));
-                el.classList.add('active');
-                
-                let isResizing = e.target.className === 'resize-handle';
-                let startX = e.clientX, startY = e.clientY;
-                let startW = el.offsetWidth, startH = el.offsetHeight;
-                let startL = el.offsetLeft, startT = el.offsetTop;
-
-                document.onmousemove = (me) => {
-                    if (isResizing) {
-                        el.style.width = (startW + (me.clientX - startX)) + 'px';
-                        el.style.height = (startH + (me.clientY - startY)) + 'px';
-                    } else {
-                        el.style.left = (startL + (me.clientX - startX)) + 'px';
-                        el.style.top = (startT + (me.clientY - startY)) + 'px';
-                    }
-                };
-                document.onmouseup = () => { document.onmousemove = null; };
-            };
-        });
+        attachInteractions();
     }
 
     function toggleSource() {
-        const isS = visual.style.display === 'none';
-        if(isS) { visual.innerHTML = source.value; visual.style.display = 'block'; source.style.display = 'none'; attachImageLogic(); }
-        else { source.value = visual.innerHTML; visual.style.display = 'none'; source.style.display = 'block'; }
+        isSource = !isSource;
+        if (isSource) {
+            source.value = visual.innerHTML;
+            visual.style.display = 'none';
+            source.style.display = 'block';
+            document.getElementById('st-btn').innerText = "Visual View";
+        } else {
+            visual.innerHTML = source.value;
+            visual.style.display = 'block';
+            source.style.display = 'none';
+            document.getElementById('st-btn').innerText = "HTML Source";
+            attachInteractions();
+        }
+    }
+
+    function insertImg(input) {
+        if (input.files[0]) {
+            const r = new FileReader();
+            r.onload = (e) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'img-wrapper';
+                wrap.style.left = '100px'; wrap.style.top = '100px'; wrap.style.width = '200px';
+                wrap.innerHTML = `<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
+                visual.appendChild(wrap);
+                attachInteractions();
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function attachInteractions() {
+        visual.querySelectorAll('.img-wrapper').forEach(wrap => {
+            wrap.onmousedown = function(e) {
+                if (e.target.className === 'remover') { wrap.remove(); return; }
+                
+                visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
+                wrap.classList.add('active');
+
+                let isResizing = e.target.className === 'resizer';
+                let sX = e.clientX, sY = e.clientY;
+                let sW = wrap.offsetWidth, sH = wrap.offsetHeight;
+                let sL = wrap.offsetLeft, sT = wrap.offsetTop;
+
+                function move(me) {
+                    if (isResizing) {
+                        wrap.style.width = Math.max(30, sW + (me.clientX - sX)) + 'px';
+                        wrap.style.height = 'auto'; 
+                    } else {
+                        wrap.style.left = (sL + (me.clientX - sX)) + 'px';
+                        wrap.style.top = (sT + (me.clientY - sY)) + 'px';
+                    }
+                }
+                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', stop);
+            };
+        });
+    }
+
+    async function save() {
+        visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
+        const html = isSource ? source.value : visual.innerHTML;
+        await fetch(`${API}/wiki/save`, {
+            method: 'POST',
+            body: JSON.stringify({ id: wikiId, content: html, user: localStorage.getItem('ada_user_email') })
+        });
+        alert("Partition Saved.");
     }
 
     function exec(c, v=null) { document.execCommand(c, false, v); visual.focus(); }
-
-    init();
+    load();
 </script>
 </body>
 </html>
