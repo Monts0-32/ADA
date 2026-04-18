@@ -12,33 +12,36 @@
         .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
         h1 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 40px; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; justify-items: center; align-items: start; }
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; width: 100%; box-sizing: border-box; transition: 0.2s; text-align: left; }
-        .wiki-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; background: #0d1117; margin-bottom: 15px; display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; align-items: start; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; text-align: left; width: 100%; box-sizing: border-box; }
+        .wiki-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; display: block; }
         .wiki-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #58a6ff; }
         .wiki-card p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; height: 40px; overflow: hidden; }
         
         .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
         .btn:hover { background: #2ea043; }
         
-        /* Edit Mode Styles */
+        /* Admin Edit Mode */
         .admin-edit-panel { background: #21262d; border: 1px solid #58a6ff; padding: 10px; border-radius: 4px; margin-top: 10px; display: none; }
-        .admin-edit-panel input, .admin-edit-panel textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 5px; border-radius: 4px; font-size: 12px; }
+        .admin-edit-panel input, .admin-edit-panel textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 5px; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
+        .edit-toggle-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 5px 15px; border-radius: 6px; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
 
 <header>
     <a href="/dash.html" class="logo">ADA Archive Selector</a>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <button id="edit-toggle" class="btn" style="background:#21262d; display:none; width:auto;" onclick="toggleEditMode()">Edit Cards</button>
+    <div style="display:flex; gap:12px; align-items:center;">
+        <button id="admin-edit-btn" class="edit-toggle-btn" onclick="toggleEditMode()">Edit Cards</button>
         <div id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:4px 12px; border-radius:20px;"></div>
     </div>
 </header>
 
 <div class="container">
     <h1>Archive Wiki Partitions</h1>
-    <div class="grid" id="wiki-grid"></div>
+    <div class="grid" id="wiki-grid">
+        <!-- Cards loaded via JS -->
+    </div>
 </div>
 
 <script>
@@ -48,9 +51,11 @@
 
     if(!user) window.location.href = '/login.html';
     document.getElementById('user-pill').innerText = user;
-    if(isAdmin) document.getElementById('edit-toggle').style.display = 'block';
 
-    let isEditMode = false;
+    // Show Edit button only if Admin
+    if(isAdmin) document.getElementById('admin-edit-btn').style.display = 'block';
+
+    let editModeActive = false;
 
     async function loadCards() {
         const res = await fetch(`${API}/wiki/metadata`);
@@ -61,30 +66,36 @@
         cards.forEach(c => {
             grid.innerHTML += `
                 <div class="wiki-card">
-                    <img src="${c.image_url}" id="img-${c.id}">
-                    <h3 id="title-${c.id}">${c.title}</h3>
-                    <p id="desc-${c.id}">${c.description}</p>
+                    <img src="${c.image_url}">
+                    <h3>${c.title}</h3>
+                    <p>${c.description}</p>
                     <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
                     
-                    <div class="admin-edit-panel" id="edit-${c.id}">
+                    <div class="admin-edit-panel" id="panel-${c.id}">
                         <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Title">
                         <textarea id="in-desc-${c.id}" placeholder="Description">${c.description}</textarea>
                         <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
-                        <button class="btn" style="background:#1f6feb" onclick="saveMetadata('${c.id}')">Save Card</button>
+                        <button class="btn" style="background:#1f6feb" onclick="saveCard('${c.id}')">Save Card Info</button>
                     </div>
                 </div>
             `;
         });
+        
+        // Ensure panels stay visible if already in edit mode
+        if(editModeActive) toggleEditMode(true);
     }
 
-    function toggleEditMode() {
-        isEditMode = !isEditMode;
-        document.querySelectorAll('.admin-edit-panel').forEach(el => {
-            el.style.display = isEditMode ? 'block' : 'none';
+    function toggleEditMode(forceShow = false) {
+        if(!forceShow) editModeActive = !editModeActive;
+        const btn = document.getElementById('admin-edit-btn');
+        btn.style.borderColor = editModeActive ? '#58a6ff' : '#30363d';
+        
+        document.querySelectorAll('.admin-edit-panel').forEach(panel => {
+            panel.style.display = editModeActive ? 'block' : 'none';
         });
     }
 
-    async function saveMetadata(id) {
+    async function saveCard(id) {
         const title = document.getElementById(`in-title-${id}`).value;
         const description = document.getElementById(`in-desc-${id}`).value;
         const image_url = document.getElementById(`in-img-${id}`).value;
@@ -93,7 +104,8 @@
             method: 'POST',
             body: JSON.stringify({ id, title, description, image_url })
         });
-        alert('Card Metadata Updated');
+        
+        alert('Card metadata synchronized.');
         loadCards();
     }
 
