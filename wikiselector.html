@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Wiki Selector</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
+        
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        h1 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 30px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 15px; transition: 0.2s; }
+        .wiki-card:hover { border-color: #8b949e; }
+        .wiki-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; background: #0d1117; margin-bottom: 12px; }
+        .wiki-card h3 { margin: 0 0 8px 0; font-size: 16px; color: #58a6ff; }
+        .wiki-card p { font-size: 12px; color: #8b949e; margin-bottom: 15px; }
+        
+        .btn { display: block; width: 100%; padding: 8px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; }
+        .btn:hover { background: #2ea043; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/dash.html" class="logo">ADA Archive Selector</a>
+    <div id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:4px 10px; border-radius:20px;"></div>
+</header>
+
+<div class="container">
+    <h1>Wiki Archives</h1>
+    <div class="grid" id="wiki-grid">
+        <!-- Generated via JS -->
+    </div>
+</div>
+
+<script>
+    const user = localStorage.getItem('ada_user_email');
+    if(!user) window.location.href = '/login.html';
+    document.getElementById('user-pill').innerText = user;
+
+    const grid = document.getElementById('wiki-grid');
+    
+    // Create 10 wiki cards
+    for(let i = 1; i <= 10; i++) {
+        grid.innerHTML += `
+            <div class="wiki-card">
+                <img src="https://via.placeholder.com/200x120?text=Wiki+${i}" alt="Wiki ${i}">
+                <h3>Archive Record ${i}</h3>
+                <p>Publicly editable data for ADA archive partition ${i}.</p>
+                <a href="/wiki.html?id=wiki${i}" class="btn">Access Record</a>
+            </div>
+        `;
+    }
+</script>
+</body>
+</html>
