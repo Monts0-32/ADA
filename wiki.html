@@ -57,16 +57,15 @@
         <button onclick="toggleSource()" id="st">Source</button>
         <button class="btn-save" onclick="saveWiki()">Sync Partition</button>
     </div>
-
+    <div class="contributor-panel">
+        <div class="contributor-title">Recent Contributors</div>
+        <div id="log-list" class="contributor-list"></div>
+    </div>
     <div class="editor-wrap">
         <div id="visual-editor" contenteditable="true"></div>
         <textarea id="source-editor"></textarea>
     </div>
 
-    <div class="contributor-panel">
-        <div class="contributor-title">Recent Contributors</div>
-        <div id="log-list" class="contributor-list"></div>
-    </div>
 </div>
 
 <script>
