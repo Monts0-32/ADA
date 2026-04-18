@@ -2,41 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Wiki Editor</title>
+    <title>ADA | Archive Editor</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
+        
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; }
-        .toolbar button, .toolbar select, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; }
-        .editor-wrap { max-width: 1100px; margin: 40px auto; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; min-height: 80vh; position: relative; }
-        #visual-editor { width: 100%; min-height: 80vh; padding: 60px; box-sizing: border-box; outline: none; }
-        #source-editor { width: 100%; min-height: 80vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; }
-        .ada-img { position: absolute; cursor: move; border: 2px solid transparent; }
-        .ada-img.active { border-color: #58a6ff; resize: both; overflow: auto; }
-        .btn-save { background: var(--btn-green) !important; font-weight: bold; margin-left: auto; border: none; color: white; }
+        
+        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; align-items: center; flex-wrap: wrap; }
+        .toolbar button, .toolbar select, .toolbar label, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; }
+        .toolbar button:hover { background: #30363d; }
+
+        .editor-wrap { max-width: 1100px; margin: 40px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; min-height: 85vh; position: relative; }
+        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; }
+        #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; }
+
+        /* Drag & Resize Images */
+        .ada-img { position: absolute; cursor: move; border: 2px solid transparent; min-width: 50px; }
+        .ada-img.active { border-color: var(--blue); resize: both; overflow: auto; z-index: 100; }
+
+        /* Contributor Log */
+        .log-panel { max-width: 1100px; margin: 20px auto; padding: 0 10px; }
+        .log-title { font-size: 12px; font-weight: bold; color: #8b949e; margin-bottom: 8px; text-transform: uppercase; }
+        .log-list { display: flex; gap: 12px; }
+        .contributor { display: flex; align-items: center; gap: 6px; background: #161b22; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; }
+        .contributor img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+
+        .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/wikiselector.html" style="color:#58a6ff; text-decoration:none;">← Back to Selector</a>
-    <div id="p-label" style="font-weight:bold; color:white;">Checking Permissions...</div>
+    <a href="/wikiselector.html" style="color:var(--blue); text-decoration:none; font-size:14px;">← Back to Selector</a>
+    <div id="p-label" style="font-weight:bold;">Loading Sector...</div>
 </header>
 
-<div id="editor-ui" style="display:none;">
+<div id="guard" style="display:none;">
     <div class="toolbar">
-        <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;"><option value="" disabled selected>Heading</option><option value="H1">H1</option><option value="H2">H2</option><option value="P">P</option></select>
-        <button onclick="exec('bold')">B</button>
-        <input type="color" onchange="exec('foreColor', this.value)">
-        <button onclick="exec('justifyCenter')">Center</button>
-        <button onclick="toggleSource()" id="ts">Source</button>
-        <button class="btn-save" onclick="saveWiki()">Save Partition</button>
+        <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
+            <option value="" disabled selected>Heading</option>
+            <option value="H1">Title (H1)</option>
+            <option value="H2">Header (H2)</option>
+            <option value="P">Text (P)</option>
+        </select>
+        <button onclick="exec('bold')"><b>B</b></button>
+        <button onclick="exec('italic')"><i>I</i></button>
+        <button onclick="exec('underline')"><u>U</u></button>
+        <input type="color" onchange="exec('foreColor', this.value)" title="Color">
+        <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
+        <button onclick="exec('justifyLeft')">L</button>
+        <button onclick="exec('justifyCenter')">C</button>
+        <button onclick="exec('justifyRight')">R</button>
+        <label for="img-upload">🖼 Upload</label>
+        <input type="file" id="img-upload" accept="image/*" onchange="uploadImg(this)" style="display:none">
+        <button onclick="toggleSource()" id="st">Source</button>
+        <button class="btn-save" onclick="saveWiki()">Sync Partition</button>
     </div>
 
     <div class="editor-wrap">
         <div id="visual-editor" contenteditable="true"></div>
         <textarea id="source-editor"></textarea>
+    </div>
+
+    <div class="log-panel">
+        <div class="log-title">Partition Contributors</div>
+        <div id="contributor-list" class="log-list"></div>
     </div>
 </div>
 
@@ -46,56 +83,92 @@
     const wikiId = urlParams.get('id') || 'wiki1';
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
-    let isSource = false;
+    const defaultPic = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
     async function init() {
         const email = localStorage.getItem('ada_user_email');
         if(!email) { window.location.href='/login.html'; return; }
 
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
+        const d = await res.json();
 
-        // Enforcement
-        const canAccess = data.user.is_admin || data.permissions.includes('wiki_access');
-        if(!canAccess || data.blocks.includes('wiki.html')) {
-            window.location.href = '/blocked.html';
-            return;
+        // Hard Permission Check
+        if(!d.user.is_admin && !d.permissions.includes('wiki_access') || d.blocks.includes('wiki.html')) {
+            window.location.href = '/blocked.html'; return;
         }
 
-        document.getElementById('editor-ui').style.display = 'block';
-        document.getElementById('p-label').innerText = `Partition: ${wikiId.toUpperCase()}`;
+        document.getElementById('guard').style.display = 'block';
+        document.getElementById('p-label').innerText = `Editing Partition: ${wikiId.toUpperCase()}`;
         loadWiki();
     }
 
     async function loadWiki() {
         const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
-        const d = await res.json();
-        visual.innerHTML = d.content;
-        source.value = d.content;
+        const data = await res.json();
+        visual.innerHTML = data.content.content;
+        source.value = data.content.content;
+
+        // Render Contributors
+        document.getElementById('contributor-list').innerHTML = data.logs.map(u => `
+            <div class="contributor">
+                <img src="${u.profile_picture || defaultPic}">
+                <span>${u.display_name || u.email}</span>
+            </div>
+        `).join('') || '<span style="font-size:11px; opacity:0.5">No recent edits recorded.</span>';
+        
         attachImageLogic();
     }
 
     async function saveWiki() {
-        const content = isSource ? source.value : visual.innerHTML;
+        const content = document.getElementById('visual-editor').innerHTML;
         await fetch(`${API}/wiki/save`, {
             method: 'POST',
             body: JSON.stringify({ id: wikiId, content, user: localStorage.getItem('ada_user_email') })
         });
-        alert("Saved.");
+        alert("Sector Synchronized.");
+        loadWiki();
     }
 
     function toggleSource() {
-        isSource = !isSource;
-        visual.style.display = isSource ? 'none' : 'block';
-        source.style.display = isSource ? 'block' : 'none';
-        if(!isSource) { visual.innerHTML = source.value; attachImageLogic(); }
-        else { source.value = visual.innerHTML; }
+        const isS = visual.style.display === 'none';
+        visual.style.display = isS ? 'block' : 'none';
+        source.style.display = isS ? 'none' : 'block';
+        if(isS) { visual.innerHTML = source.value; attachImageLogic(); } else { source.value = visual.innerHTML; }
     }
 
-    function exec(c, v=null) { if(!isSource){ document.execCommand(c, false, v); visual.focus(); }}
+    function exec(c, v=null) { document.execCommand(c, false, v); visual.focus(); }
 
-    // (Include your attachImageLogic and dragging logic here as used in previous versions)
-    
+    function uploadImg(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result; img.className = 'ada-img';
+                img.style.left = '50px'; img.style.top = '50px'; img.style.width = '200px';
+                visual.appendChild(img); attachImageLogic();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    let activeImg = null, isDragging = false, startX, startY, startLeft, startTop;
+    function attachImageLogic() {
+        visual.querySelectorAll('.ada-img').forEach(img => {
+            img.onmousedown = (e) => {
+                const rect = img.getBoundingClientRect();
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+                activeImg = img; isDragging = true;
+                visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active'));
+                img.classList.add('active');
+                startX = e.clientX; startY = e.clientY;
+                startLeft = parseInt(img.style.left) || 0; startTop = parseInt(img.style.top) || 0;
+                e.preventDefault();
+            };
+        });
+    }
+    window.onmousemove = (e) => { if (isDragging && activeImg) { activeImg.style.left = (startLeft + (e.clientX - startX)) + 'px'; activeImg.style.top = (startTop + (e.clientY - startY)) + 'px'; } };
+    window.onmouseup = () => { isDragging = false; };
+
     init();
 </script>
 </body>
