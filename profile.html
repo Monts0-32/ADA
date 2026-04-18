@@ -2,162 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | My Profile</title>
+    <title>ADA | Profile</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; justify-content: center; padding-top: 50px; }
-        .box { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 30px; width: 400px; text-align: center; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background: #0d1117; border: 1px solid var(--border); margin-bottom: 20px; }
-        input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        a { color: #58a6ff; text-decoration: none; font-size: 13px; margin-top: 15px; display: block; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; transition: 0.3s; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .container { max-width: 1000px; margin: 40px auto; display: grid; grid-template-columns: 280px 1fr; gap: 30px; padding: 0 20px; }
+        
+        /* Sidebar Styling */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .avatar-lg { width: 280px; height: 280px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
+        .search-box { background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 6px; }
+        .search-box input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 4px; box-sizing: border-box; }
+        
+        /* Badge Corner */
+        .badge-corner { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
+        .badge-admin { background: #d29922; color: black; }
+
+        /* Main Content Area */
+        .main-profile { background: rgba(22, 27, 34, 0.5); border: 1px solid var(--border); border-radius: 6px; padding: 30px; position: relative; }
+        #bio-display { line-height: 1.6; min-height: 100px; }
+        
+        /* Editor Tools */
+        .editor-tools { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; display: none; }
+        .tool-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .tool-row input, .tool-row button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 4px; }
+        
+        #bio-editor { width: 100%; min-height: 200px; background: #0d1117; border: 1px solid var(--border); padding: 15px; border-radius: 6px; outline: none; margin-bottom: 10px; }
+        #bio-source { width: 100%; min-height: 200px; background: #0d1117; color: var(--blue); font-family: monospace; display: none; }
+        
+        .btn-save { background: var(--btn-green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
     </style>
 </head>
-<body>
-    <!-- Floating Chat UI -->
-    <div id="ada-chat-widget">
-        <div id="chat-window">
-            <div id="chat-header">Global Archive Comms <span onclick="toggleChat()" style="cursor:pointer">×</span></div>
-            <div id="chat-body"></div>
-            <div id="chat-footer">
-                <input type="text" id="chat-msg" placeholder="Type a message...">
-                <label for="chat-img" style="cursor:pointer; font-size:18px;">🖼️</label>
-                <input type="file" id="chat-img" accept="image/*" style="display:none" onchange="uploadChatImg(this)">
-                <button onclick="sendText()">Send</button>
-            </div>
-        </div>
-        <div id="chat-icon" onclick="toggleChat()">
-            💬
-            <div id="chat-notif"></div>
-        </div>
-    </div>
-    
-    <style>
-        #ada-chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: -apple-system, sans-serif; }
-        #chat-icon { width: 50px; height: 50px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: relative; }
-        #chat-notif { position: absolute; top: 0; right: 0; width: 15px; height: 15px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
+<body id="profile-body">
+
+<header>
+    <a href="/dash.html" style="color:var(--blue); text-decoration:none;">← Archive Dashboard</a>
+    <div id="mode-label" style="font-weight:bold; font-size:14px;">Public Record</div>
+</header>
+
+<div class="container">
+    <div class="sidebar">
+        <img id="view-pic" class="avatar-lg" src="">
+        <h2 id="view-name" style="margin: 10px 0 0 0;"></h2>
+        <div id="view-email" style="color:#8b949e; font-size:14px; margin-bottom:10px;"></div>
         
-        #chat-window { width: 320px; height: 450px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        #chat-header { background: #21262d; padding: 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; }
-        #chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        #chat-footer { padding: 10px; border-top: 1px solid #30363d; display: flex; gap: 5px; align-items: center; }
-        #chat-msg { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 5px; border-radius: 4px; outline: none; }
-        #chat-footer button { background: #238636; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-    
-        .chat-bubble { max-width: 80%; padding: 7px 10px; border-radius: 12px; font-size: 12px; line-height: 1.4; word-wrap: break-word; }
-        .chat-bubble.me { align-self: flex-end; background: #238636; color: white; }
-        .chat-bubble.other { align-self: flex-start; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-        .chat-img-msg { width: 100%; border-radius: 8px; margin-top: 5px; cursor: zoom-in; }
-        .chat-user { font-size: 9px; opacity: 0.6; display: block; margin-bottom: 2px; }
-    </style>
-    
-    <script>
-        const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
-        const userEmail = localStorage.getItem('ada_user_email');
-        let chatOpen = false;
-        let lastMsgId = 0;
-    
-        function toggleChat() {
-            chatOpen = !chatOpen;
-            document.getElementById('chat-window').style.display = chatOpen ? 'flex' : 'none';
-            if(chatOpen) {
-                document.getElementById('chat-notif').style.display = 'none';
-                const body = document.getElementById('chat-body');
-                body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function syncChat() {
-            if(!userEmail) return;
-            const res = await fetch(`${CHAT_API}/sync?email=${encodeURIComponent(userEmail)}`);
-            const data = await res.json();
-            
-            const body = document.getElementById('chat-body');
-            const latest = data.messages[data.messages.length - 1];
-    
-            // Check for new messages for notification
-            if(latest && latest.id > lastMsgId) {
-                if(!chatOpen && lastMsgId !== 0) {
-                    document.getElementById('chat-notif').style.display = 'block';
-                }
-                lastMsgId = latest.id;
-                
-                // Render Messages
-                body.innerHTML = data.messages.map(m => `
-                    <div class="chat-bubble ${m.user_email === userEmail ? 'me' : 'other'}">
-                        <span class="chat-user">${m.user_email}</span>
-                        ${m.is_image ? `<img src="${m.content}" class="chat-img-msg" onclick="window.open(this.src)">` : m.content}
-                    </div>
-                `).join('');
-                
-                if(chatOpen) body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function sendText() {
-            const input = document.getElementById('chat-msg');
-            if(!input.value) return;
-            await fetch(`${CHAT_API}/chat`, {
-                method: 'POST',
-                body: JSON.stringify({ email: userEmail, content: input.value, isImage: false })
-            });
-            input.value = '';
-            syncChat();
-        }
-    
-        async function uploadChatImg(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    await fetch(`${CHAT_API}/chat`, {
-                        method: 'POST',
-                        body: JSON.stringify({ email: userEmail, content: e.target.result, isImage: true })
-                    });
-                    syncChat();
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    
-        setInterval(syncChat, 3000);
-        syncChat();
-    </script>    
-    <div class="box">
-        <img id="view-pic" class="avatar" src="https://via.placeholder.com/100">
-        <h3>User Identity Profile</h3>
-        <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px;">Display Name</label>
-        <input type="text" id="display-name" placeholder="Anonymous Archive User">
-        <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px;">Avatar URL</label>
-        <input type="text" id="pic-url" placeholder="https://...">
-        <button class="btn" onclick="saveProfile()">Update Record</button>
-        <a href="/dash.html">← Back to Archive Dashboard</a>
+        <div class="badge-corner" id="badge-list"></div>
+
+        <div class="search-box">
+            <div style="font-size:12px; margin-bottom:8px; font-weight:bold; color:#8b949e;">LOCATE IDENTITY</div>
+            <input type="text" id="search-email" placeholder="Search email...">
+            <button onclick="searchUser()" style="width:100%; margin-top:8px; cursor:pointer;">Search Database</button>
+        </div>
+        
+        <button id="edit-btn" onclick="toggleEdit()" style="display:none; cursor:pointer;">Edit My Profile</button>
     </div>
 
-    <script>
-        const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-        const email = localStorage.getItem('ada_user_email');
+    <div class="main-profile">
+        <div id="bio-display"></div>
 
-        async function loadProfile() {
-            const res = await fetch(`${API}/sync?email=${email}`);
-            const data = await res.json();
-            if(data.user.display_name) document.getElementById('display-name').value = data.user.display_name;
-            if(data.user.profile_picture) {
-                document.getElementById('pic-url').value = data.user.profile_picture;
-                document.getElementById('view-pic').src = data.user.profile_picture;
-            }
-        }
+        <div id="editor" class="editor-tools">
+            <h3>Identity Editor</h3>
+            
+            <div class="tool-row">
+                <label>Display Name:</label>
+                <input type="text" id="in-name">
+                <label>Avatar URL:</label>
+                <input type="text" id="in-pic">
+                <button onclick="triggerUpload()">Upload Image</button>
+                <input type="file" id="file-in" hidden onchange="handleFile(this)">
+            </div>
 
-        async function saveProfile() {
-            const name = document.getElementById('display-name').value;
-            const pic = document.getElementById('pic-url').value;
-            await fetch(`${API}/profile/save`, {
-                method: 'POST',
-                body: JSON.stringify({ email, name, pic })
-            });
-            alert('Profile metadata updated.');
-            location.reload();
+            <div class="tool-row">
+                <label>Background Color/Gradient:</label>
+                <input type="text" id="in-bg" placeholder="#0d1117 or linear-gradient(...)">
+                <label>Text Color:</label>
+                <input type="color" id="in-color">
+            </div>
+
+            <div class="tool-row">
+                <button onclick="exec('bold')">B</button>
+                <button onclick="exec('italic')">I</button>
+                <button onclick="toggleBioSource()">HTML Source</button>
+            </div>
+
+            <div id="bio-editor" contenteditable="true"></div>
+            <textarea id="bio-source"></textarea>
+
+            <button class="btn-save" onclick="saveProfile()">Synchronize Profile Record</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const myEmail = localStorage.getItem('ada_user_email');
+    const params = new URLSearchParams(window.location.search);
+    const targetEmail = params.get('email') || myEmail;
+
+    let isEditing = false;
+
+    async function loadProfile() {
+        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(targetEmail)}`);
+        const data = await res.json();
+        const user = data.user;
+
+        // Apply Custom Styling
+        document.getElementById('profile-body').style.background = user.bg_style || '#0d1117';
+        document.getElementById('profile-body').style.color = user.text_color || '#c9d1d9';
+
+        // Set View
+        document.getElementById('view-pic').src = user.profile_picture;
+        document.getElementById('view-name').innerText = user.display_name || user.email;
+        document.getElementById('view-email').innerText = user.email;
+        document.getElementById('bio-display').innerHTML = user.bio_html || '<p style="opacity:0.5">No biographical data found for this entity.</p>';
+
+        // Badges
+        const badges = document.getElementById('badge-list');
+        badges.innerHTML = '';
+        if(user.is_admin) badges.innerHTML += `<div class="badge badge-admin">ADMIN</div>`;
+        data.badges.forEach(b => {
+            badges.innerHTML += `<div class="badge" style="background:${b.badge_color}">${b.badge_name}</div>`;
+        });
+
+        // Toggle Editor permission
+        if(targetEmail === myEmail) {
+            document.getElementById('edit-btn').style.display = 'block';
+            document.getElementById('mode-label').innerText = "My Profile Control";
+            
+            // Prefill editor
+            document.getElementById('in-name').value = user.display_name || "";
+            document.getElementById('in-pic').value = user.profile_picture || "";
+            document.getElementById('in-bg').value = user.bg_style || "";
+            document.getElementById('in-color').value = user.text_color || "#c9d1d9";
+            document.getElementById('bio-editor').innerHTML = user.bio_html || "";
         }
-        loadProfile();
-    </script>
+    }
+
+    function toggleEdit() {
+        isEditing = !isEditing;
+        document.getElementById('editor').style.display = isEditing ? 'block' : 'none';
+        document.getElementById('bio-display').style.display = isEditing ? 'none' : 'block';
+    }
+
+    function triggerUpload() { document.getElementById('file-in').click(); }
+    
+    function handleFile(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('in-pic').value = e.target.result;
+                document.getElementById('view-pic').src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function searchUser() {
+        const email = document.getElementById('search-email').value;
+        if(email) window.location.href = `/profile.html?email=${encodeURIComponent(email)}`;
+    }
+
+    async function saveProfile() {
+        const isS = document.getElementById('bio-source').style.display === 'block';
+        const payload = {
+            email: myEmail,
+            name: document.getElementById('in-name').value,
+            pic: document.getElementById('in-pic').value,
+            bg: document.getElementById('in-bg').value,
+            color: document.getElementById('in-color').value,
+            bio: isS ? document.getElementById('bio-source').value : document.getElementById('bio-editor').innerHTML
+        };
+
+        await fetch(`${API}/profile/save`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        alert("Identity Record Updated.");
+        location.reload();
+    }
+
+    function toggleBioSource() {
+        const edit = document.getElementById('bio-editor');
+        const source = document.getElementById('bio-source');
+        const isS = source.style.display === 'block';
+        if(!isS) { source.value = edit.innerHTML; edit.style.display='none'; source.style.display='block'; }
+        else { edit.innerHTML = source.value; edit.style.display='block'; source.style.display='none'; }
+    }
+
+    function exec(c) { document.execCommand(c, false, null); }
+
+    loadProfile();
+</script>
 </body>
 </html>
