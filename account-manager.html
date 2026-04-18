@@ -4,92 +4,125 @@
     <meta charset="UTF-8">
     <title>ADA | Account Manager</title>
     <style>
-        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 40px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #30363d; text-align: left; }
-        th { background: #0d1117; }
-        .btn-red { background: #da3633; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .btn-blue { background: #1f6feb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-red: #da3633; --btn-blue: #1f6feb; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h2 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid var(--border); }
+        th, td { padding: 12px; border: 1px solid var(--border); text-align: left; font-size: 14px; }
+        th { background: #21262d; color: #f0f6fc; }
+
+        .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: none; font-size: 12px; font-weight: 600; color: white; margin-right: 5px; }
+        .btn-red { background: var(--btn-red); }
+        .btn-blue { background: var(--btn-blue); }
+        
         .block-pill { 
             display: inline-flex; align-items: center; background: rgba(248,81,73,0.1); 
             color: #f85149; border: 1px solid rgba(248,81,73,0.4); 
             padding: 2px 8px; border-radius: 12px; font-size: 11px; margin: 2px;
         }
-        .remove-x { margin-left: 5px; cursor: pointer; font-weight: bold; }
-        .remove-x:hover { color: white; }
+        .remove-x { margin-left: 6px; cursor: pointer; font-weight: bold; opacity: 0.7; }
+        .remove-x:hover { opacity: 1; color: white; }
+
+        .nav-link { color: #58a6ff; text-decoration: none; font-size: 14px; display: block; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/dash.html" style="color:#58a6ff; text-decoration:none;">← Return to Dashboard</a>
-        <h2>Account Management</h2>
-        <table id="user-table">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Blocked Access</th>
-                    <th>Controls</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
 
-    <script>
-        const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+<div class="container">
+    <a href="/dash.html" class="nav-link">← Return to Dashboard</a>
+    <h2>System Account Management</h2>
+    
+    <table id="user-table">
+        <thead>
+            <tr>
+                <th>User Email</th>
+                <th>Role</th>
+                <th>Restricted Access</th>
+                <th>Management Controls</th>
+            </tr>
+        </thead>
+        <tbody id="user-list">
+            <!-- Data will be loaded here -->
+        </tbody>
+    </table>
+</div>
 
-        async function loadUsers() {
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+
+    async function loadUsers() {
+        const listBody = document.getElementById('user-list');
+        listBody.innerHTML = '<tr><td colspan="4">Synchronizing with database...</td></tr>';
+
+        try {
             const res = await fetch(`${API}/admin/list-users`);
             const users = await res.json();
             
-            document.querySelector('tbody').innerHTML = users.map(u => `
+            if (!users || users.length === 0) {
+                listBody.innerHTML = '<tr><td colspan="4">No users found in database.</td></tr>';
+                return;
+            }
+
+            listBody.innerHTML = users.map(u => `
                 <tr>
                     <td>${u.email}</td>
-                    <td>${u.is_admin ? 'Admin' : 'User'}</td>
+                    <td>${u.is_admin ? '<b>Administrator</b>' : 'Standard User'}</td>
                     <td>
                         ${u.blocked_paths.map(path => `
                             <span class="block-pill">
                                 ${path} 
-                                <span class="remove-x" onclick="removeBlock('${u.email}', '${path}')">×</span>
+                                <span class="remove-x" title="Remove restriction" onclick="removeBlock('${u.email}', '${path}')">×</span>
                             </span>
-                        `).join('') || '<span style="opacity:0.4">None</span>'}
+                        `).join('') || '<span style="opacity:0.3">No Restrictions</span>'}
                     </td>
                     <td>
-                        <button class="btn-red" onclick="del(${u.id})">Delete Account</button>
-                        <button class="btn-blue" onclick="block('${u.email}')">Block Path</button>
+                        <button class="btn btn-red" onclick="deleteUser(${u.id})">Delete</button>
+                        <button class="btn btn-blue" onclick="blockPrompt('${u.email}')">Add Block</button>
                     </td>
                 </tr>
             `).join('');
+        } catch (err) {
+            listBody.innerHTML = '<tr><td colspan="4">Error: Could not connect to ADA Relay.</td></tr>';
+            console.error(err);
         }
+    }
 
-        async function del(id) {
-            if(confirm('Permanently delete this account?')) {
-                await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
-                loadUsers();
-            }
+    async function deleteUser(id) {
+        if (confirm('Permanently delete this account from the ADA archive?')) {
+            await fetch(`${API}/admin/delete-user`, {
+                method: 'POST',
+                body: JSON.stringify({ id })
+            });
+            loadUsers();
         }
+    }
 
-        async function block(email) {
-            const path = prompt("Enter filename to block (e.g., dash.html) or type 'ALL':");
-            if(path) {
-                await fetch(`${API}/admin/block-user`, { method: 'POST', body: JSON.stringify({ email, path }) });
-                loadUsers();
-            }
+    async function blockPrompt(email) {
+        const path = prompt("Enter specific filename (e.g. dash.html) or 'ALL' to block entire system:");
+        if (path) {
+            await fetch(`${API}/admin/block-user`, {
+                method: 'POST',
+                body: JSON.stringify({ email, path })
+            });
+            loadUsers();
         }
+    }
 
-        async function removeBlock(email, path) {
-            if(confirm(`Remove block for ${path}?`)) {
-                await fetch(`${API}/admin/remove-block`, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ email, path }) 
-                });
-                loadUsers();
-            }
+    async function removeBlock(email, path) {
+        if (confirm(`Lift restriction for ${path} on account ${email}?`)) {
+            await fetch(`${API}/admin/remove-block`, {
+                method: 'POST',
+                body: JSON.stringify({ email, path })
+            });
+            loadUsers();
         }
+    }
 
-        loadUsers();
-    </script>
+    // Initial load
+    loadUsers();
+</script>
+
 </body>
 </html>
