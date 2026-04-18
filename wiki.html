@@ -6,50 +6,16 @@
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
-        
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
-
-        .toolbar { 
-            background: #161b22; border-bottom: 1px solid var(--border); 
-            padding: 8px 24px; display: flex; gap: 6px; position: sticky; 
-            top: 0; z-index: 1000; flex-wrap: wrap; align-items: center;
-        }
-        .toolbar button, .toolbar label, .toolbar input[type="color"] { 
-            background: #21262d; border: 1px solid var(--border); color: white; 
-            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; 
-            display: flex; align-items: center; height: 32px; box-sizing: border-box;
-        }
+        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; flex-wrap: wrap; align-items: center; }
+        .toolbar button, .toolbar label, .toolbar input[type="color"] { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; height: 32px; box-sizing: border-box; }
         .toolbar button:hover { background: #30363d; }
-        .toolbar .divider { width: 1px; background: var(--border); height: 20px; margin: 0 4px; }
-
-        .editor-wrap { 
-            max-width: 1100px; margin: 40px auto; 
-            background: #0d1117; border: 1px solid var(--border); 
-            border-radius: 6px; position: relative; min-height: 85vh;
-        }
-        
-        #visual-editor {
-            width: 100%; min-height: 85vh; padding: 60px;
-            box-sizing: border-box; outline: none; line-height: 1.6;
-            position: relative; overflow: visible;
-        }
-
-        #source-editor {
-            width: 100%; min-height: 85vh; padding: 40px;
-            background: #0d1117; color: #79c0ff; border: none;
-            font-family: 'Courier New', monospace; display: none;
-            resize: none; outline: none; box-sizing: border-box;
-        }
-
-        /* Moveable & Resizable Images */
-        .ada-img {
-            position: absolute; cursor: move; border: 2px solid transparent;
-            user-select: none; display: inline-block; min-width: 50px; min-height: 50px;
-        }
-        .ada-img:hover { border-color: #58a6ff; }
-        .ada-img.active { border-color: #58a6ff; z-index: 100; resize: both; overflow: auto; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-
+        .editor-wrap { max-width: 1100px; margin: 40px auto; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; position: relative; min-height: 85vh; }
+        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; overflow: visible; }
+        #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; resize: none; outline: none; box-sizing: border-box; }
+        .ada-img { position: absolute; cursor: move; border: 2px solid transparent; user-select: none; display: inline-block; min-width: 50px; min-height: 50px; }
+        .ada-img.active { border-color: #58a6ff; z-index: 100; resize: both; overflow: auto; }
         .status-bar { max-width: 1100px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; padding: 0 10px; }
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; }
         input[type="file"] { display: none; }
@@ -63,31 +29,17 @@
 </header>
 
 <div class="toolbar">
-    <button onclick="exec('bold')"><b>B</b></button>
-    <button onclick="exec('italic')"><i>I</i></button>
-    <button onclick="exec('underline')"><u>U</u></button>
-    <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
-    
-    <div class="divider"></div>
-    
-    <button onclick="exec('justifyLeft')">L</button>
-    <button onclick="exec('justifyCenter')">C</button>
-    <button onclick="exec('justifyRight')">R</button>
-
-    <div class="divider"></div>
-    
+    <button onclick="exec('bold')">B</button><button onclick="exec('italic')">I</button><button onclick="exec('underline')">U</button>
+    <input type="color" onchange="exec('foreColor', this.value)">
+    <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
+    <button onclick="exec('justifyLeft')">L</button><button onclick="exec('justifyCenter')">C</button><button onclick="exec('justifyRight')">R</button>
     <label for="img-upload">🖼 Upload</label>
     <input type="file" id="img-upload" accept="image/*" onchange="uploadImage(this)">
-    
-    <button onclick="toggleSource()" id="toggle-btn">Source Code</button>
-    
-    <button class="btn-save" onclick="saveWiki()">Save Partition</button>
+    <button onclick="toggleSource()" id="toggle-btn">Source</button>
+    <button class="btn-save" onclick="saveWiki()">Save</button>
 </div>
 
-<div class="status-bar">
-    <span id="partition-id">Loading Partition...</span>
-    <span id="last-edited"></span>
-</div>
+<div class="status-bar"><span id="partition-id">Loading...</span><span id="last-edited"></span></div>
 
 <div class="editor-wrap">
     <div id="visual-editor" contenteditable="true"></div>
@@ -109,12 +61,17 @@
     document.getElementById('partition-id').innerText = `Partition: ${wikiId.toUpperCase()}`;
 
     async function loadWiki() {
-        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
-        const data = await res.json();
-        visual.innerHTML = data.content;
-        source.value = data.content;
-        document.getElementById('last-edited').innerText = `Last update: ${data.last_user}`;
-        attachImageLogic();
+        try {
+            const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
+            if (!res.ok) throw new Error("Load failed");
+            const data = await res.json();
+            visual.innerHTML = data.content;
+            source.value = data.content;
+            document.getElementById('last-edited').innerText = `Updated by: ${data.last_user}`;
+            attachImageLogic();
+        } catch (e) {
+            alert("Error loading wiki. Check Worker connection.");
+        }
     }
 
     function toggleSource() {
@@ -122,21 +79,19 @@
             source.value = visual.innerHTML;
             visual.style.display = 'none';
             source.style.display = 'block';
-            document.getElementById('toggle-btn').innerText = "Visual View";
+            document.getElementById('toggle-btn').innerText = "Visual";
         } else {
             visual.innerHTML = source.value;
             visual.style.display = 'block';
             source.style.display = 'none';
-            document.getElementById('toggle-btn').innerText = "Source Code";
+            document.getElementById('toggle-btn').innerText = "Source";
             attachImageLogic();
         }
         isSource = !isSource;
     }
 
     function exec(cmd, val = null) {
-        if (isSource) return;
-        document.execCommand(cmd, false, val);
-        visual.focus();
+        if (!isSource) { document.execCommand(cmd, false, val); visual.focus(); }
     }
 
     function uploadImage(input) {
@@ -146,9 +101,7 @@
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.className = 'ada-img';
-                img.style.left = '100px';
-                img.style.top = '100px';
-                img.style.width = '250px';
+                img.style.left = '50px'; img.style.top = '50px'; img.style.width = '200px';
                 visual.appendChild(img);
                 attachImageLogic();
             };
@@ -156,25 +109,17 @@
         }
     }
 
-    // --- SMOOTH MOVE LOGIC ---
-    let activeImg = null;
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
-
+    let activeImg = null, isDragging = false, startX, startY, startLeft, startTop;
     function attachImageLogic() {
         visual.querySelectorAll('.ada-img').forEach(img => {
             img.onmousedown = function(e) {
                 const rect = img.getBoundingClientRect();
-                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return; // Allow resize
-
-                activeImg = img;
-                isDragging = true;
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+                activeImg = img; isDragging = true;
                 visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active'));
                 img.classList.add('active');
-
                 startX = e.clientX; startY = e.clientY;
-                startLeft = parseInt(img.style.left) || 0;
-                startTop = parseInt(img.style.top) || 0;
+                startLeft = parseInt(img.style.left) || 0; startTop = parseInt(img.style.top) || 0;
                 e.preventDefault();
             };
         });
@@ -186,15 +131,23 @@
             activeImg.style.top = (startTop + (e.clientY - startY)) + 'px';
         }
     };
-
     window.onmouseup = function() { isDragging = false; };
     visual.onclick = function(e) { if (e.target === visual) { visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active')); activeImg = null; } };
 
     async function saveWiki() {
         const content = isSource ? source.value : visual.innerHTML;
-        await fetch(`${API}/wiki/save`, {
-            method: 'POST',
-            body: JSON.stringify({ id: wikiId, content, user: userEmail }),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        alert(`Partition ${wikiId} synchronized.`);
+        try {
+            await fetch(`${API}/wiki/save`, {
+                method: 'POST',
+                body: JSON.stringify({ id: wikiId, content, user: userEmail }),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            alert("Archive Saved.");
+            loadWiki();
+        } catch (e) { alert("Save failed."); }
+    }
+
+    loadWiki();
+</script>
+</body>
+</html>
