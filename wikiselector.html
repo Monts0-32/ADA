@@ -4,92 +4,163 @@
     <meta charset="UTF-8">
     <title>ADA | Wiki Selector</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
+        
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
+        
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; font-size: 14px; }
+        
+        /* USER PILL */
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
+        .user-pill:hover { border-color: #8b949e; background: #30363d; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
+
         .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; }
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; text-align: left; width: 100%; box-sizing: border-box; }
-        .wiki-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; }
-        .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; }
-        .admin-edit-panel { background: #21262d; border: 1px solid #58a6ff; padding: 10px; border-radius: 4px; margin-top: 10px; display: none; }
-        .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 5px; border-radius: 4px; box-sizing: border-box; }
+        h1 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 40px; font-weight: 400; font-size: 24px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; align-items: start; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; text-align: left; width: 100%; box-sizing: border-box; transition: 0.2s; }
+        .wiki-card:hover { border-color: #8b949e; }
+        .wiki-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; display: block; }
+        .wiki-card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
+        .wiki-card p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; }
+        
+        .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
+        .btn:hover { background: #2ea043; }
+        
+        /* Admin Edit Panel */
+        .admin-edit-panel { background: #21262d; border: 1px solid var(--blue); padding: 12px; border-radius: 6px; margin-top: 12px; display: none; }
+        .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 8px; padding: 6px; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
+        .admin-edit-panel input:focus { border-color: var(--blue); }
+        
+        .edit-toggle-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 5px 15px; border-radius: 6px; cursor: pointer; display: none; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/dash.html" class="logo">ADA Archive Selector</a>
+    <div style="display:flex; gap:20px; align-items:center;">
+        <a href="/dash.html" class="logo">ADA Archive Selector</a>
+        <button id="admin-edit-btn" class="edit-toggle-btn" onclick="toggleEditMode()">Edit Card Metadata</button>
+    </div>
+    
     <div style="display:flex; gap:12px; align-items:center;">
-        <button id="admin-edit-btn" style="display:none; background:#21262d; color:white; border:1px solid #30363d; padding:5px 12px; border-radius:6px; cursor:pointer;" onclick="toggleEditMode()">Edit Cards</button>
-        <div id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:4px 12px; border-radius:20px;">Checking...</div>
+        <!-- The Ported User Pill -->
+        <a href="/profile.html" class="user-pill">
+            <img id="pill-avatar" src="" alt="">
+            <span id="pill-name">Syncing...</span>
+        </a>
+        <button class="btn" style="background:transparent; color:#f85149; border-color:rgba(248,81,73,0.3); width:auto; padding:4px 12px;" onclick="logout()">Logout</button>
     </div>
 </header>
 
 <div class="container" id="main-content" style="display:none;">
-    <h1>Wiki Archives</h1>
-    <div class="grid" id="wiki-grid"></div>
+    <h1>Wiki Archive Partitions</h1>
+    <div class="grid" id="wiki-grid">
+        <!-- Cards loaded via Worker -->
+    </div>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    let editMode = false;
+    const email = localStorage.getItem('ada_user_email');
+    let editModeActive = false;
 
     async function init() {
-        // --- SECURITY CHECK ---
-        const data = await gatekeeper('wiki_access'); 
-        if(!data) return;
-
-        // If passed, show content
-        document.getElementById('main-content').style.display = 'block';
-        document.getElementById('user-pill').innerText = data.user.display_name || data.user.email;
-        if(data.user.is_admin) document.getElementById('admin-edit-btn').style.display = 'block';
-
-        loadCards();
-    }
-    async function gatekeeper(tag) {
-        const email = localStorage.getItem('ada_user_email');
+        // 1. Check Login
         if (!email) { window.location.href = '/login.html'; return; }
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const d = await res.json();
-        if (d.blocks.includes('wikiselector.html') || d.blocks.includes('ALL') || (!d.user.is_admin && !d.permissions.includes(tag))) {
-            window.location.href = '/blocked.html'; return;
+
+        try {
+            // 2. Security Sync (Permissions & Profile)
+            const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+            const data = await res.json();
+
+            // 3. Permission Gate: Check for Admin or wiki_access tag
+            const isAdmin = data.user.is_admin === 1;
+            const hasAccess = isAdmin || data.permissions.includes('wiki_access');
+            const isBlocked = data.blocks.includes('wikiselector.html') || data.blocks.includes('ALL');
+
+            if (!hasAccess || isBlocked) {
+                window.location.href = '/blocked.html';
+                return;
+            }
+
+            // 4. Populate User Pill
+            document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+            document.getElementById('pill-avatar').src = data.user.profile_picture;
+
+            // 5. Show Admin Tools
+            if (isAdmin) document.getElementById('admin-edit-btn').style.display = 'block';
+
+            // 6. Show Content and Load Cards
+            document.getElementById('main-content').style.display = 'block';
+            loadCards();
+
+        } catch (e) {
+            console.error("Critical System Error", e);
+            alert("Archive synchronization failed.");
         }
-        return d;
     }
 
     async function loadCards() {
         const res = await fetch(`${API}/wiki/metadata`);
         const cards = await res.json();
         const grid = document.getElementById('wiki-grid');
+        
         grid.innerHTML = cards.map(c => `
             <div class="wiki-card">
-                <img src="${c.image_url}">
+                <img src="${c.image_url}" alt="Partition">
                 <h3>${c.title}</h3>
-                <p style="font-size:12px; color:#8b949e">${c.description}</p>
+                <p>${c.description}</p>
                 <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
-                <div class="admin-edit-panel" id="p-${c.id}">
-                    <input type="text" id="t-${c.id}" value="${c.title}">
-                    <input type="text" id="i-${c.id}" value="${c.image_url}">
-                    <button class="btn" style="background:#1f6feb" onclick="saveCard('${c.id}')">Save</button>
+                
+                <div class="admin-edit-panel" id="panel-${c.id}">
+                    <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Partition Title">
+                    <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
+                    <button class="btn" style="background:var(--blue)" onclick="saveCard('${c.id}')">Save Metadata</button>
                 </div>
             </div>
         `).join('');
+        
+        if (editModeActive) toggleEditMode(true);
     }
 
-    function toggleEditMode() {
-        editMode = !editMode;
-        document.querySelectorAll('.admin-edit-panel').forEach(p => p.style.display = editMode ? 'block' : 'none');
+    function toggleEditMode(forceShow = false) {
+        if (!forceShow) editModeActive = !editModeActive;
+        const btn = document.getElementById('admin-edit-btn');
+        btn.style.borderColor = editModeActive ? var(--blue) : '#30363d';
+        
+        document.querySelectorAll('.admin-edit-panel').forEach(panel => {
+            panel.style.display = editModeActive ? 'block' : 'none';
+        });
     }
 
     async function saveCard(id) {
-        const title = document.getElementById(`t-${id}`).value;
-        const image_url = document.getElementById(`i-${id}`).value;
-        await fetch(`${API}/wiki/metadata/save`, { method: 'POST', body: JSON.stringify({ id, title, image_url, description: "" }) });
+        const title = document.getElementById(`in-title-${id}`).value;
+        const image_url = document.getElementById(`in-img-${id}`).value;
+
+        await fetch(`${API}/wiki/metadata/save`, {
+            method: 'POST',
+            body: JSON.stringify({ id, title, image_url, description: "Documentation Sector" })
+        });
+        
+        alert(`Metadata for ${id} synced.`);
         loadCards();
     }
 
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+
+    // Start Security and Load
     init();
 </script>
 </body>
