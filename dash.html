@@ -54,10 +54,11 @@
         <div class="grid">
             <div class="card">
                 <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120?text=Visuals" alt="1">
-                <h3>Wiki Pages</h3>
-                <button class="btn btn-green" style="width:100%" id="nav-page1" onclick="navTo('wiki')">View Gallery</button>
-                <button class="btn admin-only" style="margin-top:8px; width:100%; display:none;" onclick="toggleLock('wiki')">Toggle Lock</button>
+                <img src="https://via.placeholder.com/200x120?text=Archives" alt="Archive 1">
+                <h3>Visual Logs</h3>
+    <!-- CHANGED: Now points to the selector -->
+                <button class="btn btn-green" style="width:100%" onclick="navTo('wikiselector')">Open Wiki Archives</button>
+                <button class="btn admin-only" style="margin-top:8px; width:100%; display:none;" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
             <div class="card">
                 <span class="lock-badge" id="lock-page2">🔒 Locked</span>
