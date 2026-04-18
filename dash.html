@@ -24,11 +24,8 @@
         .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 12px; text-decoration: none; text-align: center; }
         .btn-green { background: var(--btn-green); border: none; width: 100%; }
         .btn-disabled { background-color: #21262d !important; color: #8b949e !important; cursor: not-allowed !important; }
-
-        /* USER PILL */
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 3px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill:hover { border-color: #8b949e; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 3px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -37,14 +34,14 @@
     <div style="display:flex; align-items:center; gap:20px;">
         <a href="/" class="logo">ADA Archive</a>
         <div id="admin-tools" style="display:none; gap:8px;">
-            <a href="/account-creator.html" class="btn">Account Creator</a>
-            <a href="/account-manager.html" class="btn">Account Manager</a>
+            <a href="/account-creator.html" class="btn">Creator</a>
+            <a href="/account-manager.html" class="btn">Manager</a>
         </div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
         <a href="/profile.html" class="user-pill">
-            <img id="pill-avatar" src="https://via.placeholder.com/20" alt="">
-            <span id="pill-name">Loading...</span>
+            <img id="pill-avatar" src="https://via.placeholder.com/20">
+            <span id="pill-name">User</span>
         </a>
         <button class="btn" onclick="logout()">Logout</button>
     </div>
@@ -52,29 +49,16 @@
 
 <div class="container">
     <div class="gallery">
-        <h2>Archive Partitions</h2>
+        <h2>Archive Records</h2>
         <div class="grid">
             <div class="card">
                 <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120?text=Wikis" alt="1">
-                <h3>Wiki Records</h3>
-                <button class="btn btn-green" id="nav-page1" onclick="navTo('wikiselector')">Access Selector</button>
-                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
+                <img src="https://via.placeholder.com/200x120?text=Wiki">
+                <h3>Wiki Sector</h3>
+                <button class="btn btn-green" id="nav-page1">Access Archives</button>
+                <button class="btn admin-only" style="margin-top:8px; display:none;" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
-            <div class="card">
-                <span class="lock-badge" id="lock-page2">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120?text=Docs" alt="2">
-                <h3>Document Leak</h3>
-                <button class="btn btn-green" id="nav-page2" onclick="navTo('page2')">Read Docs</button>
-                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page2')">Toggle Lock</button>
-            </div>
-            <div class="card">
-                <span class="lock-badge" id="lock-page3">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120?text=Core" alt="3">
-                <h3>System Core</h3>
-                <button class="btn btn-green" id="nav-page3" onclick="navTo('page3')">Access Core</button>
-                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page3')">Toggle Lock</button>
-            </div>
+            <!-- Additional partitions here -->
         </div>
     </div>
     <div class="chat-panel">
@@ -89,64 +73,47 @@
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
-    const isAdmin = localStorage.getItem('ada_admin') === '1';
-
     if (!email) window.location.href = '/login.html';
 
     async function loadData() {
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const data = await res.json();
-        
-        // Check Blocks
-        const path = window.location.pathname.split("/").pop() || "index.html";
-        if (data.blocks.includes(path) || data.blocks.includes("ALL")) window.location.href = "/blocked.html";
+        const isAdmin = data.user.is_admin === 1;
 
-        // Update Pill
+        // Security Path Check
+        if (data.blocks.includes('dash.html') || data.blocks.includes('ALL')) window.location.href = '/blocked.html';
+
+        // Update UI
         document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
         if(data.user.profile_picture) document.getElementById('pill-avatar').src = data.user.profile_picture;
-
-        if (isAdmin) {
+        if(isAdmin) {
             document.getElementById('admin-tools').style.display = 'flex';
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
         }
 
-        // Render Chat
-        document.getElementById('chat-messages').innerHTML = data.messages.map(m => `
-            <div class="msg ${m.user_email === email ? 'me' : 'other'}">
-                <span style="font-size:9px; opacity:0.6; display:block;">${m.user_email}</span>
-                ${m.content}
-            </div>`).join('');
+        // Wiki Permission Check
+        const wikiBtn = document.getElementById('nav-page1');
+        const hasWikiAccess = isAdmin || data.permissions.includes('wiki_access');
+        if(!hasWikiAccess) {
+            wikiBtn.classList.add('btn-disabled'); wikiBtn.innerText = "Restricted"; wikiBtn.onclick = () => alert("Permission required.");
+        } else {
+            wikiBtn.classList.remove('btn-disabled'); wikiBtn.innerText = "Access Selector"; wikiBtn.onclick = () => window.location.href = '/wikiselector.html';
+        }
 
-        // Render Locks
+        // Chat & Locks
+        document.getElementById('chat-messages').innerHTML = data.messages.map(m => `<div class="msg ${m.user_email === email ? 'me' : 'other'}"><span style="font-size:9px;opacity:0.6;display:block">${m.user_email}</span>${m.content}</div>`).join('');
         data.locks.forEach(l => {
-            const badge = document.getElementById(`lock-${l.page_id}`);
-            const navBtn = document.getElementById(`nav-${l.page_id}`);
-            if (badge) badge.style.display = l.is_locked ? 'block' : 'none';
-            if (navBtn) {
-                if (l.is_locked) {
-                    navBtn.classList.add('btn-disabled'); navBtn.innerText = "Locked"; navBtn.onclick = null;
-                } else {
-                    navBtn.classList.remove('btn-disabled'); 
-                    navBtn.onclick = () => navTo(l.page_id === 'page1' ? 'wikiselector' : l.page_id);
-                    navBtn.innerText = l.page_id === 'page1' ? "Access Selector" : l.page_id === 'page2' ? "Read Docs" : "Access Core";
-                }
-            }
+            const b = document.getElementById(`lock-${l.page_id}`); if(b) b.style.display = l.is_locked ? 'block' : 'none';
         });
     }
 
     async function sendMessage() {
-        const input = document.getElementById('chat-input');
-        if (!input.value) return;
-        await fetch(`${API}/chat`, { method: 'POST', body: JSON.stringify({ email, content: input.value }) });
-        input.value = ''; loadData();
+        const i = document.getElementById('chat-input'); if(!i.value) return;
+        await fetch(`${API}/chat`, { method: 'POST', body: JSON.stringify({ email, content: i.value }) });
+        i.value = ''; loadData();
     }
 
-    async function toggleLock(pageId) {
-        await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: pageId }) });
-        loadData();
-    }
-
-    function navTo(p) { window.location.href = `/${p}.html`; }
+    async function toggleLock(id) { await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: id }) }); loadData(); }
     function logout() { localStorage.clear(); window.location.href = '/login.html'; }
     setInterval(loadData, 3000); loadData();
 </script>
