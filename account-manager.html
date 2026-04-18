@@ -2,100 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Account Manager</title>
+    <title>ADA | Manager</title>
     <style>
-        :root { --bg: #0d1117; --border: #30363d; --text: #c9d1d9; --btn-red: #da3633; --btn-blue: #1f6feb; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding: 40px; }
-        .container { max-width: 1100px; margin: 0 auto; }
+        :root { --bg: #0d1117; --border: #30363d; --text: #c9d1d9; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 40px; }
         table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid var(--border); }
         th, td { padding: 12px; border: 1px solid var(--border); text-align: left; font-size: 13px; }
-        th { background: #21262d; }
-        .btn { padding: 4px 10px; border-radius: 6px; cursor: pointer; border: none; font-size: 11px; color: white; margin-right: 4px; }
-        .btn-red { background: var(--btn-red); }
-        .btn-blue { background: var(--btn-blue); }
-        .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); }
-        .pill-perm { background: rgba(35, 134, 54, 0.1); color: #3fb950; }
-        .pill-block { background: rgba(248, 81, 73, 0.1); color: #f85149; }
-        .remove-x { margin-left: 6px; cursor: pointer; font-weight: bold; }
+        .btn { padding: 4px 8px; border-radius: 4px; cursor: pointer; border: none; color: white; font-size: 11px; margin: 2px; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <a href="/dash.html" style="color: #58a6ff; text-decoration: none;">← Return to Archive</a>
-    <h2>System Account Management</h2>
-    <table id="user-table">
-        <thead>
-            <tr>
-                <th>Identity</th>
-                <th>Permissions</th>
-                <th>Restrictions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="user-list"></tbody>
+    <a href="/dash.html" style="color:#58a6ff">← Dashboard</a>
+    <h2>User Management</h2>
+    <table>
+        <thead><tr><th>User</th><th>Tags</th><th>Blocks</th><th>Actions</th></tr></thead>
+        <tbody id="list"></tbody>
     </table>
-</div>
 
-<script>
-    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const myEmail = localStorage.getItem('ada_user_email');
-
-    async function loadUsers() {
-        const res = await fetch(`${API}/admin/list-users`);
-        const users = await res.json();
-        const listBody = document.getElementById('user-list');
-        
-        listBody.innerHTML = users.map(u => `
-            <tr>
-                <td><b>${u.display_name || 'Anonymous'}</b><br><span style="opacity:0.6">${u.email}</span></td>
-                <td>
-                    ${u.perm_tags.map(t => `<span class="pill pill-perm">${t} <span class="remove-x" onclick="removePerm('${u.email}', '${t}')">×</span></span>`).join('')}
-                    <button class="btn btn-blue" style="display:block;margin-top:5px" onclick="addPerm('${u.email}')">+ Tag</button>
-                </td>
-                <td>
-                    ${u.blocked_paths.map(p => `<span class="pill pill-block">${p} <span class="remove-x" onclick="removeBlock('${u.email}', '${p}')">×</span></span>`).join('')}
-                    <button class="btn btn-red" style="display:block;margin-top:5px" onclick="blockPrompt('${u.email}')">+ Block</button>
-                </td>
-                <td><button class="btn btn-red" onclick="deleteUser(${u.id})">Delete</button></td>
-            </tr>
-        `).join('');
-    }
-
-    async function addPerm(email) {
-        const tag = prompt("Permission Tag:");
-        if (tag) {
-            await fetch(`${API}/admin/add-perm`, { method: 'POST', body: JSON.stringify({ email, tag }) });
-            loadUsers();
+    <script>
+        const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+        async function load() {
+            const res = await fetch(`${API}/admin/list-users`);
+            const users = await res.json();
+            document.getElementById('list').innerHTML = users.map(u => `
+                <tr>
+                    <td><b>${u.display_name || 'Anonymous'}</b><br>${u.email}</td>
+                    <td>
+                        ${u.perm_tags.map(t => `<span class="pill">${t} <span onclick="remP('${u.email}','${t}')" style="cursor:pointer">×</span></span>`).join('')}
+                        <button class="btn" style="background:#1f6feb" onclick="addP('${u.email}')">+ Tag</button>
+                    </td>
+                    <td>
+                        ${u.blocked_paths.map(p => `<span class="pill" style="color:red">${p} <span onclick="remB('${u.email}','${p}')" style="cursor:pointer">×</span></span>`).join('')}
+                        <button class="btn" style="background:#da3633" onclick="addB('${u.email}')">+ Block</button>
+                    </td>
+                    <td><button class="btn" style="background:#da3633" onclick="del(${u.id})">Delete</button></td>
+                </tr>
+            `).join('');
         }
-    }
-
-    async function removePerm(email, tag) {
-        await fetch(`${API}/admin/remove-perm`, { method: 'POST', body: JSON.stringify({ email, tag }) });
-        loadUsers();
-    }
-
-    async function blockPrompt(email) {
-        const path = prompt("Path to block (or 'ALL'):");
-        if (path) {
-            await fetch(`${API}/admin/block-user`, { method: 'POST', body: JSON.stringify({ email, path }) });
-            loadUsers();
-        }
-    }
-
-    async function removeBlock(email, path) {
-        await fetch(`${API}/admin/remove-block`, { method: 'POST', body: JSON.stringify({ email, path }) });
-        loadUsers();
-    }
-
-    async function deleteUser(id) {
-        if (confirm('Delete user?')) {
-            await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
-            loadUsers();
-        }
-    }
-
-    loadUsers();
-</script>
+        async function addP(e) { const t = prompt("Tag:"); if(t) { await fetch(`${API}/admin/add-perm`, {method:'POST', body:JSON.stringify({email:e,tag:t})}); load(); } }
+        async function remP(e,t) { await fetch(`${API}/admin/remove-perm`, {method:'POST', body:JSON.stringify({email:e,tag:t})}); load(); }
+        async function addB(e) { const p = prompt("Path:"); if(p) { await fetch(`${API}/admin/block-user`, {method:'POST', body:JSON.stringify({email:e,path:p})}); load(); } }
+        async function remB(e,p) { await fetch(`${API}/admin/remove-block`, {method:'POST', body:JSON.stringify({email:e,path:p})}); load(); }
+        async function del(id) { if(confirm('Delete?')) { await fetch(`${API}/admin/delete-user`, {method:'POST', body:JSON.stringify({id})}); load(); } }
+        load();
+    </script>
 </body>
 </html>
