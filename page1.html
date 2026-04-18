@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Archive Wiki</title>
+    <title>ADA | Wiki Archive Editor</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --btn-active: #1f6feb; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
 
-        /* Toolbar Styling */
         .toolbar { 
             background: #161b22; border-bottom: 1px solid var(--border); 
             padding: 8px 24px; display: flex; gap: 6px; position: sticky; 
@@ -24,12 +23,10 @@
         .toolbar button:hover { background: #30363d; }
         .toolbar .divider { width: 1px; background: var(--border); height: 20px; margin: 0 4px; }
 
-        /* The Editor Container */
         .editor-wrap { 
             max-width: 1100px; margin: 40px auto; 
             background: #0d1117; border: 1px solid var(--border); 
-            border-radius: 6px; position: relative;
-            min-height: 85vh; /* Starts large, grows naturally */
+            border-radius: 6px; position: relative; min-height: 85vh;
         }
         
         #visual-editor {
@@ -47,13 +44,8 @@
 
         /* Moveable & Resizable Images */
         .ada-img {
-            position: absolute;
-            cursor: move;
-            border: 2px solid transparent;
-            user-select: none;
-            display: inline-block;
-            min-width: 50px; min-height: 50px;
-            transition: border 0.2s;
+            position: absolute; cursor: move; border: 2px solid transparent;
+            user-select: none; display: inline-block; min-width: 50px; min-height: 50px;
         }
         .ada-img:hover { border-color: #58a6ff; }
         .ada-img.active { border-color: #58a6ff; z-index: 100; resize: both; overflow: auto; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
@@ -66,41 +58,38 @@
 <body>
 
 <header>
-    <a href="/dash.html" class="logo">ADA Wiki Editor</a>
+    <a href="/wikiselector.html" class="logo">ADA Archive System</a>
     <div id="user-info" style="font-size: 11px; opacity: 0.7;"></div>
 </header>
 
 <div class="toolbar">
-    <!-- Text Style -->
-    <button onclick="exec('bold')" title="Bold"><b>B</b></button>
-    <button onclick="exec('italic')" title="Italic"><i>I</i></button>
-    <button onclick="exec('underline')" title="Underline"><u>U</u></button>
+    <button onclick="exec('bold')"><b>B</b></button>
+    <button onclick="exec('italic')"><i>I</i></button>
+    <button onclick="exec('underline')"><u>U</u></button>
     <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
     
     <div class="divider"></div>
     
-    <!-- Alignment -->
-    <button onclick="exec('justifyLeft')" title="Align Left">Align L</button>
-    <button onclick="exec('justifyCenter')" title="Align Center">Align C</button>
-    <button onclick="exec('justifyRight')" title="Align Right">Align R</button>
+    <button onclick="exec('justifyLeft')">L</button>
+    <button onclick="exec('justifyCenter')">C</button>
+    <button onclick="exec('justifyRight')">R</button>
 
     <div class="divider"></div>
     
-    <!-- Media & View -->
-    <label for="img-upload">🖼 Upload Image</label>
+    <label for="img-upload">🖼 Upload</label>
     <input type="file" id="img-upload" accept="image/*" onchange="uploadImage(this)">
     
     <button onclick="toggleSource()" id="toggle-btn">Source Code</button>
     
-    <button class="btn-save" onclick="saveWiki()">Save Changes</button>
+    <button class="btn-save" onclick="saveWiki()">Save Partition</button>
 </div>
 
 <div class="status-bar">
-    <span id="last-edited">Initialising system...</span>
-    <span>Drag images freely • Resize using bottom-right corner • Align text using toolbar</span>
+    <span id="partition-id">Loading Partition...</span>
+    <span id="last-edited"></span>
 </div>
 
-<div class="editor-wrap" id="canvas">
+<div class="editor-wrap">
     <div id="visual-editor" contenteditable="true"></div>
     <textarea id="source-editor"></textarea>
 </div>
@@ -108,19 +97,23 @@
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const userEmail = localStorage.getItem('ada_user_email');
+    const urlParams = new URLSearchParams(window.location.search);
+    const wikiId = urlParams.get('id') || 'wiki1';
+
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
     let isSource = false;
 
     if (!userEmail) window.location.href = '/login.html';
     document.getElementById('user-info').innerText = userEmail;
+    document.getElementById('partition-id').innerText = `Partition: ${wikiId.toUpperCase()}`;
 
     async function loadWiki() {
-        const res = await fetch(`${API}/wiki/load`);
+        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
         const data = await res.json();
-        visual.innerHTML = data.content || "<h1>Wiki Start</h1><p>Type here...</p>";
-        source.value = data.content || "";
-        document.getElementById('last-edited').innerText = `Record managed by: ${data.last_user || 'Unknown'}`;
+        visual.innerHTML = data.content;
+        source.value = data.content;
+        document.getElementById('last-edited').innerText = `Last update: ${data.last_user}`;
         attachImageLogic();
     }
 
@@ -163,31 +156,25 @@
         }
     }
 
-    // --- SMOOTH MOVEMENT LOGIC ---
+    // --- SMOOTH MOVE LOGIC ---
     let activeImg = null;
     let isDragging = false;
     let startX, startY, startLeft, startTop;
 
     function attachImageLogic() {
-        const images = visual.querySelectorAll('.ada-img');
-        images.forEach(img => {
+        visual.querySelectorAll('.ada-img').forEach(img => {
             img.onmousedown = function(e) {
-                // If clicking resize handle, don't drag
                 const rect = img.getBoundingClientRect();
-                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return; // Allow resize
 
                 activeImg = img;
                 isDragging = true;
-                
-                // Set active style
-                images.forEach(i => i.classList.remove('active'));
+                visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active'));
                 img.classList.add('active');
 
-                startX = e.clientX;
-                startY = e.clientY;
+                startX = e.clientX; startY = e.clientY;
                 startLeft = parseInt(img.style.left) || 0;
                 startTop = parseInt(img.style.top) || 0;
-                
                 e.preventDefault();
             };
         });
@@ -195,39 +182,19 @@
 
     window.onmousemove = function(e) {
         if (isDragging && activeImg) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            activeImg.style.left = (startLeft + dx) + 'px';
-            activeImg.style.top = (startTop + dy) + 'px';
+            activeImg.style.left = (startLeft + (e.clientX - startX)) + 'px';
+            activeImg.style.top = (startTop + (e.clientY - startY)) + 'px';
         }
     };
 
-    window.onmouseup = function() {
-        isDragging = false;
-    };
-
-    // Deselect image
-    visual.onclick = function(e) {
-        if (e.target === visual) {
-            visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active'));
-            activeImg = null;
-        }
-    };
+    window.onmouseup = function() { isDragging = false; };
+    visual.onclick = function(e) { if (e.target === visual) { visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active')); activeImg = null; } };
 
     async function saveWiki() {
         const content = isSource ? source.value : visual.innerHTML;
-        const res = await fetch(`${API}/wiki/save`, {
+        await fetch(`${API}/wiki/save`, {
             method: 'POST',
-            body: JSON.stringify({ content, user: userEmail }),
+            body: JSON.stringify({ id: wikiId, content, user: userEmail }),
             headers: { 'Content-Type': 'application/json' }
         });
-        if (res.ok) {
-            alert("Archive synchronization successful.");
-            loadWiki();
-        }
-    }
-
-    loadWiki();
-</script>
-</body>
-</html>
+        alert(`Partition ${wikiId} synchronized.`);
