@@ -35,10 +35,8 @@
         .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
         .btn:hover { background: #2ea043; }
         
-        /* Admin Edit Panel */
         .admin-edit-panel { background: #21262d; border: 1px solid var(--blue); padding: 12px; border-radius: 6px; margin-top: 12px; display: none; }
         .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 8px; padding: 6px; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
-        .admin-edit-panel input:focus { border-color: var(--blue); }
         
         .edit-toggle-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 5px 15px; border-radius: 6px; cursor: pointer; display: none; font-size: 12px; }
     </style>
@@ -52,9 +50,8 @@
     </div>
     
     <div style="display:flex; gap:12px; align-items:center;">
-        <!-- The Ported User Pill -->
         <a href="/profile.html" class="user-pill">
-            <img id="pill-avatar" src="" alt="">
+            <img id="pill-avatar" src="" alt="" style="display:none;">
             <span id="pill-name">Syncing...</span>
         </a>
         <button class="btn" style="background:transparent; color:#f85149; border-color:rgba(248,81,73,0.3); width:auto; padding:4px 12px;" onclick="logout()">Logout</button>
@@ -63,26 +60,37 @@
 
 <div class="container" id="main-content" style="display:none;">
     <h1>Wiki Archive Partitions</h1>
-    <div class="grid" id="wiki-grid">
-        <!-- Cards loaded via Worker -->
-    </div>
+    <div class="grid" id="wiki-grid"></div>
+</div>
+
+<div id="error-screen" style="display:none; padding:100px; text-align:center; color:#f85149;">
+    <h3>Authentication Failed</h3>
+    <p id="error-msg">You do not have permission to view this partition.</p>
+    <a href="/dash.html" style="color:var(--blue)">Return to Dashboard</a>
 </div>
 
 <script>
+    // IMPORTANT: Update this to your exact Worker URL
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
     let editModeActive = false;
 
     async function init() {
-        // 1. Check Login
         if (!email) { window.location.href = '/login.html'; return; }
 
         try {
-            // 2. Security Sync (Permissions & Profile)
+            console.log("ADA: Initiating Security Sync...");
             const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+            
+            if (!res.ok) throw new Error("Worker responded with an error.");
             const data = await res.json();
 
-            // 3. Permission Gate: Check for Admin or wiki_access tag
+            if (!data.user) {
+                document.getElementById('pill-name').innerText = "Unknown User";
+                throw new Error("User record not found in database.");
+            }
+
+            // Security Check
             const isAdmin = data.user.is_admin === 1;
             const hasAccess = isAdmin || data.permissions.includes('wiki_access');
             const isBlocked = data.blocks.includes('wikiselector.html') || data.blocks.includes('ALL');
@@ -92,51 +100,54 @@
                 return;
             }
 
-            // 4. Populate User Pill
+            // Populate UI
             document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-            document.getElementById('pill-avatar').src = data.user.profile_picture;
+            const avatar = document.getElementById('pill-avatar');
+            if (data.user.profile_picture) {
+                avatar.src = data.user.profile_picture;
+                avatar.style.display = 'block';
+            }
 
-            // 5. Show Admin Tools
             if (isAdmin) document.getElementById('admin-edit-btn').style.display = 'block';
 
-            // 6. Show Content and Load Cards
             document.getElementById('main-content').style.display = 'block';
             loadCards();
 
         } catch (e) {
-            console.error("Critical System Error", e);
-            alert("Archive synchronization failed.");
+            console.error("Sync Error:", e);
+            document.getElementById('pill-name').innerText = "Sync Failed";
+            document.getElementById('error-screen').style.display = 'block';
+            document.getElementById('error-msg').innerText = "System Error: " + e.message;
         }
     }
 
     async function loadCards() {
-        const res = await fetch(`${API}/wiki/metadata`);
-        const cards = await res.json();
-        const grid = document.getElementById('wiki-grid');
-        
-        grid.innerHTML = cards.map(c => `
-            <div class="wiki-card">
-                <img src="${c.image_url}" alt="Partition">
-                <h3>${c.title}</h3>
-                <p>${c.description}</p>
-                <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
-                
-                <div class="admin-edit-panel" id="panel-${c.id}">
-                    <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Partition Title">
-                    <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
-                    <button class="btn" style="background:var(--blue)" onclick="saveCard('${c.id}')">Save Metadata</button>
+        try {
+            const res = await fetch(`${API}/wiki/metadata`);
+            const cards = await res.json();
+            const grid = document.getElementById('wiki-grid');
+            
+            grid.innerHTML = cards.map(c => `
+                <div class="wiki-card">
+                    <img src="${c.image_url}" alt="Partition">
+                    <h3>${c.title}</h3>
+                    <p>${c.description || 'System Documentation Partition'}</p>
+                    <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
+                    
+                    <div class="admin-edit-panel" id="panel-${c.id}">
+                        <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Partition Title">
+                        <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
+                        <button class="btn" style="background:var(--blue)" onclick="saveCard('${c.id}')">Save Metadata</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
-        
-        if (editModeActive) toggleEditMode(true);
+            `).join('');
+        } catch (e) {
+            console.error("Cards failed to load", e);
+        }
     }
 
-    function toggleEditMode(forceShow = false) {
-        if (!forceShow) editModeActive = !editModeActive;
-        const btn = document.getElementById('admin-edit-btn');
-        btn.style.borderColor = editModeActive ? var(--blue) : '#30363d';
-        
+    function toggleEditMode() {
+        editModeActive = !editModeActive;
         document.querySelectorAll('.admin-edit-panel').forEach(panel => {
             panel.style.display = editModeActive ? 'block' : 'none';
         });
@@ -151,7 +162,6 @@
             body: JSON.stringify({ id, title, image_url, description: "Documentation Sector" })
         });
         
-        alert(`Metadata for ${id} synced.`);
         loadCards();
     }
 
@@ -160,7 +170,6 @@
         window.location.href = '/login.html';
     }
 
-    // Start Security and Load
     init();
 </script>
 </body>
