@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <title>ADA | Archive Wiki</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --btn-active: #1f6feb; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; }
         
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
 
+        /* Toolbar Styling */
         .toolbar { 
             background: #161b22; border-bottom: 1px solid var(--border); 
-            padding: 8px 24px; display: flex; gap: 8px; position: sticky; 
+            padding: 8px 24px; display: flex; gap: 6px; position: sticky; 
             top: 0; z-index: 1000; flex-wrap: wrap; align-items: center;
         }
         .toolbar button, .toolbar label, .toolbar input[type="color"] { 
@@ -21,23 +22,24 @@
             display: flex; align-items: center; height: 32px; box-sizing: border-box;
         }
         .toolbar button:hover { background: #30363d; }
-        
-        /* The Editor */
+        .toolbar .divider { width: 1px; background: var(--border); height: 20px; margin: 0 4px; }
+
+        /* The Editor Container */
         .editor-wrap { 
             max-width: 1100px; margin: 40px auto; 
             background: #0d1117; border: 1px solid var(--border); 
-            border-radius: 6px; position: relative; /* Important for absolute images */
-            min-height: 80vh; /* Starts large, expands further if needed */
+            border-radius: 6px; position: relative;
+            min-height: 85vh; /* Starts large, grows naturally */
         }
         
         #visual-editor {
-            width: 100%; min-height: 80vh; padding: 40px;
+            width: 100%; min-height: 85vh; padding: 60px;
             box-sizing: border-box; outline: none; line-height: 1.6;
             position: relative; overflow: visible;
         }
 
         #source-editor {
-            width: 100%; min-height: 80vh; padding: 40px;
+            width: 100%; min-height: 85vh; padding: 40px;
             background: #0d1117; color: #79c0ff; border: none;
             font-family: 'Courier New', monospace; display: none;
             resize: none; outline: none; box-sizing: border-box;
@@ -45,15 +47,16 @@
 
         /* Moveable & Resizable Images */
         .ada-img {
-            position: absolute; /* Allows "Move Anywhere" */
+            position: absolute;
             cursor: move;
-            border: 1px solid transparent;
+            border: 2px solid transparent;
             user-select: none;
             display: inline-block;
             min-width: 50px; min-height: 50px;
+            transition: border 0.2s;
         }
-        .ada-img:hover { border: 1px solid #58a6ff; }
-        .ada-img.active { border: 2px solid #58a6ff; z-index: 100; resize: both; overflow: auto; }
+        .ada-img:hover { border-color: #58a6ff; }
+        .ada-img.active { border-color: #58a6ff; z-index: 100; resize: both; overflow: auto; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
 
         .status-bar { max-width: 1100px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; padding: 0 10px; }
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; }
@@ -63,18 +66,27 @@
 <body>
 
 <header>
-    <a href="/dash.html" class="logo">ADA Archive Wiki</a>
+    <a href="/dash.html" class="logo">ADA Wiki Editor</a>
     <div id="user-info" style="font-size: 11px; opacity: 0.7;"></div>
 </header>
 
 <div class="toolbar">
-    <button onclick="exec('bold')"><b>B</b></button>
-    <button onclick="exec('italic')"><i>I</i></button>
-    <button onclick="exec('underline')"><u>U</u></button>
+    <!-- Text Style -->
+    <button onclick="exec('bold')" title="Bold"><b>B</b></button>
+    <button onclick="exec('italic')" title="Italic"><i>I</i></button>
+    <button onclick="exec('underline')" title="Underline"><u>U</u></button>
     <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
     
-    <div style="width: 1px; background: var(--border); height: 20px; margin: 0 4px;"></div>
+    <div class="divider"></div>
     
+    <!-- Alignment -->
+    <button onclick="exec('justifyLeft')" title="Align Left">Align L</button>
+    <button onclick="exec('justifyCenter')" title="Align Center">Align C</button>
+    <button onclick="exec('justifyRight')" title="Align Right">Align R</button>
+
+    <div class="divider"></div>
+    
+    <!-- Media & View -->
     <label for="img-upload">🖼 Upload Image</label>
     <input type="file" id="img-upload" accept="image/*" onchange="uploadImage(this)">
     
@@ -84,8 +96,8 @@
 </div>
 
 <div class="status-bar">
-    <span id="last-edited">Loading...</span>
-    <span>Click & Drag images to move • Use bottom-right corner to resize</span>
+    <span id="last-edited">Initialising system...</span>
+    <span>Drag images freely • Resize using bottom-right corner • Align text using toolbar</span>
 </div>
 
 <div class="editor-wrap" id="canvas">
@@ -106,9 +118,9 @@
     async function loadWiki() {
         const res = await fetch(`${API}/wiki/load`);
         const data = await res.json();
-        visual.innerHTML = data.content;
-        source.value = data.content;
-        document.getElementById('last-edited').innerText = `Last update by: ${data.last_user}`;
+        visual.innerHTML = data.content || "<h1>Wiki Start</h1><p>Type here...</p>";
+        source.value = data.content || "";
+        document.getElementById('last-edited').innerText = `Record managed by: ${data.last_user || 'Unknown'}`;
         attachImageLogic();
     }
 
@@ -120,7 +132,6 @@
             document.getElementById('toggle-btn').innerText = "Visual View";
         } else {
             visual.innerHTML = source.value;
-            source.style.display = 'block';
             visual.style.display = 'block';
             source.style.display = 'none';
             document.getElementById('toggle-btn').innerText = "Source Code";
@@ -132,6 +143,7 @@
     function exec(cmd, val = null) {
         if (isSource) return;
         document.execCommand(cmd, false, val);
+        visual.focus();
     }
 
     function uploadImage(input) {
@@ -141,9 +153,9 @@
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.className = 'ada-img';
-                img.style.left = '50px';
+                img.style.left = '100px';
                 img.style.top = '100px';
-                img.style.width = '200px';
+                img.style.width = '250px';
                 visual.appendChild(img);
                 attachImageLogic();
             };
@@ -151,7 +163,7 @@
         }
     }
 
-    // --- SMOOTH DRAG LOGIC ---
+    // --- SMOOTH MOVEMENT LOGIC ---
     let activeImg = null;
     let isDragging = false;
     let startX, startY, startLeft, startTop;
@@ -160,6 +172,10 @@
         const images = visual.querySelectorAll('.ada-img');
         images.forEach(img => {
             img.onmousedown = function(e) {
+                // If clicking resize handle, don't drag
+                const rect = img.getBoundingClientRect();
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+
                 activeImg = img;
                 isDragging = true;
                 
@@ -190,7 +206,7 @@
         isDragging = false;
     };
 
-    // Deselect image when clicking empty space
+    // Deselect image
     visual.onclick = function(e) {
         if (e.target === visual) {
             visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active'));
@@ -200,13 +216,15 @@
 
     async function saveWiki() {
         const content = isSource ? source.value : visual.innerHTML;
-        await fetch(`${API}/wiki/save`, {
+        const res = await fetch(`${API}/wiki/save`, {
             method: 'POST',
             body: JSON.stringify({ content, user: userEmail }),
             headers: { 'Content-Type': 'application/json' }
         });
-        alert("Wiki Saved.");
-        loadWiki();
+        if (res.ok) {
+            alert("Archive synchronization successful.");
+            loadWiki();
+        }
     }
 
     loadWiki();
