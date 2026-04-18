@@ -8,232 +8,90 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
-        
         .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
-        h1 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 40px; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; align-items: start; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; }
         .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; text-align: left; width: 100%; box-sizing: border-box; }
-        .wiki-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; display: block; }
-        .wiki-card h3 { margin: 0 0 10px 0; font-size: 18px; color: #58a6ff; }
-        .wiki-card p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; height: 40px; overflow: hidden; }
-        
-        .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
-        .btn:hover { background: #2ea043; }
-        
-        /* Admin Edit Mode */
+        .wiki-card img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; }
+        .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; }
         .admin-edit-panel { background: #21262d; border: 1px solid #58a6ff; padding: 10px; border-radius: 4px; margin-top: 10px; display: none; }
-        .admin-edit-panel input, .admin-edit-panel textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 5px; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
-        .edit-toggle-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 5px 15px; border-radius: 6px; cursor: pointer; display: none; }
+        .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 5px; border-radius: 4px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <!-- Floating Chat UI -->
-    <div id="ada-chat-widget">
-        <div id="chat-window">
-            <div id="chat-header">Global Archive Comms <span onclick="toggleChat()" style="cursor:pointer">×</span></div>
-            <div id="chat-body"></div>
-            <div id="chat-footer">
-                <input type="text" id="chat-msg" placeholder="Type a message...">
-                <label for="chat-img" style="cursor:pointer; font-size:18px;">🖼️</label>
-                <input type="file" id="chat-img" accept="image/*" style="display:none" onchange="uploadChatImg(this)">
-                <button onclick="sendText()">Send</button>
-            </div>
-        </div>
-        <div id="chat-icon" onclick="toggleChat()">
-            💬
-            <div id="chat-notif"></div>
-        </div>
-    </div>
-    
-    <style>
-        #ada-chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: -apple-system, sans-serif; }
-        #chat-icon { width: 50px; height: 50px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: relative; }
-        #chat-notif { position: absolute; top: 0; right: 0; width: 15px; height: 15px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
-        
-        #chat-window { width: 320px; height: 450px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        #chat-header { background: #21262d; padding: 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; }
-        #chat-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        #chat-footer { padding: 10px; border-top: 1px solid #30363d; display: flex; gap: 5px; align-items: center; }
-        #chat-msg { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 5px; border-radius: 4px; outline: none; }
-        #chat-footer button { background: #238636; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-    
-        .chat-bubble { max-width: 80%; padding: 7px 10px; border-radius: 12px; font-size: 12px; line-height: 1.4; word-wrap: break-word; }
-        .chat-bubble.me { align-self: flex-end; background: #238636; color: white; }
-        .chat-bubble.other { align-self: flex-start; background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-        .chat-img-msg { width: 100%; border-radius: 8px; margin-top: 5px; cursor: zoom-in; }
-        .chat-user { font-size: 9px; opacity: 0.6; display: block; margin-bottom: 2px; }
-    </style>
-    
-    <script>
-        const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
-        const userEmail = localStorage.getItem('ada_user_email');
-        let chatOpen = false;
-        let lastMsgId = 0;
-    
-        function toggleChat() {
-            chatOpen = !chatOpen;
-            document.getElementById('chat-window').style.display = chatOpen ? 'flex' : 'none';
-            if(chatOpen) {
-                document.getElementById('chat-notif').style.display = 'none';
-                const body = document.getElementById('chat-body');
-                body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function syncChat() {
-            if(!userEmail) return;
-            const res = await fetch(`${CHAT_API}/sync?email=${encodeURIComponent(userEmail)}`);
-            const data = await res.json();
-            
-            const body = document.getElementById('chat-body');
-            const latest = data.messages[data.messages.length - 1];
-    
-            // Check for new messages for notification
-            if(latest && latest.id > lastMsgId) {
-                if(!chatOpen && lastMsgId !== 0) {
-                    document.getElementById('chat-notif').style.display = 'block';
-                }
-                lastMsgId = latest.id;
-                
-                // Render Messages
-                body.innerHTML = data.messages.map(m => `
-                    <div class="chat-bubble ${m.user_email === userEmail ? 'me' : 'other'}">
-                        <span class="chat-user">${m.user_email}</span>
-                        ${m.is_image ? `<img src="${m.content}" class="chat-img-msg" onclick="window.open(this.src)">` : m.content}
-                    </div>
-                `).join('');
-                
-                if(chatOpen) body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function sendText() {
-            const input = document.getElementById('chat-msg');
-            if(!input.value) return;
-            await fetch(`${CHAT_API}/chat`, {
-                method: 'POST',
-                body: JSON.stringify({ email: userEmail, content: input.value, isImage: false })
-            });
-            input.value = '';
-            syncChat();
-        }
-    
-        async function uploadChatImg(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    await fetch(`${CHAT_API}/chat`, {
-                        method: 'POST',
-                        body: JSON.stringify({ email: userEmail, content: e.target.result, isImage: true })
-                    });
-                    syncChat();
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    
-        setInterval(syncChat, 3000);
-        syncChat();
-    </script>
+
 <header>
     <a href="/dash.html" class="logo">ADA Archive Selector</a>
     <div style="display:flex; gap:12px; align-items:center;">
-        <button id="admin-edit-btn" class="edit-toggle-btn" onclick="toggleEditMode()">Edit Cards</button>
-        <div id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:4px 12px; border-radius:20px;"></div>
+        <button id="admin-edit-btn" style="display:none; background:#21262d; color:white; border:1px solid #30363d; padding:5px 12px; border-radius:6px; cursor:pointer;" onclick="toggleEditMode()">Edit Cards</button>
+        <div id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:4px 12px; border-radius:20px;">Checking...</div>
     </div>
 </header>
 
-<div class="container">
-    <h1>Archive Wiki Partitions</h1>
-    <div class="grid" id="wiki-grid">
-        <!-- Cards loaded via JS -->
-    </div>
+<div class="container" id="main-content" style="display:none;">
+    <h1>Wiki Archives</h1>
+    <div class="grid" id="wiki-grid"></div>
 </div>
-<script>
-    async function loadWiki() {
-        const sync = await fetch(`${API}/sync?email=${encodeURIComponent(userEmail)}`);
-        const sData = await sync.json();
 
-    // Security Gate
-        const hasAccess = sData.user.is_admin || sData.permissions.includes('wiki_access');
-        if(!hasAccess || sData.blocks.includes('wiki.html') || sData.blocks.includes('ALL')) {
-            window.location.href = '/blocked.html'; return;
-        }
-
-    // Load Content
-        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
-        const data = await res.json();
-        visual.innerHTML = data.content;
-        source.value = data.content;
-    }
-</script>
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const user = localStorage.getItem('ada_user_email');
-    const isAdmin = localStorage.getItem('ada_admin') === '1';
+    let editMode = false;
 
-    if(!user) window.location.href = '/login.html';
-    document.getElementById('user-pill').innerText = user;
+    async function init() {
+        // --- SECURITY CHECK ---
+        const data = await gatekeeper('wiki_access'); 
+        if(!data) return;
 
-    // Show Edit button only if Admin
-    if(isAdmin) document.getElementById('admin-edit-btn').style.display = 'block';
+        // If passed, show content
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('user-pill').innerText = data.user.display_name || data.user.email;
+        if(data.user.is_admin) document.getElementById('admin-edit-btn').style.display = 'block';
 
-    let editModeActive = false;
+        loadCards();
+    }
+
+    async function gatekeeper(tag) {
+        const email = localStorage.getItem('ada_user_email');
+        if (!email) { window.location.href = '/login.html'; return; }
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const d = await res.json();
+        if (d.blocks.includes('wikiselector.html') || d.blocks.includes('ALL') || (!d.user.is_admin && !d.permissions.includes(tag))) {
+            window.location.href = '/blocked.html'; return;
+        }
+        return d;
+    }
 
     async function loadCards() {
         const res = await fetch(`${API}/wiki/metadata`);
         const cards = await res.json();
         const grid = document.getElementById('wiki-grid');
-        grid.innerHTML = '';
-
-        cards.forEach(c => {
-            grid.innerHTML += `
-                <div class="wiki-card">
-                    <img src="${c.image_url}">
-                    <h3>${c.title}</h3>
-                    <p>${c.description}</p>
-                    <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
-                    
-                    <div class="admin-edit-panel" id="panel-${c.id}">
-                        <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Title">
-                        <textarea id="in-desc-${c.id}" placeholder="Description">${c.description}</textarea>
-                        <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
-                        <button class="btn" style="background:#1f6feb" onclick="saveCard('${c.id}')">Save Card Info</button>
-                    </div>
+        grid.innerHTML = cards.map(c => `
+            <div class="wiki-card">
+                <img src="${c.image_url}">
+                <h3>${c.title}</h3>
+                <p style="font-size:12px; color:#8b949e">${c.description}</p>
+                <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
+                <div class="admin-edit-panel" id="p-${c.id}">
+                    <input type="text" id="t-${c.id}" value="${c.title}">
+                    <input type="text" id="i-${c.id}" value="${c.image_url}">
+                    <button class="btn" style="background:#1f6feb" onclick="saveCard('${c.id}')">Save</button>
                 </div>
-            `;
-        });
-        
-        // Ensure panels stay visible if already in edit mode
-        if(editModeActive) toggleEditMode(true);
+            </div>
+        `).join('');
     }
 
-    function toggleEditMode(forceShow = false) {
-        if(!forceShow) editModeActive = !editModeActive;
-        const btn = document.getElementById('admin-edit-btn');
-        btn.style.borderColor = editModeActive ? '#58a6ff' : '#30363d';
-        
-        document.querySelectorAll('.admin-edit-panel').forEach(panel => {
-            panel.style.display = editModeActive ? 'block' : 'none';
-        });
+    function toggleEditMode() {
+        editMode = !editMode;
+        document.querySelectorAll('.admin-edit-panel').forEach(p => p.style.display = editMode ? 'block' : 'none');
     }
 
     async function saveCard(id) {
-        const title = document.getElementById(`in-title-${id}`).value;
-        const description = document.getElementById(`in-desc-${id}`).value;
-        const image_url = document.getElementById(`in-img-${id}`).value;
-
-        await fetch(`${API}/wiki/metadata/save`, {
-            method: 'POST',
-            body: JSON.stringify({ id, title, description, image_url })
-        });
-        
-        alert('Card metadata synchronized.');
+        const title = document.getElementById(`t-${id}`).value;
+        const image_url = document.getElementById(`i-${id}`).value;
+        await fetch(`${API}/wiki/metadata/save`, { method: 'POST', body: JSON.stringify({ id, title, image_url, description: "" }) });
         loadCards();
     }
 
-    loadCards();
+    init();
 </script>
 </body>
 </html>
