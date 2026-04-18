@@ -8,112 +8,157 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; min-height: 100vh; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
 
-        .container { max-width: 1200px; margin: 40px auto; display: grid; grid-template-columns: 320px 1fr; gap: 40px; padding: 0 20px; }
-        
+        .container { max-width: 1100px; margin: 40px auto; display: grid; grid-template-columns: 320px 1fr; gap: 40px; padding: 0 20px; }
         .sidebar { display: flex; flex-direction: column; gap: 20px; }
         .avatar-lg { width: 320px; height: 320px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
         
-        .action-card { background: #161b22; border: 1px solid var(--border); padding: 20px; border-radius: 8px; }
-        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; margin-bottom: 10px; transition: 0.2s; }
-        .btn-gh:hover { border-color: #8b949e; background: #30363d; }
-        .btn-primary { background: var(--btn-green); border: none; }
+        /* Smart Search */
+        .search-container { position: relative; width: 100%; }
+        .suggestions { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1000; display: none; margin-top: 5px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .suggest-item:hover { background: #21262d; }
+        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; }
 
-        /* The Bio Display/Editor */
-        .bio-container { background: rgba(22, 27, 34, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 500px; position: relative; }
+        /* Badges */
+        .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; color: white; border: 1px solid rgba(255,255,255,0.1); }
+
+        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; margin-top: 5px; }
+        .btn-red { border-color: var(--red); color: var(--red); }
         
-        .img-wrapper { position: absolute; cursor: move; line-height: 0; border: 2px solid transparent; }
-        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; }
+        .bio-area { background: rgba(22,27,34,0.7); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 500px; position: relative; }
+        #bio-editor, #bio-raw { width: 100%; min-height: 400px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 20px; outline: none; margin-top: 15px; display: none; }
+        
+        .img-wrapper { position: absolute; cursor: move; border: 2px solid transparent; }
         .img-wrapper.active { border-color: var(--blue); }
-        .resizer { position: absolute; width: 10px; height: 10px; background: var(--blue); right: -5px; bottom: -5px; cursor: nwse-resize; display: none; }
-        .remover { position: absolute; width: 18px; height: 18px; background: var(--red); color: white; right: -9px; top: -9px; cursor: pointer; display: none; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; }
+        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; display: none; border-radius: 50%; }
+        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; top: -10px; right: -10px; cursor: pointer; display: none; border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; border: 2px solid var(--bg); }
         .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
-
-        .editor-panel { display: none; flex-direction: column; gap: 15px; border-top: 1px solid var(--border); padding-top: 25px; margin-top: 25px; }
-        #bio-edit { width: 100%; min-height: 350px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 20px; outline: none; position: relative; overflow: visible; }
-        #bio-raw { width: 100%; min-height: 350px; background: #0d1117; color: #79c0ff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: monospace; display: none; outline: none; }
-
-        .tool-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .inp { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; outline: none; }
     </style>
 </head>
 <body id="main-body">
 
 <header>
     <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive Dashboard</a>
-    <div style="font-weight:bold;">Identity Record</div>
+    <div style="font-weight:bold;" id="status-label">Identity Profile</div>
 </header>
 
-<div class="container">
+<div class="container" id="profile-wrap">
     <div class="sidebar">
-        <img id="avatar-view" class="avatar-lg" src="">
-        <h2 id="name-view" style="margin:0;"></h2>
-        <div id="email-view" style="color:#8b949e; font-size:14px;"></div>
+        <img id="view-pic" class="avatar-lg" src="">
+        <h2 id="view-name" style="margin:0;"></h2>
+        <div id="view-email" style="color:#8b949e; font-size:14px;"></div>
 
-        <div class="action-card">
-            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px;">LOCATE IDENTITY</div>
-            <input type="text" id="sq" class="inp" style="width:100%; margin-bottom:10px;" placeholder="Email address...">
-            <button class="btn-gh" onclick="search()">Search Database</button>
-            <button id="edit-btn" class="btn-gh" style="display:none;" onclick="toggleEdit()">Edit Identity Profile</button>
+        <div class="badge-row" id="view-badges"></div>
+
+        <div class="search-container">
+            <input type="text" id="search-box" class="btn-gh" style="text-align:left; cursor:text;" placeholder="Search email or name..." oninput="doSuggest(this.value)">
+            <div id="suggest-list" class="suggestions"></div>
         </div>
+
+        <div id="admin-actions" style="display:none; border-top: 1px solid var(--border); padding-top:15px; margin-top:10px;">
+            <div style="font-size:11px; font-weight:bold; color:var(--red); margin-bottom:10px;">ADMINISTRATIVE CONTROLS</div>
+            <button id="toggle-disabled-btn" class="btn-gh btn-red" onclick="toggleProfileStatus()">Disable Profile Access</button>
+        </div>
+
+        <button id="edit-btn" class="btn-gh" style="display:none; border-color:var(--blue); color:var(--blue);" onclick="toggleEdit()">Edit My Profile</button>
     </div>
 
-    <div class="bio-container">
+    <div class="bio-area">
         <div id="bio-display"></div>
 
-        <div id="editor-ui" class="editor-panel">
-            <div class="tool-row">
-                <input type="text" id="in-name" class="inp" placeholder="Display Name">
-                <input type="text" id="in-bg" class="inp" style="flex:1" placeholder="Hex Color or linear-gradient(...)">
-                <input type="color" id="bg-picker" onchange="document.getElementById('in-bg').value = this.value">
+        <div id="editor-ui" style="display:none; flex-direction:column; gap:15px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <input type="text" id="in-name" class="btn-gh" style="text-align:left;" placeholder="Display Name">
+                <input type="text" id="in-bg" class="btn-gh" style="text-align:left;" placeholder="Hex or linear-gradient">
             </div>
-
-            <div class="tool-row">
-                <button class="btn-gh" style="width:auto" onclick="exec('bold')">B</button>
-                <button class="btn-gh" style="width:auto" onclick="exec('italic')">I</button>
-                <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
-                <button class="btn-gh" style="width:auto" onclick="document.getElementById('f-pic').click()">Upload Avatar</button>
-                <button class="btn-gh" style="width:auto" onclick="document.getElementById('f-bio').click()">Add Bio Image</button>
-                <button class="btn-gh" style="width:auto" onclick="toggleBioSource()" id="src-btn">HTML Source</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-gh" onclick="document.getElementById('f-pic').click()">Change Avatar</button>
+                <button class="btn-gh" onclick="document.getElementById('f-bio').click()">Add Image to Bio</button>
+                <button class="btn-gh" onclick="toggleSource()" id="st-btn">HTML Source</button>
             </div>
-            
             <input type="file" id="f-pic" hidden onchange="upAvatar(this)">
-            <input type="file" id="f-bio" hidden onchange="upBioImg(this)">
+            <input type="file" id="f-bio" hidden onchange="upBio(this)">
 
-            <div id="bio-edit" contenteditable="true"></div>
+            <div id="bio-editor" contenteditable="true" style="display:block"></div>
             <textarea id="bio-raw"></textarea>
 
-            <button class="btn-gh btn-primary" onclick="save()">Save Profile Changes</button>
+            <button class="btn-gh" style="background:var(--btn-green); border:none;" onclick="save()">Save Identity Changes</button>
         </div>
     </div>
+</div>
+
+<div id="disabled-screen" style="display:none; padding:100px; text-align:center;">
+    <h1 style="color:var(--red)">ACCESS RESTRICTED</h1>
+    <p>This identity record has been disabled by a system administrator.</p>
+    <a href="/dash.html" style="color:var(--blue)">Return to Archive</a>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const myEmail = localStorage.getItem('ada_user_email');
     const params = new URLSearchParams(window.location.search);
-    const target = params.get('email') || myEmail;
+    const targetEmail = params.get('email') || myEmail;
     let isSrc = false;
+    let profileData = null;
 
     async function load() {
-        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}`);
+        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(targetEmail)}&by=${myEmail}`);
         const d = await res.json();
-        const u = d.user;
 
-        document.getElementById('main-body').style.background = u.bg_style || "#0d1117";
-        document.getElementById('avatar-view').src = u.profile_picture;
-        document.getElementById('name-view').innerText = u.display_name || u.email;
-        document.getElementById('email-view').innerText = u.email;
-        document.getElementById('bio-display').innerHTML = u.bio_html || "Record is empty.";
+        if (d.disabled) {
+            document.getElementById('profile-wrap').style.display = 'none';
+            document.getElementById('disabled-screen').style.display = 'block';
+            return;
+        }
 
-        if(target === myEmail) {
+        profileData = d.user;
+        document.getElementById('main-body').style.background = profileData.bg_style || "#0d1117";
+        document.getElementById('view-pic').src = profileData.profile_picture;
+        document.getElementById('view-name').innerText = profileData.display_name || profileData.email;
+        document.getElementById('view-email').innerText = profileData.email;
+        document.getElementById('bio-display').innerHTML = profileData.bio_html || "No public data recorded.";
+
+        // Render Badges
+        const br = document.getElementById('view-badges');
+        br.innerHTML = d.badges.map(b => `<div class="badge" style="background:${b.color}">${b.icon} ${b.name}</div>`).join('');
+        if(profileData.is_admin) br.innerHTML += `<div class="badge" style="background:#d29922; color:black;">🛡️ ADMIN</div>`;
+
+        // Admin Buttons
+        if (localStorage.getItem('ada_admin') === '1') {
+            document.getElementById('admin-actions').style.display = 'block';
+            const btn = document.getElementById('toggle-disabled-btn');
+            btn.innerText = profileData.profile_disabled ? "Enable Profile Access" : "Disable Profile Access";
+        }
+
+        if(targetEmail === myEmail) {
             document.getElementById('edit-btn').style.display = 'block';
-            document.getElementById('in-name').value = u.display_name || "";
-            document.getElementById('in-bg').value = u.bg_style || "";
-            document.getElementById('bio-edit').innerHTML = u.bio_html || "";
+            document.getElementById('in-name').value = profileData.display_name || "";
+            document.getElementById('in-bg').value = profileData.bg_style || "";
+            document.getElementById('bio-editor').innerHTML = profileData.bio_html || "";
             attachLogic();
         }
     }
 
+    async function doSuggest(q) {
+        if(q.length < 2) { document.getElementById('suggest-list').style.display='none'; return; }
+        const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
+        const items = await res.json();
+        const list = document.getElementById('suggest-list');
+        list.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
+        list.style.display = items.length ? 'block' : 'none';
+    }
+
+    async function toggleProfileStatus() {
+        const newStatus = profileData.profile_disabled ? 0 : 1;
+        await fetch(`${API}/admin/profile/toggle-status`, {
+            method: 'POST',
+            body: JSON.stringify({ email: targetEmail, status: newStatus })
+        });
+        location.reload();
+    }
+
+    // Image logic and formatting functions remain the same as previous wiki version
     function toggleEdit() {
         const ui = document.getElementById('editor-ui');
         const view = document.getElementById('bio-display');
@@ -122,27 +167,27 @@
         view.style.display = active ? 'block' : 'none';
     }
 
-    function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('avatar-view').src=e.target.result; r.readAsDataURL(i.files[0]); }}
+    function toggleSource() {
+        isSrc = !isSrc;
+        const ed = document.getElementById('bio-editor'), raw = document.getElementById('bio-raw');
+        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; }
+        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; attachLogic(); }
+    }
+
+    function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('view-pic').src=e.target.result; r.readAsDataURL(i.files[0]); }}
     
-    function upBioImg(i) {
+    function upBio(i) {
         if(i.files[0]){
             const r = new FileReader();
             r.onload=(e)=>{
                 const w = document.createElement('div');
                 w.className='img-wrapper'; w.style.width='150px'; w.style.left='10px'; w.style.top='10px';
                 w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
-                document.getElementById('bio-edit').appendChild(w);
+                document.getElementById('bio-editor').appendChild(w);
                 attachLogic();
             };
             r.readAsDataURL(i.files[0]);
         }
-    }
-
-    function toggleBioSource() {
-        isSrc = !isSrc;
-        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw');
-        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; }
-        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; attachLogic(); }
     }
 
     function attachLogic() {
@@ -151,7 +196,7 @@
                 if(e.target.className === 'remover') { w.remove(); return; }
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
-                let res = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
+                let res = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sH = w.offsetHeight, sL = w.offsetLeft, sT = w.offsetTop;
                 function move(me) {
                     if(res){ w.style.width = (sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
                     else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
@@ -166,15 +211,13 @@
         document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
         const payload = {
             email: myEmail, name: document.getElementById('in-name').value,
-            pic: document.getElementById('avatar-view').src, bg: document.getElementById('in-bg').value,
-            bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-edit').innerHTML, color: "#c9d1d9"
+            pic: document.getElementById('view-pic').src, bg: document.getElementById('in-bg').value,
+            bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-editor').innerHTML, color: "#c9d1d9"
         };
         await fetch(`${API}/profile/save`, { method: 'POST', body: JSON.stringify(payload) });
         location.reload();
     }
 
-    function search() { const q = document.getElementById('sq').value; if(q) location.href=`/profile.html?email=${encodeURIComponent(q)}`; }
-    function exec(c, v=null) { document.execCommand(c, false, v); }
     load();
 </script>
 </body>
