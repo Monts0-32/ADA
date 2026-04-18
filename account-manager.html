@@ -2,26 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Manager</title>
+    <title>ADA | Account Manager</title>
     <style>
-        :root { --bg: #0d1117; --border: #30363d; --text: #c9d1d9; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 40px; }
-        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid var(--border); }
+        :root { --bg: #0d1117; --border: #30363d; --text: #c9d1d9; --btn-red: #da3633; --btn-blue: #1f6feb; --gold: #d29922; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; padding: 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid var(--border); margin-top: 20px; }
         th, td { padding: 12px; border: 1px solid var(--border); text-align: left; font-size: 13px; }
-        .btn { padding: 4px 8px; border-radius: 4px; cursor: pointer; border: none; color: white; font-size: 11px; margin: 2px; }
+        th { background: #21262d; color: #f0f6fc; }
+        .btn { padding: 5px 10px; border-radius: 6px; cursor: pointer; border: none; color: white; font-size: 11px; margin: 2px; font-weight: 600; }
+        .btn-red { background: var(--btn-red); }
+        .btn-blue { background: var(--btn-blue); }
+        .btn-gold { background: var(--gold); }
         .pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); }
+        .role-badge { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 10px; text-transform: uppercase; }
+        .role-admin { background: rgba(210, 153, 34, 0.2); color: var(--gold); border: 1px solid var(--gold); }
+        .role-user { background: rgba(139, 148, 158, 0.2); color: #8b949e; border: 1px solid #8b949e; }
     </style>
 </head>
 <body>
-    <a href="/dash.html" style="color:#58a6ff">← Dashboard</a>
-    <h2>User Management</h2>
-    <table>
-        <thead><tr><th>User</th><th>Tags</th><th>Blocks</th><th>Actions</th></tr></thead>
-        <tbody id="list"></tbody>
-    </table>
+    <div class="container">
+        <a href="/dash.html" style="color:#58a6ff; text-decoration:none;">← Dashboard</a>
+        <h2>Archive Identity Management</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Identity</th>
+                    <th>Role</th>
+                    <th>Permission Tags</th>
+                    <th>Restrictions</th>
+                    <th>Management</th>
+                </tr>
+            </thead>
+            <tbody id="list"></tbody>
+        </table>
+    </div>
 
     <script>
         const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+        const myEmail = localStorage.getItem('ada_user_email');
+
         async function load() {
             const res = await fetch(`${API}/admin/list-users`);
             const users = await res.json();
@@ -29,22 +49,50 @@
                 <tr>
                     <td><b>${u.display_name || 'Anonymous'}</b><br>${u.email}</td>
                     <td>
-                        ${u.perm_tags.map(t => `<span class="pill">${t} <span onclick="remP('${u.email}','${t}')" style="cursor:pointer">×</span></span>`).join('')}
-                        <button class="btn" style="background:#1f6feb" onclick="addP('${u.email}')">+ Tag</button>
+                        <span class="role-badge ${u.is_admin ? 'role-admin' : 'role-user'}">
+                            ${u.is_admin ? 'Admin' : 'Standard'}
+                        </span>
                     </td>
                     <td>
-                        ${u.blocked_paths.map(p => `<span class="pill" style="color:red">${p} <span onclick="remB('${u.email}','${p}')" style="cursor:pointer">×</span></span>`).join('')}
-                        <button class="btn" style="background:#da3633" onclick="addB('${u.email}')">+ Block</button>
+                        ${u.perm_tags.map(t => `<span class="pill">${t} <span onclick="remP('${u.email}','${t}')" style="cursor:pointer">×</span></span>`).join('')}
+                        <button class="btn btn-blue" onclick="addP('${u.email}')">+ Tag</button>
                     </td>
-                    <td><button class="btn" style="background:#da3633" onclick="del(${u.id})">Delete</button></td>
+                    <td>
+                        ${u.blocked_paths.map(p => `<span class="pill" style="color:#f85149; border-color:#f85149;">${p} <span onclick="remB('${u.email}','${p}')" style="cursor:pointer">×</span></span>`).join('')}
+                        <button class="btn btn-red" onclick="addB('${u.email}')">+ Block</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-gold" onclick="toggleAdmin(${u.id}, ${u.is_admin}, '${u.email}')">Toggle Admin</button>
+                        <button class="btn btn-red" onclick="del(${u.id}, '${u.email}')">Wipe Account</button>
+                    </td>
                 </tr>
             `).join('');
         }
+
+        async function toggleAdmin(id, currentStatus, email) {
+            if (email === myEmail) return alert("You cannot change your own status.");
+            const newStatus = currentStatus === 1 ? 0 : 1;
+            await fetch(`${API}/admin/toggle-admin`, {
+                method: 'POST',
+                body: JSON.stringify({ id, isAdmin: newStatus })
+            });
+            load();
+        }
+
+        async function del(id, email) {
+            if (email === myEmail) return alert("You cannot delete your own account.");
+            if (confirm(`Delete ${email}?`)) {
+                await fetch(`${API}/admin/delete-user`, { method: 'POST', body: JSON.stringify({ id }) });
+                load();
+            }
+        }
+
+        // Tag and Block functions
         async function addP(e) { const t = prompt("Tag:"); if(t) { await fetch(`${API}/admin/add-perm`, {method:'POST', body:JSON.stringify({email:e,tag:t})}); load(); } }
         async function remP(e,t) { await fetch(`${API}/admin/remove-perm`, {method:'POST', body:JSON.stringify({email:e,tag:t})}); load(); }
         async function addB(e) { const p = prompt("Path:"); if(p) { await fetch(`${API}/admin/block-user`, {method:'POST', body:JSON.stringify({email:e,path:p})}); load(); } }
         async function remB(e,p) { await fetch(`${API}/admin/remove-block`, {method:'POST', body:JSON.stringify({email:e,path:p})}); load(); }
-        async function del(id) { if(confirm('Delete?')) { await fetch(`${API}/admin/delete-user`, {method:'POST', body:JSON.stringify({id})}); load(); } }
+
         load();
     </script>
 </body>
