@@ -6,34 +6,31 @@
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
         
-        /* CUSTOM SCROLLBAR */
+        /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg); }
+        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         
-        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; align-items: center; flex-wrap: wrap; }
-        .toolbar button, .toolbar select, .toolbar label, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; }
-        .toolbar button:hover { background: #30363d; }
-
+        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; align-items: center; }
+        .toolbar button, .toolbar select, .toolbar label, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; display: flex; align-items: center; }
+        
         .editor-wrap { max-width: 1100px; margin: 40px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; min-height: 85vh; position: relative; }
         #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; }
         #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; }
 
-        /* Drag & Resize Images */
-        .ada-img { position: absolute; cursor: move; border: 2px solid transparent; min-width: 50px; }
+        /* Contributor Log Styling */
+        .contributor-panel { max-width: 1100px; margin: 20px auto; padding: 20px; border-top: 1px solid var(--border); }
+        .contributor-title { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px; }
+        .contributor-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .contributor-card { display: flex; align-items: center; gap: 8px; background: #161b22; border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        .contributor-card img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+
+        .ada-img { position: absolute; cursor: move; border: 2px solid transparent; }
         .ada-img.active { border-color: var(--blue); resize: both; overflow: auto; z-index: 100; }
-
-        /* Contributor Log */
-        .log-panel { max-width: 1100px; margin: 20px auto; padding: 0 10px; }
-        .log-title { font-size: 12px; font-weight: bold; color: #8b949e; margin-bottom: 8px; text-transform: uppercase; }
-        .log-list { display: flex; gap: 12px; }
-        .contributor { display: flex; align-items: center; gap: 6px; background: #161b22; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; }
-        .contributor img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
-
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
     </style>
 </head>
@@ -41,25 +38,20 @@
 
 <header>
     <a href="/wikiselector.html" style="color:var(--blue); text-decoration:none; font-size:14px;">← Back to Selector</a>
-    <div id="p-label" style="font-weight:bold;">Loading Sector...</div>
+    <div id="p-label" style="font-weight:600;">Loading...</div>
 </header>
 
-<div id="guard" style="display:none;">
+<div id="main-ui" style="display:none;">
     <div class="toolbar">
         <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
             <option value="" disabled selected>Heading</option>
-            <option value="H1">Title (H1)</option>
-            <option value="H2">Header (H2)</option>
-            <option value="P">Text (P)</option>
+            <option value="H1">H1</option><option value="H2">H2</option><option value="P">P</option>
         </select>
-        <button onclick="exec('bold')"><b>B</b></button>
-        <button onclick="exec('italic')"><i>I</i></button>
-        <button onclick="exec('underline')"><u>U</u></button>
-        <input type="color" onchange="exec('foreColor', this.value)" title="Color">
+        <button onclick="exec('bold')">B</button>
+        <button onclick="exec('italic')">I</button>
+        <input type="color" onchange="exec('foreColor', this.value)">
         <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
-        <button onclick="exec('justifyLeft')">L</button>
-        <button onclick="exec('justifyCenter')">C</button>
-        <button onclick="exec('justifyRight')">R</button>
+        <button onclick="exec('justifyCenter')">Center</button>
         <label for="img-upload">🖼 Upload</label>
         <input type="file" id="img-upload" accept="image/*" onchange="uploadImg(this)" style="display:none">
         <button onclick="toggleSource()" id="st">Source</button>
@@ -71,9 +63,9 @@
         <textarea id="source-editor"></textarea>
     </div>
 
-    <div class="log-panel">
-        <div class="log-title">Partition Contributors</div>
-        <div id="contributor-list" class="log-list"></div>
+    <div class="contributor-panel">
+        <div class="contributor-title">Recent Contributors</div>
+        <div id="log-list" class="contributor-list"></div>
     </div>
 </div>
 
@@ -83,7 +75,6 @@
     const wikiId = urlParams.get('id') || 'wiki1';
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
-    const defaultPic = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
     async function init() {
         const email = localStorage.getItem('ada_user_email');
@@ -92,13 +83,13 @@
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const d = await res.json();
 
-        // Hard Permission Check
-        if(!d.user.is_admin && !d.permissions.includes('wiki_access') || d.blocks.includes('wiki.html')) {
+        // Permission Security
+        if(!d.user.is_admin && !d.permissions.includes('wiki_access')) {
             window.location.href = '/blocked.html'; return;
         }
 
-        document.getElementById('guard').style.display = 'block';
-        document.getElementById('p-label').innerText = `Editing Partition: ${wikiId.toUpperCase()}`;
+        document.getElementById('main-ui').style.display = 'block';
+        document.getElementById('p-label').innerText = `Partition: ${wikiId.toUpperCase()}`;
         loadWiki();
     }
 
@@ -108,24 +99,25 @@
         visual.innerHTML = data.content.content;
         source.value = data.content.content;
 
-        // Render Contributors
-        document.getElementById('contributor-list').innerHTML = data.logs.map(u => `
-            <div class="contributor">
-                <img src="${u.profile_picture || defaultPic}">
+        // Render Contributor Log
+        const logHtml = data.logs.map(u => `
+            <div class="contributor-card">
+                <img src="${u.profile_picture}">
                 <span>${u.display_name || u.email}</span>
             </div>
-        `).join('') || '<span style="font-size:11px; opacity:0.5">No recent edits recorded.</span>';
+        `).join('') || '<span style="font-size:11px; opacity:0.5">No entries found.</span>';
+        document.getElementById('log-list').innerHTML = logHtml;
         
         attachImageLogic();
     }
 
     async function saveWiki() {
-        const content = document.getElementById('visual-editor').innerHTML;
+        const content = visual.innerHTML;
         await fetch(`${API}/wiki/save`, {
             method: 'POST',
             body: JSON.stringify({ id: wikiId, content, user: localStorage.getItem('ada_user_email') })
         });
-        alert("Sector Synchronized.");
+        alert("Sector Synced.");
         loadWiki();
     }
 
