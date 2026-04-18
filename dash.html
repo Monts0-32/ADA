@@ -21,10 +21,14 @@
         .msg.me { background: #238636; color: white; align-self: flex-end; }
         .chat-input-area { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
         input#chat-input { flex: 1; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; color: white; padding: 8px; outline: none; }
-        .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 12px; text-decoration: none; text-align: center; display: block; }
+        .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 12px; text-decoration: none; text-align: center; }
         .btn-green { background: var(--btn-green); border: none; width: 100%; }
         .btn-disabled { background-color: #21262d !important; color: #8b949e !important; cursor: not-allowed !important; }
-        .admin-only { display: none; }
+
+        /* USER PILL */
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 3px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
+        .user-pill:hover { border-color: #8b949e; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
     </style>
 </head>
 <body>
@@ -32,48 +36,47 @@
 <header>
     <div style="display:flex; align-items:center; gap:20px;">
         <a href="/" class="logo">ADA Archive</a>
-        <div id="admin-tools" style="display:none; gap:10px;">
+        <div id="admin-tools" style="display:none; gap:8px;">
             <a href="/account-creator.html" class="btn">Account Creator</a>
             <a href="/account-manager.html" class="btn">Account Manager</a>
         </div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
-        <span id="user-pill" style="font-size:12px; border:1px solid var(--border); padding:2px 8px; border-radius:10px;"></span>
+        <a href="/profile.html" class="user-pill">
+            <img id="pill-avatar" src="https://via.placeholder.com/20" alt="">
+            <span id="pill-name">Loading...</span>
+        </a>
         <button class="btn" onclick="logout()">Logout</button>
     </div>
 </header>
 
 <div class="container">
     <div class="gallery">
-        <h2>Archive Content</h2>
+        <h2>Archive Partitions</h2>
         <div class="grid">
-            <!-- Partition 1 (Wiki Selector) -->
             <div class="card">
                 <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-                <img src="https://via.placeholder.com/200x120?text=Archives" alt="1">
+                <img src="https://via.placeholder.com/200x120?text=Wikis" alt="1">
                 <h3>Wiki Records</h3>
                 <button class="btn btn-green" id="nav-page1" onclick="navTo('wikiselector')">Access Selector</button>
-                <button class="btn admin-only" style="margin-top:8px; width:100%;" onclick="toggleLock('page1')">Toggle Lock</button>
+                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
             </div>
-            <!-- Partition 2 -->
             <div class="card">
                 <span class="lock-badge" id="lock-page2">🔒 Locked</span>
                 <img src="https://via.placeholder.com/200x120?text=Docs" alt="2">
                 <h3>Document Leak</h3>
                 <button class="btn btn-green" id="nav-page2" onclick="navTo('page2')">Read Docs</button>
-                <button class="btn admin-only" style="margin-top:8px; width:100%;" onclick="toggleLock('page2')">Toggle Lock</button>
+                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page2')">Toggle Lock</button>
             </div>
-            <!-- Partition 3 -->
             <div class="card">
                 <span class="lock-badge" id="lock-page3">🔒 Locked</span>
                 <img src="https://via.placeholder.com/200x120?text=Core" alt="3">
                 <h3>System Core</h3>
                 <button class="btn btn-green" id="nav-page3" onclick="navTo('page3')">Access Core</button>
-                <button class="btn admin-only" style="margin-top:8px; width:100%;" onclick="toggleLock('page3')">Toggle Lock</button>
+                <button class="btn admin-only" style="margin-top:8px; display:none; width:100%" onclick="toggleLock('page3')">Toggle Lock</button>
             </div>
         </div>
     </div>
-
     <div class="chat-panel">
         <div id="chat-messages"></div>
         <form class="chat-input-area" onsubmit="event.preventDefault(); sendMessage();">
@@ -89,39 +92,41 @@
     const isAdmin = localStorage.getItem('ada_admin') === '1';
 
     if (!email) window.location.href = '/login.html';
-    document.getElementById('user-pill').innerText = email;
-
-    if (isAdmin) {
-        document.getElementById('admin-tools').style.display = 'flex';
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-    }
 
     async function loadData() {
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         
+        // Check Blocks
         const path = window.location.pathname.split("/").pop() || "index.html";
-        if (data.blocks.includes(path) || data.blocks.includes("ALL")) {
-            window.location.href = "/blocked.html"; return;
+        if (data.blocks.includes(path) || data.blocks.includes("ALL")) window.location.href = "/blocked.html";
+
+        // Update Pill
+        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+        if(data.user.profile_picture) document.getElementById('pill-avatar').src = data.user.profile_picture;
+
+        if (isAdmin) {
+            document.getElementById('admin-tools').style.display = 'flex';
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         }
 
+        // Render Chat
         document.getElementById('chat-messages').innerHTML = data.messages.map(m => `
             <div class="msg ${m.user_email === email ? 'me' : 'other'}">
                 <span style="font-size:9px; opacity:0.6; display:block;">${m.user_email}</span>
                 ${m.content}
             </div>`).join('');
 
+        // Render Locks
         data.locks.forEach(l => {
             const badge = document.getElementById(`lock-${l.page_id}`);
             const navBtn = document.getElementById(`nav-${l.page_id}`);
             if (badge) badge.style.display = l.is_locked ? 'block' : 'none';
             if (navBtn) {
                 if (l.is_locked) {
-                    navBtn.classList.add('btn-disabled');
-                    navBtn.innerText = "Locked";
-                    navBtn.onclick = null;
+                    navBtn.classList.add('btn-disabled'); navBtn.innerText = "Locked"; navBtn.onclick = null;
                 } else {
-                    navBtn.classList.remove('btn-disabled');
+                    navBtn.classList.remove('btn-disabled'); 
                     navBtn.onclick = () => navTo(l.page_id === 'page1' ? 'wikiselector' : l.page_id);
                     navBtn.innerText = l.page_id === 'page1' ? "Access Selector" : l.page_id === 'page2' ? "Read Docs" : "Access Core";
                 }
@@ -133,8 +138,7 @@
         const input = document.getElementById('chat-input');
         if (!input.value) return;
         await fetch(`${API}/chat`, { method: 'POST', body: JSON.stringify({ email, content: input.value }) });
-        input.value = '';
-        loadData();
+        input.value = ''; loadData();
     }
 
     async function toggleLock(pageId) {
@@ -142,10 +146,9 @@
         loadData();
     }
 
-    function navTo(page) { window.location.href = `/${page}.html`; }
+    function navTo(p) { window.location.href = `/${p}.html`; }
     function logout() { localStorage.clear(); window.location.href = '/login.html'; }
-    setInterval(loadData, 3000);
-    loadData();
+    setInterval(loadData, 3000); loadData();
 </script>
 </body>
 </html>
