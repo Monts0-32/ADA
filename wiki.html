@@ -9,37 +9,51 @@
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; }
         .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 6px; position: sticky; top: 0; z-index: 1000; flex-wrap: wrap; align-items: center; }
-        .toolbar button, .toolbar label, .toolbar input[type="color"] { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; height: 32px; box-sizing: border-box; }
+        .toolbar button, .toolbar label, .toolbar select, .toolbar input[type="color"] { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; height: 32px; box-sizing: border-box; }
         .toolbar button:hover { background: #30363d; }
         .editor-wrap { max-width: 1100px; margin: 40px auto; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; position: relative; min-height: 85vh; }
-        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; overflow: visible; }
+        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; }
         #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; resize: none; outline: none; box-sizing: border-box; }
         .ada-img { position: absolute; cursor: move; border: 2px solid transparent; user-select: none; display: inline-block; min-width: 50px; min-height: 50px; }
         .ada-img.active { border-color: #58a6ff; z-index: 100; resize: both; overflow: auto; }
         .status-bar { max-width: 1100px; margin: 10px auto; font-size: 12px; color: #8b949e; display: flex; justify-content: space-between; padding: 0 10px; }
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; }
-        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/wikiselector.html" class="logo">ADA Archive System</a>
+    <a href="/wikiselector.html" class="logo">ADA Wiki System</a>
     <div id="user-info" style="font-size: 11px; opacity: 0.7;"></div>
 </header>
 
 <div class="toolbar">
-    <button onclick="exec('bold')">B</button><button onclick="exec('italic')">I</button><button onclick="exec('underline')">U</button>
+    <!-- NEW: Heading Selector -->
+    <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
+        <option value="" selected disabled>Heading</option>
+        <option value="H1">Title (H1)</option>
+        <option value="H2">Header (H2)</option>
+        <option value="H3">Sub-header (H3)</option>
+        <option value="P">Paragraph (P)</option>
+    </select>
+
+    <button onclick="exec('bold')">B</button>
+    <button onclick="exec('italic')">I</button>
     <input type="color" onchange="exec('foreColor', this.value)">
     <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
-    <button onclick="exec('justifyLeft')">L</button><button onclick="exec('justifyCenter')">C</button><button onclick="exec('justifyRight')">R</button>
+    <button onclick="exec('justifyLeft')">L</button>
+    <button onclick="exec('justifyCenter')">C</button>
+    <button onclick="exec('justifyRight')">R</button>
     <label for="img-upload">🖼 Upload</label>
-    <input type="file" id="img-upload" accept="image/*" onchange="uploadImage(this)">
+    <input type="file" id="img-upload" accept="image/*" onchange="uploadImage(this)" style="display:none">
     <button onclick="toggleSource()" id="toggle-btn">Source</button>
-    <button class="btn-save" onclick="saveWiki()">Save</button>
+    <button class="btn-save" onclick="saveWiki()">Save Partition</button>
 </div>
 
-<div class="status-bar"><span id="partition-id">Loading...</span><span id="last-edited"></span></div>
+<div class="status-bar">
+    <span id="partition-id">...</span>
+    <span id="last-edited"></span>
+</div>
 
 <div class="editor-wrap">
     <div id="visual-editor" contenteditable="true"></div>
@@ -50,7 +64,7 @@
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const userEmail = localStorage.getItem('ada_user_email');
     const urlParams = new URLSearchParams(window.location.search);
-    const wikiId = urlParams.get('id') || 'wiki1';
+    const wikiId = urlParams.get('id') || 'wiki1'; // ID ensures no overriding
 
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
@@ -58,20 +72,15 @@
 
     if (!userEmail) window.location.href = '/login.html';
     document.getElementById('user-info').innerText = userEmail;
-    document.getElementById('partition-id').innerText = `Partition: ${wikiId.toUpperCase()}`;
+    document.getElementById('partition-id').innerText = `ID: ${wikiId.toUpperCase()}`;
 
     async function loadWiki() {
-        try {
-            const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
-            if (!res.ok) throw new Error("Load failed");
-            const data = await res.json();
-            visual.innerHTML = data.content;
-            source.value = data.content;
-            document.getElementById('last-edited').innerText = `Updated by: ${data.last_user}`;
-            attachImageLogic();
-        } catch (e) {
-            alert("Error loading wiki. Check Worker connection.");
-        }
+        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
+        const data = await res.json();
+        visual.innerHTML = data.content;
+        source.value = data.content;
+        document.getElementById('last-edited').innerText = `Updated by: ${data.last_user}`;
+        attachImageLogic();
     }
 
     function toggleSource() {
@@ -79,12 +88,10 @@
             source.value = visual.innerHTML;
             visual.style.display = 'none';
             source.style.display = 'block';
-            document.getElementById('toggle-btn').innerText = "Visual";
         } else {
             visual.innerHTML = source.value;
             visual.style.display = 'block';
             source.style.display = 'none';
-            document.getElementById('toggle-btn').innerText = "Source";
             attachImageLogic();
         }
         isSource = !isSource;
@@ -132,19 +139,16 @@
         }
     };
     window.onmouseup = function() { isDragging = false; };
-    visual.onclick = function(e) { if (e.target === visual) { visual.querySelectorAll('.ada-img').forEach(i => i.classList.remove('active')); activeImg = null; } };
 
     async function saveWiki() {
         const content = isSource ? source.value : visual.innerHTML;
-        try {
-            await fetch(`${API}/wiki/save`, {
-                method: 'POST',
-                body: JSON.stringify({ id: wikiId, content, user: userEmail }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            alert("Archive Saved.");
-            loadWiki();
-        } catch (e) { alert("Save failed."); }
+        await fetch(`${API}/wiki/save`, {
+            method: 'POST',
+            body: JSON.stringify({ id: wikiId, content, user: userEmail }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        alert("Partition Saved.");
+        loadWiki();
     }
 
     loadWiki();
