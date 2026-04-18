@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | My Profile</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; display: flex; justify-content: center; padding-top: 50px; }
+        .box { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 30px; width: 400px; text-align: center; }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background: #0d1117; border: 1px solid var(--border); margin-bottom: 20px; }
+        input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        a { color: #58a6ff; text-decoration: none; font-size: 13px; margin-top: 15px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <img id="view-pic" class="avatar" src="https://via.placeholder.com/100">
+        <h3>User Identity Profile</h3>
+        <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px;">Display Name</label>
+        <input type="text" id="display-name" placeholder="Anonymous Archive User">
+        <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px;">Avatar URL</label>
+        <input type="text" id="pic-url" placeholder="https://...">
+        <button class="btn" onclick="saveProfile()">Update Record</button>
+        <a href="/dash.html">← Back to Archive Dashboard</a>
+    </div>
+
+    <script>
+        const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+        const email = localStorage.getItem('ada_user_email');
+
+        async function loadProfile() {
+            const res = await fetch(`${API}/sync?email=${email}`);
+            const data = await res.json();
+            if(data.user.display_name) document.getElementById('display-name').value = data.user.display_name;
+            if(data.user.profile_picture) {
+                document.getElementById('pic-url').value = data.user.profile_picture;
+                document.getElementById('view-pic').src = data.user.profile_picture;
+            }
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('display-name').value;
+            const pic = document.getElementById('pic-url').value;
+            await fetch(`${API}/profile/save`, {
+                method: 'POST',
+                body: JSON.stringify({ email, name, pic })
+            });
+            alert('Profile metadata updated.');
+            location.reload();
+        }
+        loadProfile();
+    </script>
+</body>
+</html>
