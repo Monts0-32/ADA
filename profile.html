@@ -4,94 +4,85 @@
     <meta charset="UTF-8">
     <title>ADA | Profile</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; transition: 0.3s; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
+        
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; min-height: 100vh; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .container { max-width: 1000px; margin: 40px auto; display: grid; grid-template-columns: 280px 1fr; gap: 30px; padding: 0 20px; }
-        
-        /* Sidebar Styling */
-        .sidebar { display: flex; flex-direction: column; gap: 20px; }
-        .avatar-lg { width: 280px; height: 280px; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
-        .search-box { background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 6px; }
-        .search-box input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 4px; box-sizing: border-box; }
-        
-        /* Badge Corner */
-        .badge-corner { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
-        .badge-admin { background: #d29922; color: black; }
 
-        /* Main Content Area */
-        .main-profile { background: rgba(22, 27, 34, 0.5); border: 1px solid var(--border); border-radius: 6px; padding: 30px; position: relative; }
-        #bio-display { line-height: 1.6; min-height: 100px; }
+        .container { max-width: 1100px; margin: 40px auto; display: grid; grid-template-columns: 300px 1fr; gap: 40px; padding: 0 20px; }
         
-        /* Editor Tools */
-        .editor-tools { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; display: none; }
-        .tool-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .tool-row input, .tool-row button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 4px; }
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .avatar-main { width: 300px; height: 300px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
         
-        #bio-editor { width: 100%; min-height: 200px; background: #0d1117; border: 1px solid var(--border); padding: 15px; border-radius: 6px; outline: none; margin-bottom: 10px; }
-        #bio-source { width: 100%; min-height: 200px; background: #0d1117; color: var(--blue); font-family: monospace; display: none; }
+        /* Styled Search & Edit Buttons */
+        .action-box { background: #161b22; border: 1px solid var(--border); padding: 20px; border-radius: 8px; }
+        .btn-github { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.2s; }
+        .btn-github:hover { background: #30363d; border-color: #8b949e; }
+        .btn-primary { background: var(--btn-green); border: none; }
+        .btn-primary:hover { background: #2ea043; }
+
+        .search-input { width: 100%; padding: 8px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; outline: none; }
+
+        /* Bio/Content Area */
+        .bio-area { background: rgba(22,27,34,0.7); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 400px; position: relative; }
         
-        .btn-save { background: var(--btn-green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        /* Image Logic (Same as Wiki) */
+        .img-container { position: absolute; display: inline-block; cursor: move; line-height: 0; border: 2px solid transparent; }
+        .img-container.active { border-color: var(--blue); }
+        .resize-handle { position: absolute; width: 10px; height: 10px; background: var(--blue); bottom: -5px; right: -5px; cursor: nwse-resize; display: none; }
+        .delete-btn { position: absolute; width: 18px; height: 18px; background: var(--red); color: white; top: -9px; right: -9px; cursor: pointer; display: none; border-radius: 50%; font-size: 11px; align-items: center; justify-content: center; }
+        .img-container.active .resize-handle, .img-container.active .delete-btn { display: flex; }
+
+        .editor-tools { display: none; flex-direction: column; gap: 15px; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+        #bio-editor { width: 100%; min-height: 300px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 20px; outline: none; position: relative; }
     </style>
 </head>
-<body id="profile-body">
+<body id="p-body">
 
 <header>
-    <a href="/dash.html" style="color:var(--blue); text-decoration:none;">← Archive Dashboard</a>
-    <div id="mode-label" style="font-weight:bold; font-size:14px;">Public Record</div>
+    <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive Dashboard</a>
+    <div style="font-size:14px; font-weight:bold;" id="header-label">Identity Profile</div>
 </header>
 
 <div class="container">
     <div class="sidebar">
-        <img id="view-pic" class="avatar-lg" src="">
-        <h2 id="view-name" style="margin: 10px 0 0 0;"></h2>
-        <div id="view-email" style="color:#8b949e; font-size:14px; margin-bottom:10px;"></div>
-        
-        <div class="badge-corner" id="badge-list"></div>
+        <img id="profile-pic" class="avatar-main" src="">
+        <h2 id="display-name" style="margin:0;"></h2>
+        <div id="email-label" style="color:#8b949e; font-size:14px;"></div>
 
-        <div class="search-box">
-            <div style="font-size:12px; margin-bottom:8px; font-weight:bold; color:#8b949e;">LOCATE IDENTITY</div>
-            <input type="text" id="search-email" placeholder="Search email...">
-            <button onclick="searchUser()" style="width:100%; margin-top:8px; cursor:pointer;">Search Database</button>
+        <div class="action-box">
+            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:8px;">LOCATE IDENTITY</div>
+            <input type="text" id="search-q" class="search-input" placeholder="User email...">
+            <button class="btn-github" onclick="search()">Search Database</button>
         </div>
-        
-        <button id="edit-btn" onclick="toggleEdit()" style="display:none; cursor:pointer;">Edit My Profile</button>
+
+        <button id="edit-mode-btn" class="btn-github" style="display:none;" onclick="toggleEdit()">Edit My Profile</button>
     </div>
 
-    <div class="main-profile">
-        <div id="bio-display"></div>
+    <div class="bio-area">
+        <div id="bio-view"></div>
 
-        <div id="editor" class="editor-tools">
-            <h3>Identity Editor</h3>
+        <div id="editor-ui" class="editor-tools">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label style="font-size:12px;">Display Name</label>
+                    <input type="text" id="in-name" class="search-input">
+                </div>
+                <div>
+                    <label style="font-size:12px;">Background (Hex or Gradient)</label>
+                    <input type="text" id="in-bg" class="search-input" placeholder="#0d1117 or linear-gradient(...)">
+                </div>
+            </div>
             
-            <div class="tool-row">
-                <label>Display Name:</label>
-                <input type="text" id="in-name">
-                <label>Avatar URL:</label>
-                <input type="text" id="in-pic">
-                <button onclick="triggerUpload()">Upload Image</button>
-                <input type="file" id="file-in" hidden onchange="handleFile(this)">
-            </div>
-
-            <div class="tool-row">
-                <label>Background Color/Gradient:</label>
-                <input type="text" id="in-bg" placeholder="#0d1117 or linear-gradient(...)">
-                <label>Text Color:</label>
-                <input type="color" id="in-color">
-            </div>
-
-            <div class="tool-row">
-                <button onclick="exec('bold')">B</button>
-                <button onclick="exec('italic')">I</button>
-                <button onclick="toggleBioSource()">HTML Source</button>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn-github" onclick="document.getElementById('file-up').click()">Upload Profile Image</button>
+                <input type="file" id="file-up" hidden onchange="handleImgUpload(this)">
+                <button class="btn-github" onclick="document.getElementById('file-bio').click()">Add Bio Image</button>
+                <input type="file" id="file-bio" hidden onchange="uploadBioImg(this)">
             </div>
 
             <div id="bio-editor" contenteditable="true"></div>
-            <textarea id="bio-source"></textarea>
-
-            <button class="btn-save" onclick="saveProfile()">Synchronize Profile Record</button>
+            <button class="btn-github btn-primary" onclick="save()">Save Identity Record</button>
         </div>
     </div>
 </div>
@@ -102,99 +93,94 @@
     const params = new URLSearchParams(window.location.search);
     const targetEmail = params.get('email') || myEmail;
 
-    let isEditing = false;
-
-    async function loadProfile() {
+    async function load() {
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(targetEmail)}`);
         const data = await res.json();
-        const user = data.user;
+        const u = data.user;
 
-        // Apply Custom Styling
-        document.getElementById('profile-body').style.background = user.bg_style || '#0d1117';
-        document.getElementById('profile-body').style.color = user.text_color || '#c9d1d9';
+        document.getElementById('p-body').style.background = u.bg_style || "#0d1117";
+        document.getElementById('profile-pic').src = u.profile_picture;
+        document.getElementById('display-name').innerText = u.display_name || u.email;
+        document.getElementById('email-label').innerText = u.email;
+        document.getElementById('bio-view').innerHTML = u.bio_html || "No bio data.";
 
-        // Set View
-        document.getElementById('view-pic').src = user.profile_picture;
-        document.getElementById('view-name').innerText = user.display_name || user.email;
-        document.getElementById('view-email').innerText = user.email;
-        document.getElementById('bio-display').innerHTML = user.bio_html || '<p style="opacity:0.5">No biographical data found for this entity.</p>';
-
-        // Badges
-        const badges = document.getElementById('badge-list');
-        badges.innerHTML = '';
-        if(user.is_admin) badges.innerHTML += `<div class="badge badge-admin">ADMIN</div>`;
-        data.badges.forEach(b => {
-            badges.innerHTML += `<div class="badge" style="background:${b.badge_color}">${b.badge_name}</div>`;
-        });
-
-        // Toggle Editor permission
         if(targetEmail === myEmail) {
-            document.getElementById('edit-btn').style.display = 'block';
-            document.getElementById('mode-label').innerText = "My Profile Control";
-            
-            // Prefill editor
-            document.getElementById('in-name').value = user.display_name || "";
-            document.getElementById('in-pic').value = user.profile_picture || "";
-            document.getElementById('in-bg').value = user.bg_style || "";
-            document.getElementById('in-color').value = user.text_color || "#c9d1d9";
-            document.getElementById('bio-editor').innerHTML = user.bio_html || "";
+            document.getElementById('edit-mode-btn').style.display = 'block';
+            document.getElementById('in-name').value = u.display_name || "";
+            document.getElementById('in-bg').value = u.bg_style || "";
+            document.getElementById('bio-editor').innerHTML = u.bio_html || "";
+            attachImageLogic();
         }
     }
 
     function toggleEdit() {
-        isEditing = !isEditing;
-        document.getElementById('editor').style.display = isEditing ? 'block' : 'none';
-        document.getElementById('bio-display').style.display = isEditing ? 'none' : 'block';
+        const ui = document.getElementById('editor-ui');
+        const view = document.getElementById('bio-view');
+        const active = ui.style.display === 'flex';
+        ui.style.display = active ? 'none' : 'flex';
+        view.style.display = active ? 'block' : 'none';
     }
 
-    function triggerUpload() { document.getElementById('file-in').click(); }
-    
-    function handleFile(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('in-pic').value = e.target.result;
-                document.getElementById('view-pic').src = e.target.result;
-            };
-            reader.readAsDataURL(input.files[0]);
+    function handleImgUpload(input) {
+        if (input.files[0]) {
+            const r = new FileReader();
+            r.onload = (e) => { document.getElementById('profile-pic').src = e.target.result; };
+            r.readAsDataURL(input.files[0]);
         }
     }
 
-    function searchUser() {
-        const email = document.getElementById('search-email').value;
-        if(email) window.location.href = `/profile.html?email=${encodeURIComponent(email)}`;
+    function uploadBioImg(input) {
+        if (input.files[0]) {
+            const r = new FileReader();
+            r.onload = (e) => {
+                const c = document.createElement('div');
+                c.className = 'img-container';
+                c.style.left = '10px'; c.style.top = '10px'; c.style.width = '150px';
+                c.innerHTML = `<img src="${e.target.result}"><div class="resize-handle"></div><div class="delete-btn">×</div>`;
+                document.getElementById('bio-editor').appendChild(c);
+                attachImageLogic();
+            };
+            r.readAsDataURL(input.files[0]);
+        }
     }
 
-    async function saveProfile() {
-        const isS = document.getElementById('bio-source').style.display === 'block';
+    function attachImageLogic() {
+        document.querySelectorAll('.img-container').forEach(el => {
+            el.onmousedown = (e) => {
+                if (e.target.className === 'delete-btn') { el.remove(); return; }
+                document.querySelectorAll('.img-container').forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+                let resizing = e.target.className === 'resize-handle';
+                let sX = e.clientX, sY = e.clientY, sW = el.offsetWidth, sH = el.offsetHeight, sL = el.offsetLeft, sT = el.offsetTop;
+                document.onmousemove = (me) => {
+                    if (resizing) { el.style.width = (sW + (me.clientX - sX)) + 'px'; el.style.height = (sH + (me.clientY - sY)) + 'px'; }
+                    else { el.style.left = (sL + (me.clientX - sX)) + 'px'; el.style.top = (sT + (me.clientY - sY)) + 'px'; }
+                };
+                document.onmouseup = () => document.onmousemove = null;
+            };
+        });
+    }
+
+    async function save() {
+        document.querySelectorAll('.img-container').forEach(el => el.classList.remove('active'));
         const payload = {
             email: myEmail,
             name: document.getElementById('in-name').value,
-            pic: document.getElementById('in-pic').value,
+            pic: document.getElementById('profile-pic').src,
             bg: document.getElementById('in-bg').value,
-            color: document.getElementById('in-color').value,
-            bio: isS ? document.getElementById('bio-source').value : document.getElementById('bio-editor').innerHTML
+            bio: document.getElementById('bio-editor').innerHTML,
+            color: "#c9d1d9"
         };
-
-        await fetch(`${API}/profile/save`, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        alert("Identity Record Updated.");
+        await fetch(`${API}/profile/save`, { method: 'POST', body: JSON.stringify(payload) });
         location.reload();
     }
 
-    function toggleBioSource() {
-        const edit = document.getElementById('bio-editor');
-        const source = document.getElementById('bio-source');
-        const isS = source.style.display === 'block';
-        if(!isS) { source.value = edit.innerHTML; edit.style.display='none'; source.style.display='block'; }
-        else { edit.innerHTML = source.value; edit.style.display='block'; source.style.display='none'; }
+    function search() {
+        const q = document.getElementById('search-q').value;
+        if(q) window.location.href = `/profile.html?email=${encodeURIComponent(q)}`;
     }
 
-    function exec(c) { document.execCommand(c, false, null); }
-
-    loadProfile();
+    load();
 </script>
 </body>
 </html>
