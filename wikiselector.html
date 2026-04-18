@@ -43,7 +43,24 @@
         <!-- Cards loaded via JS -->
     </div>
 </div>
+<script>
+    async function loadWiki() {
+        const sync = await fetch(`${API}/sync?email=${encodeURIComponent(userEmail)}`);
+        const sData = await sync.json();
 
+    // Security Gate
+        const hasAccess = sData.user.is_admin || sData.permissions.includes('wiki_access');
+        if(!hasAccess || sData.blocks.includes('wiki.html') || sData.blocks.includes('ALL')) {
+            window.location.href = '/blocked.html'; return;
+        }
+
+    // Load Content
+        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
+        const data = await res.json();
+        visual.innerHTML = data.content;
+        source.value = data.content;
+    }
+</script>
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const user = localStorage.getItem('ada_user_email');
