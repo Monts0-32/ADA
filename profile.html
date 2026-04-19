@@ -5,38 +5,56 @@
     <title>ADA | Identity Profile</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; min-height: 100vh; }
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* THEMED SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
-        .container { max-width: 1100px; margin: 40px auto; display: grid; grid-template-columns: 320px 1fr; gap: 40px; padding: 0 20px; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; min-height: 100vh; overflow-x: hidden; transition: background 0.3s; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 1100; }
+
+        .container { max-width: 1200px; margin: 40px auto; display: grid; grid-template-columns: 320px 1fr; gap: 40px; padding: 0 20px; }
+        
+        /* SIDEBAR & SEARCH */
         .sidebar { display: flex; flex-direction: column; gap: 20px; }
         .avatar-lg { width: 320px; height: 320px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
         
-        /* Smart Search */
-        .search-container { position: relative; width: 100%; }
-        .suggestions { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1000; display: none; margin-top: 5px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .search-wrap { position: relative; background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 8px; }
+        .suggest-box { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1000; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         .suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
         .suggest-item:hover { background: #21262d; }
-        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; }
+        .suggest-item img { width: 28px; height: 28px; border-radius: 50%; }
 
-        /* Badges */
-        .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 5px; color: white; border: 1px solid rgba(255,255,255,0.1); }
+        /* BUTTON STYLING */
+        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .btn-gh:hover { background: #30363d; border-color: #8b949e; }
+        .btn-primary { background: var(--btn-green); border: none; }
+        .btn-primary:hover { background: #2ea043; }
 
-        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; margin-top: 5px; }
-        .btn-red { border-color: var(--red); color: var(--red); }
+        /* BIO DISPLAY & EDITOR */
+        .bio-container { background: rgba(22, 27, 34, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 600px; position: relative; backdrop-filter: blur(10px); }
         
-        .bio-area { background: rgba(22,27,34,0.7); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 500px; position: relative; }
-        #bio-editor, #bio-raw { width: 100%; min-height: 400px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 20px; outline: none; margin-top: 15px; display: none; }
+        .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+        .toolbar select, .toolbar button, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
+
+        #bio-edit { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; }
+        #bio-raw { width: 100%; min-height: 450px; background: #0d1117; color: #79c0ff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: monospace; display: none; outline: none; }
+
+        /* IMAGE ENGINE */
+        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; }
+        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; }
+        .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); z-index: 100; }
         
-        .img-wrapper { position: absolute; cursor: move; border: 2px solid transparent; }
-        .img-wrapper.active { border-color: var(--blue); }
-        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; display: none; border-radius: 50%; }
-        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; top: -10px; right: -10px; cursor: pointer; display: none; border-radius: 50%; align-items: center; justify-content: center; font-size: 12px; border: 2px solid var(--bg); }
+        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); }
+        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); }
         .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
+
+        .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
     </style>
 </head>
-<body id="main-body">
+<body id="p-body">
     <div id="ada-chat-widget">
         <div id="chat-window">
             <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
@@ -141,125 +159,110 @@
     </script>
 <header>
     <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive Dashboard</a>
-    <div style="font-weight:bold;" id="status-label">Identity Profile</div>
+    <div style="font-weight:bold;">Identity Record</div>
 </header>
 
-<div class="container" id="profile-wrap">
+<div class="container">
     <div class="sidebar">
-        <img id="view-pic" class="avatar-lg" src="">
-        <h2 id="view-name" style="margin:0;"></h2>
-        <div id="view-email" style="color:#8b949e; font-size:14px;"></div>
+        <img id="avatar-view" class="avatar-lg" src="">
+        <h2 id="name-view" style="margin:10px 0 0 0;"></h2>
+        <div id="email-view" style="color:#8b949e; font-size:14px;"></div>
+        
+        <div class="badge-list" id="badges-view"></div>
 
-        <div class="badge-row" id="view-badges"></div>
-
-        <div class="search-container">
-            <input type="text" id="search-box" class="btn-gh" style="text-align:left; cursor:text;" placeholder="Search email or name..." oninput="doSuggest(this.value)">
-            <div id="suggest-list" class="suggestions"></div>
-        </div>
-
-        <div id="admin-actions" style="display:none; border-top: 1px solid var(--border); padding-top:15px; margin-top:10px;">
-            <div style="font-size:11px; font-weight:bold; color:var(--red); margin-bottom:10px;">ADMINISTRATIVE CONTROLS</div>
-            <button id="toggle-disabled-btn" class="btn-gh btn-red" onclick="toggleProfileStatus()">Disable Profile Access</button>
+        <div class="search-wrap">
+            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px;">LOCATE IDENTITY</div>
+            <input type="text" id="sq" class="btn-gh" style="text-align:left; cursor:text;" placeholder="Search names or emails..." oninput="doSuggest(this.value)">
+            <div id="suggest" class="suggest-box"></div>
+            <button class="btn-gh btn-primary" style="margin-top:10px;" onclick="search()">Search Database</button>
         </div>
 
         <button id="edit-btn" class="btn-gh" style="display:none; border-color:var(--blue); color:var(--blue);" onclick="toggleEdit()">Edit My Profile</button>
     </div>
 
-    <div class="bio-area">
+    <div class="bio-container">
         <div id="bio-display"></div>
 
-        <div id="editor-ui" style="display:none; flex-direction:column; gap:15px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <!-- EDITOR UI -->
+        <div id="editor-ui" style="display:none; flex-direction:column;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
                 <input type="text" id="in-name" class="btn-gh" style="text-align:left;" placeholder="Display Name">
-                <input type="text" id="in-bg" class="btn-gh" style="text-align:left;" placeholder="Hex or linear-gradient">
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="in-bg" class="btn-gh" style="text-align:left; flex:1" placeholder="Background Hex or linear-gradient">
+                    <input type="color" style="height:38px; margin-top:10px;" onchange="document.getElementById('in-bg').value=this.value">
+                </div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-gh" onclick="document.getElementById('f-pic').click()">Change Avatar</button>
-                <button class="btn-gh" onclick="document.getElementById('f-bio').click()">Add Image to Bio</button>
-                <button class="btn-gh" onclick="toggleSource()" id="st-btn">HTML Source</button>
-            </div>
-            <input type="file" id="f-pic" hidden onchange="upAvatar(this)">
-            <input type="file" id="f-bio" hidden onchange="upBio(this)">
 
-            <div id="bio-editor" contenteditable="true" style="display:block"></div>
+            <div class="toolbar">
+                <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
+                    <option value="" disabled selected>Heading</option>
+                    <option value="H1">Title (H1)</option>
+                    <option value="H2">Header (H2)</option>
+                    <option value="P">Text (P)</option>
+                </select>
+                <button onclick="exec('bold')"><b>B</b></button>
+                <button onclick="exec('italic')"><i>I</i></button>
+                <button onclick="exec('underline')"><u>U</u></button>
+                <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
+                <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
+                <button onclick="document.getElementById('f-pic').click()">Change Avatar</button>
+                <button onclick="document.getElementById('f-bio').click()">Add Image</button>
+                <button onclick="toggleSource()" id="src-btn">Source Code</button>
+            </div>
+            
+            <input type="file" id="f-pic" hidden onchange="upAvatar(this)">
+            <input type="file" id="f-bio" hidden onchange="upBioImg(this)">
+
+            <div id="bio-edit" contenteditable="true"></div>
             <textarea id="bio-raw"></textarea>
 
-            <button class="btn-gh" style="background:var(--btn-green); border:none;" onclick="save()">Save Identity Changes</button>
+            <button class="btn-gh btn-primary" style="margin-top:20px; padding:15px;" onclick="save()">Save Identity Changes</button>
         </div>
     </div>
-</div>
-
-<div id="disabled-screen" style="display:none; padding:100px; text-align:center;">
-    <h1 style="color:var(--red)">ACCESS RESTRICTED</h1>
-    <p>This identity record has been disabled by a system administrator.</p>
-    <a href="/dash.html" style="color:var(--blue)">Return to Archive</a>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const myEmail = localStorage.getItem('ada_user_email');
     const params = new URLSearchParams(window.location.search);
-    const targetEmail = params.get('email') || myEmail;
+    const target = params.get('email') || myEmail;
     let isSrc = false;
-    let profileData = null;
 
     async function load() {
-        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(targetEmail)}&by=${myEmail}`);
+        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
+        if(d.disabled) { document.body.innerHTML="<h1 style='color:red; text-align:center; padding:100px;'>ACCESS RESTRICTED</h1>"; return; }
+        
+        const u = d.user;
+        document.getElementById('p-body').style.background = u.bg_style || "#0d1117";
+        document.getElementById('avatar-view').src = u.profile_picture;
+        document.getElementById('name-view').innerText = u.display_name || u.email;
+        document.getElementById('email-view').innerText = u.email;
+        document.getElementById('bio-display').innerHTML = u.bio_html || "This record is currently empty.";
 
-        if (d.disabled) {
-            document.getElementById('profile-wrap').style.display = 'none';
-            document.getElementById('disabled-screen').style.display = 'block';
-            return;
-        }
+        // Badges
+        const br = document.getElementById('badges-view');
+        br.innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
+        if(u.is_admin) br.innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
 
-        profileData = d.user;
-        document.getElementById('main-body').style.background = profileData.bg_style || "#0d1117";
-        document.getElementById('view-pic').src = profileData.profile_picture;
-        document.getElementById('view-name').innerText = profileData.display_name || profileData.email;
-        document.getElementById('view-email').innerText = profileData.email;
-        document.getElementById('bio-display').innerHTML = profileData.bio_html || "No public data recorded.";
-
-        // Render Badges
-        const br = document.getElementById('view-badges');
-        br.innerHTML = d.badges.map(b => `<div class="badge" style="background:${b.color}">${b.icon} ${b.name}</div>`).join('');
-        if(profileData.is_admin) br.innerHTML += `<div class="badge" style="background:#d29922; color:black;">🛡️ ADMIN</div>`;
-
-        // Admin Buttons
-        if (localStorage.getItem('ada_admin') === '1') {
-            document.getElementById('admin-actions').style.display = 'block';
-            const btn = document.getElementById('toggle-disabled-btn');
-            btn.innerText = profileData.profile_disabled ? "Enable Profile Access" : "Disable Profile Access";
-        }
-
-        if(targetEmail === myEmail) {
+        if(target === myEmail) {
             document.getElementById('edit-btn').style.display = 'block';
-            document.getElementById('in-name').value = profileData.display_name || "";
-            document.getElementById('in-bg').value = profileData.bg_style || "";
-            document.getElementById('bio-editor').innerHTML = profileData.bio_html || "";
+            document.getElementById('in-name').value = u.display_name || "";
+            document.getElementById('in-bg').value = u.bg_style || "";
+            document.getElementById('bio-edit').innerHTML = u.bio_html || "";
             attachLogic();
         }
     }
 
     async function doSuggest(q) {
-        if(q.length < 2) { document.getElementById('suggest-list').style.display='none'; return; }
-        const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
-        const items = await res.json();
-        const list = document.getElementById('suggest-list');
-        list.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
-        list.style.display = items.length ? 'block' : 'none';
+        if(q.length < 2) { document.getElementById('suggest').style.display='none'; return; }
+        const r = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
+        const items = await r.json();
+        const box = document.getElementById('suggest');
+        box.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
+        box.style.display = items.length ? 'block' : 'none';
     }
 
-    async function toggleProfileStatus() {
-        const newStatus = profileData.profile_disabled ? 0 : 1;
-        await fetch(`${API}/admin/profile/toggle-status`, {
-            method: 'POST',
-            body: JSON.stringify({ email: targetEmail, status: newStatus })
-        });
-        location.reload();
-    }
-
-    // Image logic and formatting functions remain the same as previous wiki version
     function toggleEdit() {
         const ui = document.getElementById('editor-ui');
         const view = document.getElementById('bio-display');
@@ -270,21 +273,21 @@
 
     function toggleSource() {
         isSrc = !isSrc;
-        const ed = document.getElementById('bio-editor'), raw = document.getElementById('bio-raw');
-        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; }
-        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; attachLogic(); }
+        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw');
+        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; document.getElementById('src-btn').innerText="Visual View"; }
+        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; document.getElementById('src-btn').innerText="Source Code"; attachLogic(); }
     }
 
-    function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('view-pic').src=e.target.result; r.readAsDataURL(i.files[0]); }}
+    function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('avatar-view').src=e.target.result; r.readAsDataURL(i.files[0]); }}
     
-    function upBio(i) {
+    function upBioImg(i) {
         if(i.files[0]){
             const r = new FileReader();
             r.onload=(e)=>{
                 const w = document.createElement('div');
-                w.className='img-wrapper'; w.style.width='150px'; w.style.left='10px'; w.style.top='10px';
+                w.className='img-wrapper'; w.style.width='200px'; w.style.left='10px'; w.style.top='10px';
                 w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
-                document.getElementById('bio-editor').appendChild(w);
+                document.getElementById('bio-edit').appendChild(w);
                 attachLogic();
             };
             r.readAsDataURL(i.files[0]);
@@ -297,28 +300,47 @@
                 if(e.target.className === 'remover') { w.remove(); return; }
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
-                let res = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sH = w.offsetHeight, sL = w.offsetLeft, sT = w.offsetTop;
-                function move(me) {
-                    if(res){ w.style.width = (sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
-                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
-                }
-                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
-                window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
+                
+                let resizing = e.target.className === 'resizer';
+                let sX = e.clientX, sY = e.clientY;
+                let sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
+
+                const move = (me) => {
+                    if(resizing){ 
+                        w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; 
+                        w.style.height = 'auto'; 
+                    }
+                    else { 
+                        w.style.left = (sL + (me.clientX - sX)) + 'px'; 
+                        w.style.top = (sT + (me.clientY - sY)) + 'px'; 
+                    }
+                };
+                const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', stop);
+                e.preventDefault();
             };
         });
     }
 
     async function save() {
+        // Clean UI handles before save
         document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
         const payload = {
-            email: myEmail, name: document.getElementById('in-name').value,
-            pic: document.getElementById('view-pic').src, bg: document.getElementById('in-bg').value,
-            bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-editor').innerHTML, color: "#c9d1d9"
+            email: myEmail,
+            name: document.getElementById('in-name').value,
+            pic: document.getElementById('avatar-view').src,
+            bg: document.getElementById('in-bg').value,
+            bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-edit').innerHTML,
+            color: "#c9d1d9"
         };
         await fetch(`${API}/profile/save`, { method: 'POST', body: JSON.stringify(payload) });
         location.reload();
     }
 
+    function search() { const q = document.getElementById('sq').value; if(q) location.href=`/profile.html?email=${encodeURIComponent(q)}`; }
+    function exec(c, v=null) { if(!isSrc){ document.execCommand(c, false, v); }}
+    
     load();
 </script>
 </body>
