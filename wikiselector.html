@@ -42,7 +42,108 @@
     </style>
 </head>
 <body>
-
+    <div id="ada-chat-widget">
+        <div id="chat-window">
+            <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
+            <div id="chat-body"></div>
+            <form id="chat-footer" onsubmit="event.preventDefault(); sendChatText();">
+                <input type="text" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
+                <button type="button" class="chat-btn" onclick="document.getElementById('chat-file').click()" title="Share Image">🖼️</button>
+                <input type="file" id="chat-file" hidden accept="image/*" onchange="uploadChatImg(this)">
+                <button type="submit" class="chat-btn btn-send">Send</button>
+            </form>
+        </div>
+        <div id="chat-icon" onclick="toggleChat()">💬<div id="chat-notif"></div></div>
+    </div>
+    
+    <style>
+        #ada-chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: -apple-system, sans-serif; }
+        #chat-icon { width: 56px; height: 56px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; }
+        #chat-notif { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
+        
+        /* Bigger Window */
+        #chat-window { width: 380px; height: 550px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        #chat-header { background: #21262d; padding: 14px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; }
+        #chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #0d1117; }
+        #chat-footer { padding: 12px; border-top: 1px solid #30363d; display: flex; gap: 8px; align-items: center; background: #161b22; }
+        #chat-msg-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 13px; }
+        
+        /* Styled Buttons */
+        .chat-btn { background: #21262d; border: 1px solid #30363d; color: white; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
+        .chat-btn:hover { background: #30363d; border-color: #8b949e; }
+        .btn-send { background: #238636; border: none; }
+        .btn-send:hover { background: #2ea043; }
+    
+        /* Message Bubbles with Avatars */
+        .chat-row { display: flex; gap: 10px; align-items: flex-end; max-width: 90%; }
+        .chat-row.me { flex-direction: row-reverse; align-self: flex-end; }
+        .chat-row img.chat-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #30363d; background: #0d1117; flex-shrink: 0; }
+        .chat-bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; word-wrap: break-word; position: relative; }
+        .chat-row.other .chat-bubble { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-bottom-left-radius: 2px; }
+        .chat-row.me .chat-bubble { background: #238636; color: white; border-bottom-right-radius: 2px; }
+        .chat-user-label { font-size: 9px; opacity: 0.5; display: block; margin-bottom: 2px; }
+    </style>
+    
+    <script>
+        const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
+        const myChatEmail = localStorage.getItem('ada_user_email');
+        let isChatOpen = false;
+        let lastChatId = 0;
+    
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            document.getElementById('chat-window').style.display = isChatOpen ? 'flex' : 'none';
+            if(isChatOpen) {
+                document.getElementById('chat-notif').style.display = 'none';
+                const body = document.getElementById('chat-body');
+                body.scrollTop = body.scrollHeight;
+            }
+        }
+    
+        async function syncWidget() {
+            if(!myChatEmail) return;
+            const res = await fetch(`${CHAT_API}/sync?email=${encodeURIComponent(myChatEmail)}`);
+            const data = await res.json();
+            
+            const latest = data.messages[data.messages.length - 1];
+            if(latest && latest.id > lastChatId) {
+                if(!isChatOpen && lastChatId !== 0) document.getElementById('chat-notif').style.display = 'block';
+                lastChatId = latest.id;
+                
+                const body = document.getElementById('chat-body');
+                body.innerHTML = data.messages.map(m => `
+                    <div class="chat-row ${m.user_email === myChatEmail ? 'me' : 'other'}">
+                        <img src="${m.profile_picture}" class="chat-avatar" title="${m.user_email}">
+                        <div class="chat-bubble">
+                            <span class="chat-user-label">${m.display_name || m.user_email}</span>
+                            ${m.is_image ? `<img src="${m.content}" style="max-width:100%;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="window.open(this.src)">` : m.content}
+                        </div>
+                    </div>
+                `).join('');
+                if(isChatOpen) body.scrollTop = body.scrollHeight;
+            }
+        }
+    
+        async function sendChatText() {
+            const inp = document.getElementById('chat-msg-input');
+            if(!inp.value.trim()) return;
+            await fetch(`${CHAT_API}/chat`, { method: 'POST', body: JSON.stringify({ email: myChatEmail, content: inp.value, isImage: false }) });
+            inp.value = ''; syncWidget();
+        }
+    
+        async function uploadChatImg(input) {
+            if (input.files && input.files[0]) {
+                const r = new FileReader();
+                r.onload = async (e) => {
+                    await fetch(`${CHAT_API}/chat`, { method: 'POST', body: JSON.stringify({ email: myChatEmail, content: e.target.result, isImage: true }) });
+                    syncWidget();
+                };
+                r.readAsDataURL(input.files[0]);
+            }
+        }
+    
+        setInterval(syncWidget, 3000); syncWidget();
+    </script>
 <header>
     <div style="display:flex; gap:20px; align-items:center;">
         <a href="/dash.html" class="logo">ADA Archive Selector</a>
