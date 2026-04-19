@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Tetris Core</title>
+    <title>ADA | Tetris Module</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --red: #f85149; }
         
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; }
-        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; position: sticky; top:0; z-index:100; }
+        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
         
         /* USER PILL */
         .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
         .user-pill:hover { border-color: #8b949e; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
 
-        #game-layout { display: flex; gap: 40px; margin-top: 30px; align-items: flex-start; }
+        #game-layout { display: flex; gap: 30px; margin-top: 30px; align-items: flex-start; }
 
         #tetris-wrap { position: relative; border: 4px solid var(--border); border-radius: 8px; background: #000; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
         canvas { display: block; }
@@ -23,20 +23,23 @@
         .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
         .stat-value { font-size: 28px; font-family: monospace; color: var(--blue); }
         
+        .btn { width: 100%; padding: 10px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
+        .btn-green { background: var(--green); }
+        .btn-pause { background: #21262d; border: 1px solid var(--border); }
+        .btn-pause.active { background: var(--blue); color: #000; }
+
         .next-box { background: #000; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; padding: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="display:flex; align-items:center; gap:15px;">
-        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
-        <span style="font-weight:bold; font-size:14px; letter-spacing:1px;">ADA_CORE: TETRIS_MODULE</span>
-    </div>
+    <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
+    <span style="font-weight:bold; font-size:14px; letter-spacing:1px;">ADA_TRAINING: TETRIS_V3</span>
     
     <a href="/profile.html" class="user-pill">
-        <img id="pill-pic" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=">
-        <span id="pill-name">Syncing...</span>
+        <img id="pill-pic" src="">
+        <span id="pill-name">...</span>
     </a>
 </header>
 
@@ -50,7 +53,8 @@
             <div class="stat-label">Personal Best</div>
             <div id="high-score" class="stat-value">0</div>
         </div>
-        <button style="background:var(--green); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="resetGame()">Reset</button>
+        <button id="pause-btn" class="btn btn-pause" onclick="togglePause()">Pause</button>
+        <button class="btn btn-green" onclick="resetGame()">Reset</button>
     </div>
 
     <div id="tetris-wrap">
@@ -62,7 +66,7 @@
         <div class="next-box">
             <canvas id="next" width="80" height="80"></canvas>
         </div>
-        <div class="stat-label" style="margin-top:20px;">Controls</div>
+        <div class="stat-label" style="margin-top:20px;">Manual</div>
         <div style="font-size:11px; color:#8b949e; line-height:1.8;">
             <b>ARROWS</b>: Move / Rotate<br>
             <b>SPACE</b>: Hard Drop<br>
@@ -83,21 +87,27 @@
     const grid = 30;
     let score = 0;
     let highScore = 0;
-    let clearingLines = []; // For animation
+    let isPaused = false;
+    let clearingLines = [];
 
-    // --- IDENTITY SYNC ---
-    async function syncIdentity() {
-        if(!email) return;
+    // --- SYSTEM SYNC ---
+    async function init() {
+        if(!email) { window.location.href='/login.html'; return; }
+        
+        // 1. Load User Profile
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-        if(data.user.profile_picture) document.getElementById('pill-pic').src = data.user.profile_picture;
+        document.getElementById('pill-pic').src = data.user.profile_picture;
         
-        // Load Score
-        const sRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
-        const sData = await sRes.json();
-        highScore = sData.score || 0;
+        // 2. Load High Score specifically
+        const scoreRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+        const scoreData = await scoreRes.json();
+        highScore = scoreData.score || 0; // Fixed: Ensuring we grab the score key correctly
         document.getElementById('high-score').innerText = highScore;
+
+        resetPlayer();
+        update();
     }
 
     async function submitScore() {
@@ -110,9 +120,7 @@
         document.getElementById('high-score').innerText = highScore;
     }
 
-    // --- TETRIS ---
-    const COLS = 10, ROWS = 20;
-    const arena = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    // --- TETRIS LOGIC ---
     const colors = [null, '#ff7b72', '#79c0ff', '#d29922', '#3fb950', '#a5d6ff', '#ffa657', '#bc8cff'];
     const pieces = {
         'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -124,7 +132,16 @@
         'Z': [[7,7,0],[0,7,7],[0,0,0]]
     };
 
+    const COLS = 10, ROWS = 20;
+    const arena = Array.from({length: ROWS}, () => Array(COLS).fill(0));
     let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
+
+    function togglePause() {
+        isPaused = !isPaused;
+        const btn = document.getElementById('pause-btn');
+        btn.innerText = isPaused ? "Resume" : "Pause";
+        btn.className = isPaused ? "btn btn-pause active" : "btn btn-pause";
+    }
 
     function resetPlayer() {
         const types = 'IJLOSTZ';
@@ -138,7 +155,7 @@
             submitScore();
             arena.forEach(row => row.fill(0));
             score = 0;
-            updateScore();
+            document.getElementById('score').innerText = 0;
         }
     }
 
@@ -163,7 +180,6 @@
         let rowCount = 1;
         for (let y = arena.length - 1; y > 0; --y) {
             if (arena[y].every(value => value !== 0)) {
-                // Flash Animation Trigger
                 clearingLines.push(y);
                 setTimeout(() => {
                     const row = arena.splice(y, 1)[0].fill(0);
@@ -171,8 +187,8 @@
                     clearingLines = [];
                     score += rowCount * 10;
                     rowCount *= 2;
-                    updateScore();
-                }, 150); 
+                    document.getElementById('score').innerText = score;
+                }, 100); 
             }
         }
     }
@@ -181,7 +197,7 @@
         context.fillStyle = '#000';
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Arena
+        // Arena + Line Clear Flash
         arena.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value !== 0) {
@@ -209,27 +225,38 @@
             });
         });
 
-        // Draw Next
+        // Next Piece Preview
         nContext.fillStyle = '#000';
         nContext.fillRect(0, 0, nCanvas.width, nCanvas.height);
         player.next.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value !== 0) {
                     nContext.fillStyle = colors[value];
-                    nContext.fillRect(x * 20 + 10, y * 20 + 10, 19, 19);
+                    // Center the next piece
+                    const offsetX = (nCanvas.width - player.next[0].length * 15) / 2;
+                    const offsetY = (nCanvas.height - player.next.length * 15) / 2;
+                    nContext.fillRect(x * 15 + offsetX, y * 15 + offsetY, 14, 14);
                 }
             });
         });
     }
 
-    function updateScore() { document.getElementById('score').innerText = score; }
-    function resetGame() { submitScore(); arena.forEach(row => row.fill(0)); score = 0; updateScore(); resetPlayer(); }
-
     let dropCounter = 0, lastTime = 0;
     function update(time = 0) {
         const dt = time - lastTime; lastTime = time;
-        dropCounter += dt;
-        if (dropCounter > 1000) { player.pos.y++; if(collide(arena, player)){ player.pos.y--; merge(); resetPlayer(); arenaSweep(); } dropCounter = 0; }
+        if (!isPaused) {
+            dropCounter += dt;
+            if (dropCounter > 1000) { 
+                player.pos.y++; 
+                if(collide(arena, player)){ 
+                    player.pos.y--; 
+                    merge(); 
+                    resetPlayer(); 
+                    arenaSweep(); 
+                } 
+                dropCounter = 0; 
+            }
+        }
         draw();
         requestAnimationFrame(update);
     }
@@ -238,18 +265,20 @@
         player.matrix.forEach((row, y) => { row.forEach((v, x) => { if(v!==0) arena[y+player.pos.y][x+player.pos.x] = v; }); });
     }
 
+    function resetGame() { submitScore(); arena.forEach(row => row.fill(0)); score = 0; document.getElementById('score').innerText = 0; isPaused = false; resetPlayer(); }
+
     document.addEventListener('keydown', e => {
+        if (isPaused && e.keyCode !== 80) return; // Only allow unpause key if paused
+        
         if(e.keyCode === 37) { player.pos.x--; if(collide(arena,player)) player.pos.x++; }
         else if(e.keyCode === 39) { player.pos.x++; if(collide(arena,player)) player.pos.x--; }
         else if(e.keyCode === 40) { player.pos.y++; if(collide(arena,player)) player.pos.y--; }
         else if(e.keyCode === 38) { rotate(player.matrix); if(collide(arena,player)) rotate(player.matrix); rotate(player.matrix); rotate(player.matrix); }
-        else if(e.keyCode === 32) { while(!collide(arena,player)) player.pos.y++; player.pos.y--; merge(); resetPlayer(); arenaSweep(); updateScore(); }
+        else if(e.keyCode === 32) { while(!collide(arena,player)) player.pos.y++; player.pos.y--; merge(); resetPlayer(); arenaSweep(); }
+        else if(e.keyCode === 80) { togglePause(); } // 'P' key
     });
 
-    syncIdentity();
-    resetPlayer();
-    update();
+    init();
 </script>
-
 </body>
 </html>
