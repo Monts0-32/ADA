@@ -259,11 +259,13 @@
     const target = params.get('email') || myEmail;
     let isSrc = false;
     let currentProfile = null;
-
+    async function returntodash() {
+        window.location.href = "dash.html"
+    }
     async function load() {
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
-        if(d.disabled) { document.body.innerHTML="<h1 style='color:red; text-align:center; padding:100px;'>ACCESS RESTRICTED</h1>"; return; }
+        if(d.disabled) { document.body.innerHTML="<h1 style='color:white; text-align:center; padding:100px;'>Profile Disabled</h1><p>This profile is not available please return to dashboard</p><button class="btn-primary" onclick="returntodash()">"; return; }
         
         currentProfile = d.user;
         document.getElementById('p-body').style.background = currentProfile.bg_style || "#0d1117";
