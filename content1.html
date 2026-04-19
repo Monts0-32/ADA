@@ -2,40 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Tetris Module</title>
+    <title>ADA | Tetris Mouse Module</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --red: #f85149; }
         
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; }
-        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; user-select: none; }
+        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; z-index: 100; }
         
-        /* USER PILL */
         .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill:hover { border-color: #8b949e; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 
         #game-layout { display: flex; gap: 30px; margin-top: 30px; align-items: flex-start; }
 
-        #tetris-wrap { position: relative; border: 4px solid var(--border); border-radius: 8px; background: #000; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
-        canvas { display: block; }
+        #tetris-container { position: relative; cursor: crosshair; }
+        canvas { display: block; border: 4px solid var(--border); border-radius: 8px; background: #000; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
-        .panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 180px; display: flex; flex-direction: column; gap: 20px; }
-        .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 28px; font-family: monospace; color: var(--blue); }
+        .panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 160px; display: flex; flex-direction: column; gap: 15px; }
+        .stat-label { font-size: 10px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 24px; font-family: monospace; color: var(--blue); }
         
-        .btn { width: 100%; padding: 10px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
-        .btn-green { background: var(--green); }
-        .btn-pause { background: #21262d; border: 1px solid var(--border); }
-        .btn-pause.active { background: var(--blue); color: #000; }
-
-        .next-box { background: #000; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; padding: 10px; }
+        .next-box { background: #000; border: 1px solid var(--border); border-radius: 4px; height: 80px; display: flex; justify-content: center; align-items: center; }
+        
+        .instructions { font-size: 11px; color: #8b949e; line-height: 1.5; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
-    <span style="font-weight:bold; font-size:14px; letter-spacing:1px;">ADA_TRAINING: TETRIS_V3</span>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Back</a>
+        <span style="font-weight:bold; font-size:14px; color:#f0f6fc;">ADA_LABS: NEURAL_TETRIS</span>
+    </div>
     
     <a href="/profile.html" class="user-pill">
         <img id="pill-pic" src="">
@@ -50,28 +47,26 @@
             <div id="score" class="stat-value">0</div>
         </div>
         <div>
-            <div class="stat-label">Personal Best</div>
+            <div class="stat-label">High Score</div>
             <div id="high-score" class="stat-value">0</div>
         </div>
-        <button id="pause-btn" class="btn btn-pause" onclick="togglePause()">Pause</button>
-        <button class="btn btn-green" onclick="resetGame()">Reset</button>
+        <div class="instructions">
+            <b>MOUSE</b>: Aim & Auto-Rotate<br>
+            <b>CLICK</b>: Hard Drop<br>
+            <b>P</b>: Pause
+        </div>
     </div>
 
-    <div id="tetris-wrap">
+    <div id="tetris-container">
         <canvas id="tetris" width="300" height="600"></canvas>
     </div>
 
     <div class="panel">
-        <div class="stat-label">Next Phase</div>
+        <div class="stat-label">Next Unit</div>
         <div class="next-box">
             <canvas id="next" width="80" height="80"></canvas>
         </div>
-        <div class="stat-label" style="margin-top:20px;">Manual</div>
-        <div style="font-size:11px; color:#8b949e; line-height:1.8;">
-            <b>ARROWS</b>: Move / Rotate<br>
-            <b>SPACE</b>: Hard Drop<br>
-            <b>DOWN</b>: Soft Drop
-        </div>
+        <button onclick="resetGame()" style="background:var(--green); color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; margin-top:20px;">Manual Reset</button>
     </div>
 </div>
 
@@ -80,49 +75,20 @@
     const email = localStorage.getItem('ada_user_email');
     
     const canvas = document.getElementById('tetris');
-    const context = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
     const nCanvas = document.getElementById('next');
-    const nContext = nCanvas.getContext('2d');
+    const nCtx = nCanvas.getContext('2d');
     
     const grid = 30;
-    let score = 0;
-    let highScore = 0;
-    let isPaused = false;
-    let clearingLines = [];
+    const COLS = 10, ROWS = 20;
+    
+    let score = 0, highScore = 0, isPaused = false;
+    let arena = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+    let particles = [];
 
-    // --- SYSTEM SYNC ---
-    async function init() {
-        if(!email) { window.location.href='/login.html'; return; }
-        
-        // 1. Load User Profile
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-        document.getElementById('pill-pic').src = data.user.profile_picture;
-        
-        // 2. Load High Score specifically
-        const scoreRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
-        const scoreData = await scoreRes.json();
-        highScore = scoreData.score || 0; // Fixed: Ensuring we grab the score key correctly
-        document.getElementById('high-score').innerText = highScore;
-
-        resetPlayer();
-        update();
-    }
-
-    async function submitScore() {
-        if (score <= highScore) return;
-        await fetch(`${API}/game/save-score`, {
-            method: 'POST',
-            body: JSON.stringify({ email, gameId: 'tetris', score: score })
-        });
-        highScore = score;
-        document.getElementById('high-score').innerText = highScore;
-    }
-
-    // --- TETRIS LOGIC ---
+    // Colors & Shapes
     const colors = [null, '#ff7b72', '#79c0ff', '#d29922', '#3fb950', '#a5d6ff', '#ffa657', '#bc8cff'];
-    const pieces = {
+    const shapes = {
         'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
         'J': [[2,0,0],[2,2,2],[0,0,0]],
         'L': [[0,0,3],[3,3,3],[0,0,0]],
@@ -132,31 +98,74 @@
         'Z': [[7,7,0],[0,7,7],[0,0,0]]
     };
 
-    const COLS = 10, ROWS = 20;
-    const arena = Array.from({length: ROWS}, () => Array(COLS).fill(0));
     let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
 
-    function togglePause() {
-        isPaused = !isPaused;
-        const btn = document.getElementById('pause-btn');
-        btn.innerText = isPaused ? "Resume" : "Pause";
-        btn.className = isPaused ? "btn btn-pause active" : "btn btn-pause";
+    async function init() {
+        if(!email) return window.location.href='/login.html';
+        
+        // Sync Profile & High Score
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+        document.getElementById('pill-pic').src = data.user.profile_picture;
+
+        const sRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+        const sData = await sRes.json();
+        highScore = sData.score || 0;
+        document.getElementById('high-score').innerText = highScore;
+
+        resetPlayer();
+        requestAnimationFrame(update);
     }
+
+    function createPiece(type) { return shapes[type]; }
 
     function resetPlayer() {
         const types = 'IJLOSTZ';
-        if (!player.next) player.next = pieces[types[Math.random() * types.length | 0]];
-        player.matrix = player.next;
-        player.next = pieces[types[Math.random() * types.length | 0]];
+        player.matrix = player.next || createPiece(types[types.length * Math.random() | 0]);
+        player.next = createPiece(types[types.length * Math.random() | 0]);
         player.pos.y = 0;
         player.pos.x = (COLS / 2 | 0) - (player.matrix[0].length / 2 | 0);
 
         if (collide(arena, player)) {
-            submitScore();
+            saveScore();
             arena.forEach(row => row.fill(0));
             score = 0;
-            document.getElementById('score').innerText = 0;
+            updateScore();
         }
+    }
+
+    // --- AUTO ROTATE LOGIC ---
+    // Finds the rotation that allows the piece to reach the lowest possible Y
+    function autoRotate(targetX) {
+        let bestY = -1;
+        let bestMatrix = player.matrix;
+
+        for (let i = 0; i < 4; i++) {
+            let testMatrix = player.matrix;
+            for(let r=0; r<i; r++) testMatrix = rotateMatrix(testMatrix);
+            
+            let testPlayer = { pos: {x: targetX, y: 0}, matrix: testMatrix };
+            
+            // Adjust X if it hits walls
+            while(collide(arena, testPlayer) && testPlayer.pos.x > 0) testPlayer.pos.x--;
+            while(collide(arena, testPlayer)) testPlayer.pos.x++;
+
+            let dropY = 0;
+            while(!collide(arena, {pos: {x: testPlayer.pos.x, y: dropY}, matrix: testMatrix})) dropY++;
+            
+            if (dropY > bestY) {
+                bestY = dropY;
+                bestMatrix = testMatrix;
+            }
+        }
+        player.matrix = bestMatrix;
+    }
+
+    function rotateMatrix(matrix) {
+        const m = matrix.map((row, i) => matrix.map(col => col[i]));
+        m.forEach(row => row.reverse());
+        return m;
     }
 
     function collide(arena, player) {
@@ -169,116 +178,181 @@
         return false;
     }
 
-    function rotate(matrix) {
-        for (let y = 0; y < matrix.length; ++y) {
-            for (let x = 0; x < y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-        }
-        matrix.forEach(row => row.reverse());
+    function merge(arena, player) {
+        player.matrix.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) arena[y + player.pos.y][x + player.pos.x] = value;
+            });
+        });
+        createParticles(player.pos.x * grid, player.pos.y * grid, colors[player.matrix.find(r => r.some(v => v !== 0)).find(v => v !== 0)]);
     }
 
     function arenaSweep() {
         let rowCount = 1;
         for (let y = arena.length - 1; y > 0; --y) {
             if (arena[y].every(value => value !== 0)) {
-                clearingLines.push(y);
-                setTimeout(() => {
-                    const row = arena.splice(y, 1)[0].fill(0);
-                    arena.unshift(row);
-                    clearingLines = [];
-                    score += rowCount * 10;
-                    rowCount *= 2;
-                    document.getElementById('score').innerText = score;
-                }, 100); 
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                ++y;
+                score += rowCount * 10;
+                rowCount *= 2;
+                updateScore();
+                // Line clear animation effect (simulated via particles)
+                for(let i=0; i<COLS; i++) createParticles(i*grid, y*grid, '#fff');
             }
+        }
+    }
+
+    function updateScore() {
+        document.getElementById('score').innerText = score;
+    }
+
+    async function saveScore() {
+        if (score <= highScore) return;
+        await fetch(`${API}/game/save-score`, {
+            method: 'POST',
+            body: JSON.stringify({ email, gameId: 'tetris', score })
+        });
+        highScore = score;
+        document.getElementById('high-score').innerText = highScore;
+    }
+
+    // --- ANIMATION EFFECTS ---
+    function createParticles(x, y, color) {
+        for(let i=0; i<8; i++) {
+            particles.push({
+                x: x + grid/2, y: y + grid/2,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                life: 1.0, color: color
+            });
         }
     }
 
     function draw() {
-        context.fillStyle = '#000';
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Arena + Line Clear Flash
-        arena.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value !== 0) {
-                    context.fillStyle = clearingLines.includes(y) ? '#fff' : colors[value];
-                    context.fillRect(x * grid, y * grid, grid - 1, grid - 1);
-                }
-            });
-        });
+        // Grid Lines
+        ctx.strokeStyle = '#161b22';
+        for(let i=0; i<COLS; i++) ctx.strokeRect(i*grid, 0, grid, canvas.height);
 
-        // Ghost
+        drawMatrix(arena, {x: 0, y: 0});
+
+        // Ghost Piece
         const ghost = { pos: {...player.pos}, matrix: player.matrix };
         while(!collide(arena, ghost)) ghost.pos.y++;
         ghost.pos.y--;
-        context.globalAlpha = 0.15;
-        player.matrix.forEach((row, y) => { row.forEach((v, x) => { if(v!==0){ context.fillStyle='#fff'; context.fillRect((x+ghost.pos.x)*grid, (y+ghost.pos.y)*grid, grid-1, grid-1); }}); });
-        context.globalAlpha = 1;
+        ctx.globalAlpha = 0.2;
+        drawMatrix(ghost.matrix, ghost.pos);
+        ctx.globalAlpha = 1;
 
-        // Player
-        player.matrix.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value !== 0) {
-                    context.fillStyle = colors[value];
-                    context.fillRect((x + player.pos.x) * grid, (y + player.pos.y) * grid, grid - 1, grid - 1);
-                }
-            });
+        // Active Piece
+        drawMatrix(player.matrix, player.pos);
+
+        // Next Preview
+        nCtx.fillStyle = '#000';
+        nCtx.fillRect(0, 0, nCanvas.width, nCanvas.height);
+        drawMatrixNext(player.next);
+
+        // Particles
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.fillRect(p.x, p.y, 4, 4);
+            if(p.life <= 0) particles.splice(i, 1);
         });
+        ctx.globalAlpha = 1;
+    }
 
-        // Next Piece Preview
-        nContext.fillStyle = '#000';
-        nContext.fillRect(0, 0, nCanvas.width, nCanvas.height);
-        player.next.forEach((row, y) => {
+    function drawMatrix(matrix, offset) {
+        matrix.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value !== 0) {
-                    nContext.fillStyle = colors[value];
-                    // Center the next piece
-                    const offsetX = (nCanvas.width - player.next[0].length * 15) / 2;
-                    const offsetY = (nCanvas.height - player.next.length * 15) / 2;
-                    nContext.fillRect(x * 15 + offsetX, y * 15 + offsetY, 14, 14);
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = colors[value];
+                    ctx.fillStyle = colors[value];
+                    ctx.fillRect((x + offset.x) * grid, (y + offset.y) * grid, grid-1, grid-1);
+                    ctx.shadowBlur = 0;
                 }
             });
         });
     }
 
-    let dropCounter = 0, lastTime = 0;
+    function drawMatrixNext(matrix) {
+        matrix.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) {
+                    nCtx.fillStyle = colors[value];
+                    nCtx.fillRect(x * 15 + 20, y * 15 + 20, 14, 14);
+                }
+            });
+        });
+    }
+
+    let dropCounter = 0;
+    let lastTime = 0;
     function update(time = 0) {
-        const dt = time - lastTime; lastTime = time;
+        const deltaTime = time - lastTime;
+        lastTime = time;
+
         if (!isPaused) {
-            dropCounter += dt;
-            if (dropCounter > 1000) { 
-                player.pos.y++; 
-                if(collide(arena, player)){ 
-                    player.pos.y--; 
-                    merge(); 
-                    resetPlayer(); 
-                    arenaSweep(); 
-                } 
-                dropCounter = 0; 
+            dropCounter += deltaTime;
+            if (dropCounter > 1000) {
+                player.pos.y++;
+                if(collide(arena, player)) {
+                    player.pos.y--;
+                    merge(arena, player);
+                    resetPlayer();
+                    arenaSweep();
+                }
+                dropCounter = 0;
             }
         }
+
         draw();
         requestAnimationFrame(update);
     }
 
-    function merge() {
-        player.matrix.forEach((row, y) => { row.forEach((v, x) => { if(v!==0) arena[y+player.pos.y][x+player.pos.x] = v; }); });
-    }
-
-    function resetGame() { submitScore(); arena.forEach(row => row.fill(0)); score = 0; document.getElementById('score').innerText = 0; isPaused = false; resetPlayer(); }
-
-    document.addEventListener('keydown', e => {
-        if (isPaused && e.keyCode !== 80) return; // Only allow unpause key if paused
+    // --- MOUSE CONTROLS ---
+    canvas.addEventListener('mousemove', e => {
+        if (isPaused) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        let targetX = Math.floor(mouseX / grid);
         
-        if(e.keyCode === 37) { player.pos.x--; if(collide(arena,player)) player.pos.x++; }
-        else if(e.keyCode === 39) { player.pos.x++; if(collide(arena,player)) player.pos.x--; }
-        else if(e.keyCode === 40) { player.pos.y++; if(collide(arena,player)) player.pos.y--; }
-        else if(e.keyCode === 38) { rotate(player.matrix); if(collide(arena,player)) rotate(player.matrix); rotate(player.matrix); rotate(player.matrix); }
-        else if(e.keyCode === 32) { while(!collide(arena,player)) player.pos.y++; player.pos.y--; merge(); resetPlayer(); arenaSweep(); }
-        else if(e.keyCode === 80) { togglePause(); } // 'P' key
+        // Boundaries
+        targetX = Math.max(0, Math.min(targetX, COLS - player.matrix[0].length));
+        
+        player.pos.x = targetX;
+        autoRotate(targetX); // Automatically orient to fit the floor
     });
+
+    canvas.addEventListener('mousedown', () => {
+        if (isPaused) return;
+        // Hard Drop
+        while(!collide(arena, player)) player.pos.y++;
+        player.pos.y--;
+        merge(arena, player);
+        resetPlayer();
+        arenaSweep();
+        updateScore();
+    });
+
+    window.addEventListener('keydown', e => {
+        if (e.code === 'KeyP') isPaused = !isPaused;
+    });
+
+    function resetGame() {
+        arena.forEach(row => row.fill(0));
+        score = 0;
+        updateScore();
+        resetPlayer();
+    }
 
     init();
 </script>
+
 </body>
 </html>
