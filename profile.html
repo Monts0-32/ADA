@@ -16,41 +16,52 @@
 
         .container { max-width: 1200px; margin: 40px auto; display: grid; grid-template-columns: 320px 1fr; gap: 40px; padding: 0 20px; }
         
-        /* SIDEBAR & SEARCH */
-        .sidebar { display: flex; flex-direction: column; gap: 20px; }
-        .avatar-lg { width: 320px; height: 320px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; }
+        /* SIDEBAR LAYOUT */
+        .sidebar { display: flex; flex-direction: column; gap: 15px; }
+        .avatar-lg { width: 320px; height: 320px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; margin-bottom: 5px; }
         
-        .search-wrap { position: relative; background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 8px; }
-        .suggest-box { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1000; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        .suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
-        .suggest-item:hover { background: #21262d; }
-        .suggest-item img { width: 28px; height: 28px; border-radius: 50%; }
-
         /* BUTTON STYLING */
-        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; }
+        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; box-sizing: border-box; text-align: center; }
         .btn-gh:hover { background: #30363d; border-color: #8b949e; }
         .btn-primary { background: var(--btn-green); border: none; }
         .btn-primary:hover { background: #2ea043; }
+        .btn-danger { color: var(--red); border-color: rgba(248, 81, 73, 0.3); }
+        .btn-danger:hover { background: rgba(248, 81, 73, 0.1); border-color: var(--red); }
 
-        /* BIO DISPLAY & EDITOR */
+        /* SEARCH SECTION (FIXED OFFSETS) */
+        .search-area { background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .search-wrap { position: relative; width: 100%; margin-bottom: 8px; }
+        .search-input { width: 100%; padding: 8px 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; outline: none; font-size: 13px; }
+        .search-input:focus { border-color: var(--blue); }
+
+        .suggest-box { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1200; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 4px; box-sizing: border-box; }
+        .suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .suggest-item:last-child { border-bottom: none; }
+        .suggest-item:hover { background: #21262d; }
+        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        /* THEMED COLOR PICKER */
+        .color-picker-wrapper { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid #444c56; border-radius: 6px; padding: 4px 10px; cursor: pointer; height: 38px; box-sizing: border-box; }
+        .color-preview { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); }
+        input[type="color"] { border: none; width: 0; height: 0; padding: 0; visibility: hidden; position: absolute; }
+
+        /* BIO CONTAINER */
         .bio-container { background: rgba(22, 27, 34, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 600px; position: relative; backdrop-filter: blur(10px); }
-        
         .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
         .toolbar select, .toolbar button, .toolbar input { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
 
-        #bio-edit { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; }
-        #bio-raw { width: 100%; min-height: 450px; background: #0d1117; color: #79c0ff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-family: monospace; display: none; outline: none; }
+        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; box-sizing: border-box; }
+        #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
 
         /* IMAGE ENGINE */
         .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; }
         .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; }
         .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); z-index: 100; }
-        
         .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); }
         .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); }
         .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
 
-        .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
     </style>
 </head>
@@ -165,19 +176,29 @@
 <div class="container">
     <div class="sidebar">
         <img id="avatar-view" class="avatar-lg" src="">
-        <h2 id="name-view" style="margin:10px 0 0 0;"></h2>
-        <div id="email-view" style="color:#8b949e; font-size:14px;"></div>
         
-        <div class="badge-list" id="badges-view"></div>
-
-        <div class="search-wrap">
-            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px;">LOCATE IDENTITY</div>
-            <input type="text" id="sq" class="btn-gh" style="text-align:left; cursor:text;" placeholder="Search names or emails..." oninput="doSuggest(this.value)">
-            <div id="suggest" class="suggest-box"></div>
-            <button class="btn-gh btn-primary" style="margin-top:10px;" onclick="search()">Search Database</button>
+        <div>
+            <h2 id="name-view" style="margin:0;"></h2>
+            <div id="email-view" style="color:#8b949e; font-size:14px;"></div>
+            <div class="badge-list" id="badges-view"></div>
         </div>
 
+        <!-- REORDERED: MANAGEMENT BUTTONS AT TOP -->
         <button id="edit-btn" class="btn-gh" style="display:none; border-color:var(--blue); color:var(--blue);" onclick="toggleEdit()">Edit My Profile</button>
+        
+        <div id="admin-actions" style="display:none;">
+            <button id="toggle-disabled-btn" class="btn-gh btn-danger" onclick="toggleProfileStatus()">Disable Profile Access</button>
+        </div>
+
+        <!-- SEARCH AT BOTTOM OF SIDEBAR -->
+        <div class="search-area">
+            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px; text-transform: uppercase; letter-spacing: 0.5px;">Locate Identity</div>
+            <div class="search-wrap">
+                <input type="text" id="sq" class="search-input" placeholder="Name or email..." oninput="doSuggest(this.value)">
+                <div id="suggest" class="suggest-box"></div>
+            </div>
+            <button class="btn-gh btn-primary" onclick="search()">Search Database</button>
+        </div>
     </div>
 
     <div class="bio-container">
@@ -186,10 +207,20 @@
         <!-- EDITOR UI -->
         <div id="editor-ui" style="display:none; flex-direction:column;">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                <input type="text" id="in-name" class="btn-gh" style="text-align:left;" placeholder="Display Name">
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="in-bg" class="btn-gh" style="text-align:left; flex:1" placeholder="Background Hex or linear-gradient">
-                    <input type="color" style="height:38px; margin-top:10px;" onchange="document.getElementById('in-bg').value=this.value">
+                <div>
+                    <label style="font-size:11px; color:#8b949e; display:block; margin-bottom:5px;">Display Name</label>
+                    <input type="text" id="in-name" class="search-input" placeholder="Display Name">
+                </div>
+                <div>
+                    <label style="font-size:11px; color:#8b949e; display:block; margin-bottom:5px;">Background Style (Gradient Support)</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="in-bg" class="search-input" style="flex:1" placeholder="#0d1117 or gradient...">
+                        <!-- THEMED COLOR PICKER -->
+                        <label class="color-picker-wrapper">
+                            <div id="picker-preview" class="color-preview"></div>
+                            <input type="color" onchange="updateBgFromPicker(this.value)">
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -200,9 +231,9 @@
                     <option value="H2">Header (H2)</option>
                     <option value="P">Text (P)</option>
                 </select>
-                <button onclick="exec('bold')"><b>B</b></button>
-                <button onclick="exec('italic')"><i>I</i></button>
-                <button onclick="exec('underline')"><u>U</u></button>
+                <button onclick="exec('bold')">B</button>
+                <button onclick="exec('italic')">I</button>
+                <button onclick="exec('underline')">U</button>
                 <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
                 <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
                 <button onclick="document.getElementById('f-pic').click()">Change Avatar</button>
@@ -227,29 +258,37 @@
     const params = new URLSearchParams(window.location.search);
     const target = params.get('email') || myEmail;
     let isSrc = false;
+    let currentProfile = null;
 
     async function load() {
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
         if(d.disabled) { document.body.innerHTML="<h1 style='color:red; text-align:center; padding:100px;'>ACCESS RESTRICTED</h1>"; return; }
         
-        const u = d.user;
-        document.getElementById('p-body').style.background = u.bg_style || "#0d1117";
-        document.getElementById('avatar-view').src = u.profile_picture;
-        document.getElementById('name-view').innerText = u.display_name || u.email;
-        document.getElementById('email-view').innerText = u.email;
-        document.getElementById('bio-display').innerHTML = u.bio_html || "This record is currently empty.";
+        currentProfile = d.user;
+        document.getElementById('p-body').style.background = currentProfile.bg_style || "#0d1117";
+        document.getElementById('avatar-view').src = currentProfile.profile_picture;
+        document.getElementById('name-view').innerText = currentProfile.display_name || currentProfile.email;
+        document.getElementById('email-view').innerText = currentProfile.email;
+        document.getElementById('bio-display').innerHTML = currentProfile.bio_html || "This record is currently empty.";
 
         // Badges
         const br = document.getElementById('badges-view');
         br.innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
-        if(u.is_admin) br.innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
+        if(currentProfile.is_admin) br.innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
+
+        // Admin checks
+        if(localStorage.getItem('ada_admin') === '1') {
+            document.getElementById('admin-actions').style.display = 'block';
+            document.getElementById('toggle-disabled-btn').innerText = currentProfile.profile_disabled ? "Enable Profile Access" : "Disable Profile Access";
+        }
 
         if(target === myEmail) {
             document.getElementById('edit-btn').style.display = 'block';
-            document.getElementById('in-name').value = u.display_name || "";
-            document.getElementById('in-bg').value = u.bg_style || "";
-            document.getElementById('bio-edit').innerHTML = u.bio_html || "";
+            document.getElementById('in-name').value = currentProfile.display_name || "";
+            document.getElementById('in-bg').value = currentProfile.bg_style || "";
+            document.getElementById('picker-preview').style.backgroundColor = currentProfile.bg_style || "#0d1117";
+            document.getElementById('bio-edit').innerHTML = currentProfile.bio_html || "";
             attachLogic();
         }
     }
@@ -261,6 +300,18 @@
         const box = document.getElementById('suggest');
         box.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
         box.style.display = items.length ? 'block' : 'none';
+    }
+
+    function updateBgFromPicker(val) {
+        document.getElementById('in-bg').value = val;
+        document.getElementById('picker-preview').style.backgroundColor = val;
+        document.getElementById('p-body').style.background = val;
+    }
+
+    async function toggleProfileStatus() {
+        const s = currentProfile.profile_disabled ? 0 : 1;
+        await fetch(`${API}/admin/profile/toggle-status`, { method: 'POST', body: JSON.stringify({ email: target, status: s }) });
+        location.reload();
     }
 
     function toggleEdit() {
@@ -301,19 +352,12 @@
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
                 
-                let resizing = e.target.className === 'resizer';
-                let sX = e.clientX, sY = e.clientY;
-                let sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
+                let res = e.target.className === 'resizer';
+                let sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
 
                 const move = (me) => {
-                    if(resizing){ 
-                        w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; 
-                        w.style.height = 'auto'; 
-                    }
-                    else { 
-                        w.style.left = (sL + (me.clientX - sX)) + 'px'; 
-                        w.style.top = (sT + (me.clientY - sY)) + 'px'; 
-                    }
+                    if(res){ w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
+                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
                 };
                 const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
                 window.addEventListener('mousemove', move);
@@ -324,13 +368,10 @@
     }
 
     async function save() {
-        // Clean UI handles before save
         document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
         const payload = {
-            email: myEmail,
-            name: document.getElementById('in-name').value,
-            pic: document.getElementById('avatar-view').src,
-            bg: document.getElementById('in-bg').value,
+            email: myEmail, name: document.getElementById('in-name').value,
+            pic: document.getElementById('avatar-view').src, bg: document.getElementById('in-bg').value,
             bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-edit').innerHTML,
             color: "#c9d1d9"
         };
