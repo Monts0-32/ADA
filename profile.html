@@ -259,13 +259,21 @@
     const target = params.get('email') || myEmail;
     let isSrc = false;
     let currentProfile = null;
-    async function returntodash() {
-        window.location.href = "dash.html"
-    }
     async function load() {
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
-        if(d.disabled) { document.body.innerHTML="<h1 style='color:white; text-align:center; padding:100px;'>Profile Disabled</h1><p>This profile is not available please return to dashboard</p><button class="btn-primary" onclick="returntodash()">"; return; }
+        if (d.disabled) { 
+                    document.body.innerHTML = `
+                        <div style="text-align:center; padding:100px; color:white; background:#0d1117; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                            <h1 style="font-size: 32px; margin-bottom: 10px;">Profile Disabled</h1>
+                            <p style="color:#8b949e; margin-bottom: 30px; font-size: 16px;">This profile is not available. Please return to the system dashboard.</p>
+                            <button class="btn-gh btn-primary" style="width:auto; padding:12px 30px;" onclick="window.location.href='/dash.html'">
+                                Return to Dashboard
+                            </button>
+                        </div>
+                    `; 
+                    return; 
+                }
         
         currentProfile = d.user;
         document.getElementById('p-body').style.background = currentProfile.bg_style || "#0d1117";
