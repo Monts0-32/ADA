@@ -7,87 +7,100 @@
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
         
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; }
-        header { width: 100%; padding: 15px 30px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; position: sticky; top:0; z-index:100; }
+        
+        /* USER PILL */
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
+        .user-pill:hover { border-color: #8b949e; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 
-        #game-layout { display: flex; gap: 40px; margin-top: 50px; align-items: flex-start; }
+        #game-layout { display: flex; gap: 40px; margin-top: 30px; align-items: flex-start; }
 
-        /* Bigger Canvas */
         #tetris-wrap { position: relative; border: 4px solid var(--border); border-radius: 8px; background: #000; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
         canvas { display: block; }
 
-        /* UI Panels */
         .panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 180px; display: flex; flex-direction: column; gap: 20px; }
         .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 28px; font-family: 'SFMono-Regular', monospace; color: var(--blue); }
+        .stat-value { font-size: 28px; font-family: monospace; color: var(--blue); }
         
-        .controls-hint { font-size: 12px; color: #8b949e; line-height: 1.6; }
-        .key { background: #21262d; border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; color: white; font-size: 10px; }
-        
-        .btn-restart { background: var(--green); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-restart:hover { background: #2ea043; }
+        .next-box { background: #000; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; padding: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit Training</a>
-    <div style="letter-spacing: 2px; font-size: 14px; font-weight: bold;">ADA_SYSTEM: TETRIS_MODULE_V2</div>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
+        <span style="font-weight:bold; font-size:14px; letter-spacing:1px;">ADA_CORE: TETRIS_MODULE</span>
+    </div>
+    
+    <a href="/profile.html" class="user-pill">
+        <img id="pill-pic" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=">
+        <span id="pill-name">Syncing...</span>
+    </a>
 </header>
 
 <div id="game-layout">
-    <!-- Left Panel: Score -->
     <div class="panel">
         <div>
-            <div class="stat-label">Current Score</div>
+            <div class="stat-label">Score</div>
             <div id="score" class="stat-value">0</div>
         </div>
         <div>
             <div class="stat-label">Personal Best</div>
             <div id="high-score" class="stat-value">0</div>
         </div>
-        <button class="btn-restart" onclick="resetGame()">System Reboot</button>
+        <button style="background:var(--green); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;" onclick="resetGame()">Reset</button>
     </div>
 
-    <!-- Center: Game -->
     <div id="tetris-wrap">
         <canvas id="tetris" width="300" height="600"></canvas>
     </div>
 
-    <!-- Right Panel: Controls -->
     <div class="panel">
-        <div class="stat-label">Controls</div>
-        <div class="controls-hint">
-            <span class="key">←</span> <span class="key">→</span> Move<br>
-            <span class="key">↑</span> Rotate<br>
-            <span class="key">↓</span> Soft Drop<br>
-            <span class="key">Space</span> Hard Drop
-        </div>
-        <hr style="border:0; border-top:1px solid var(--border); margin:0;">
         <div class="stat-label">Next Phase</div>
-        <canvas id="next" width="100" height="100"></canvas>
+        <div class="next-box">
+            <canvas id="next" width="80" height="80"></canvas>
+        </div>
+        <div class="stat-label" style="margin-top:20px;">Controls</div>
+        <div style="font-size:11px; color:#8b949e; line-height:1.8;">
+            <b>ARROWS</b>: Move / Rotate<br>
+            <b>SPACE</b>: Hard Drop<br>
+            <b>DOWN</b>: Soft Drop
+        </div>
     </div>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
+    
     const canvas = document.getElementById('tetris');
     const context = canvas.getContext('2d');
-    const grid = 30; // Bigger blocks
-
+    const nCanvas = document.getElementById('next');
+    const nContext = nCanvas.getContext('2d');
+    
+    const grid = 30;
     let score = 0;
     let highScore = 0;
+    let clearingLines = []; // For animation
 
-    // --- DB SYNC ---
-    async function syncScore() {
+    // --- IDENTITY SYNC ---
+    async function syncIdentity() {
         if(!email) return;
-        const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const data = await res.json();
-        highScore = data.score || 0;
+        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+        if(data.user.profile_picture) document.getElementById('pill-pic').src = data.user.profile_picture;
+        
+        // Load Score
+        const sRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+        const sData = await sRes.json();
+        highScore = sData.score || 0;
         document.getElementById('high-score').innerText = highScore;
     }
 
-    async function saveScore() {
+    async function submitScore() {
         if (score <= highScore) return;
         await fetch(`${API}/game/save-score`, {
             method: 'POST',
@@ -97,37 +110,21 @@
         document.getElementById('high-score').innerText = highScore;
     }
 
-    // --- GAME LOGIC ---
-    const COLS = 10;
-    const ROWS = 20;
+    // --- TETRIS ---
+    const COLS = 10, ROWS = 20;
     const arena = Array.from({length: ROWS}, () => Array(COLS).fill(0));
-
-    const colors = [
-        null,
-        '#ff7b72', // Z
-        '#79c0ff', // I
-        '#d29922', // O
-        '#3fb950', // S
-        '#a5d6ff', // J
-        '#ffa657', // L
-        '#bc8cff'  // T
-    ];
-
+    const colors = [null, '#ff7b72', '#79c0ff', '#d29922', '#3fb950', '#a5d6ff', '#ffa657', '#bc8cff'];
     const pieces = {
-        'I': [[0,0,0,0],[2,2,2,2],[0,0,0,0],[0,0,0,0]],
-        'J': [[5,0,0],[5,5,5],[0,0,0]],
-        'L': [[0,0,6],[6,6,6],[0,0,0]],
-        'O': [[3,3],[3,3]],
-        'S': [[0,4,4],[4,4,0],[0,0,0]],
-        'T': [[0,7,0],[7,7,7],[0,0,0]],
-        'Z': [[1,1,0],[0,1,1],[0,0,0]]
+        'I': [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+        'J': [[2,0,0],[2,2,2],[0,0,0]],
+        'L': [[0,0,3],[3,3,3],[0,0,0]],
+        'O': [[4,4],[4,4]],
+        'S': [[0,5,5],[5,5,0],[0,0,0]],
+        'T': [[0,6,0],[6,6,6],[0,0,0]],
+        'Z': [[7,7,0],[0,7,7],[0,0,0]]
     };
 
-    let player = {
-        pos: {x: 0, y: 0},
-        matrix: null,
-        next: null
-    };
+    let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
 
     function resetPlayer() {
         const types = 'IJLOSTZ';
@@ -138,8 +135,7 @@
         player.pos.x = (COLS / 2 | 0) - (player.matrix[0].length / 2 | 0);
 
         if (collide(arena, player)) {
-            // GAME OVER
-            saveScore();
+            submitScore();
             arena.forEach(row => row.fill(0));
             score = 0;
             updateScore();
@@ -163,137 +159,97 @@
         matrix.forEach(row => row.reverse());
     }
 
-    function playerRotate() {
-        const pos = player.pos.x;
-        let offset = 1;
-        rotate(player.matrix);
-        while (collide(arena, player)) {
-            player.pos.x += offset;
-            offset = -(offset + (offset > 0 ? 1 : -1));
-            if (offset > player.matrix[0].length) {
-                rotate(player.matrix); rotate(player.matrix); rotate(player.matrix);
-                player.pos.x = pos;
-                return;
-            }
-        }
-    }
-
-    function playerDrop() {
-        player.pos.y++;
-        if (collide(arena, player)) {
-            player.pos.y--;
-            merge(arena, player);
-            resetPlayer();
-            arenaSweep();
-            updateScore();
-        }
-        dropCounter = 0;
-    }
-
-    function merge(arena, player) {
-        player.matrix.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value !== 0) arena[y + player.pos.y][x + player.pos.x] = value;
-            });
-        });
-    }
-
     function arenaSweep() {
         let rowCount = 1;
-        outer: for (let y = arena.length - 1; y > 0; --y) {
-            for (let x = 0; x < arena[y].length; ++x) {
-                if (arena[y][x] === 0) continue outer;
+        for (let y = arena.length - 1; y > 0; --y) {
+            if (arena[y].every(value => value !== 0)) {
+                // Flash Animation Trigger
+                clearingLines.push(y);
+                setTimeout(() => {
+                    const row = arena.splice(y, 1)[0].fill(0);
+                    arena.unshift(row);
+                    clearingLines = [];
+                    score += rowCount * 10;
+                    rowCount *= 2;
+                    updateScore();
+                }, 150); 
             }
-            const row = arena.splice(y, 1)[0].fill(0);
-            arena.unshift(row);
-            ++y;
-            score += rowCount * 10;
-            rowCount *= 2;
         }
     }
 
     function draw() {
-        // Clear
         context.fillStyle = '#000';
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         // Draw Arena
-        drawMatrix(arena, {x: 0, y: 0});
+        arena.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) {
+                    context.fillStyle = clearingLines.includes(y) ? '#fff' : colors[value];
+                    context.fillRect(x * grid, y * grid, grid - 1, grid - 1);
+                }
+            });
+        });
 
-        // Draw Ghost
+        // Ghost
         const ghost = { pos: {...player.pos}, matrix: player.matrix };
         while(!collide(arena, ghost)) ghost.pos.y++;
         ghost.pos.y--;
-        context.globalAlpha = 0.2;
-        drawMatrix(ghost.matrix, ghost.pos);
+        context.globalAlpha = 0.15;
+        player.matrix.forEach((row, y) => { row.forEach((v, x) => { if(v!==0){ context.fillStyle='#fff'; context.fillRect((x+ghost.pos.x)*grid, (y+ghost.pos.y)*grid, grid-1, grid-1); }}); });
         context.globalAlpha = 1;
 
-        // Draw Player
-        drawMatrix(player.matrix, player.pos);
-    }
-
-    function drawMatrix(matrix, offset) {
-        matrix.forEach((row, y) => {
+        // Player
+        player.matrix.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value !== 0) {
                     context.fillStyle = colors[value];
-                    context.fillRect((x + offset.x) * grid, (y + offset.y) * grid, grid - 1, grid - 1);
+                    context.fillRect((x + player.pos.x) * grid, (y + player.pos.y) * grid, grid - 1, grid - 1);
+                }
+            });
+        });
+
+        // Draw Next
+        nContext.fillStyle = '#000';
+        nContext.fillRect(0, 0, nCanvas.width, nCanvas.height);
+        player.next.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value !== 0) {
+                    nContext.fillStyle = colors[value];
+                    nContext.fillRect(x * 20 + 10, y * 20 + 10, 19, 19);
                 }
             });
         });
     }
 
-    function updateScore() {
-        document.getElementById('score').innerText = score;
-    }
+    function updateScore() { document.getElementById('score').innerText = score; }
+    function resetGame() { submitScore(); arena.forEach(row => row.fill(0)); score = 0; updateScore(); resetPlayer(); }
 
-    function resetGame() {
-        arena.forEach(row => row.fill(0));
-        score = 0;
-        updateScore();
-        resetPlayer();
-    }
-
-    let dropCounter = 0;
-    let dropInterval = 1000;
-    let lastTime = 0;
-
+    let dropCounter = 0, lastTime = 0;
     function update(time = 0) {
-        const deltaTime = time - lastTime;
-        lastTime = time;
-        dropCounter += deltaTime;
-        if (dropCounter > dropInterval) playerDrop();
+        const dt = time - lastTime; lastTime = time;
+        dropCounter += dt;
+        if (dropCounter > 1000) { player.pos.y++; if(collide(arena, player)){ player.pos.y--; merge(); resetPlayer(); arenaSweep(); } dropCounter = 0; }
         draw();
         requestAnimationFrame(update);
     }
 
+    function merge() {
+        player.matrix.forEach((row, y) => { row.forEach((v, x) => { if(v!==0) arena[y+player.pos.y][x+player.pos.x] = v; }); });
+    }
+
     document.addEventListener('keydown', e => {
-        if (e.keyCode === 37) { // Left
-            player.pos.x--;
-            if (collide(arena, player)) player.pos.x++;
-        } else if (e.keyCode === 39) { // Right
-            player.pos.x++;
-            if (collide(arena, player)) player.pos.x--;
-        } else if (e.keyCode === 40) { // Down
-            playerDrop();
-        } else if (e.keyCode === 38) { // Up
-            playerRotate();
-        } else if (e.keyCode === 32) { // Space (Hard drop)
-            while(!collide(arena, player)) player.pos.y++;
-            player.pos.y--;
-            merge(arena, player);
-            resetPlayer();
-            arenaSweep();
-            updateScore();
-        }
+        if(e.keyCode === 37) { player.pos.x--; if(collide(arena,player)) player.pos.x++; }
+        else if(e.keyCode === 39) { player.pos.x++; if(collide(arena,player)) player.pos.x--; }
+        else if(e.keyCode === 40) { player.pos.y++; if(collide(arena,player)) player.pos.y--; }
+        else if(e.keyCode === 38) { rotate(player.matrix); if(collide(arena,player)) rotate(player.matrix); rotate(player.matrix); rotate(player.matrix); }
+        else if(e.keyCode === 32) { while(!collide(arena,player)) player.pos.y++; player.pos.y--; merge(); resetPlayer(); arenaSweep(); updateScore(); }
     });
 
-    syncScore();
+    syncIdentity();
     resetPlayer();
     update();
 </script>
-
-<!-- (PASTE THE FLOATING CHAT WIDGET CODE HERE) -->
 
 </body>
 </html>
