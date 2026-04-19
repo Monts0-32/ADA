@@ -33,24 +33,6 @@
         .admin-only { display: none; }
 
         /* CHAT WIDGET STYLES */
-    </style>
-</head>
-<body>
-    <div id="ada-chat-widget">
-        <div id="chat-window">
-            <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
-            <div id="chat-body"></div>
-            <form id="chat-footer" onsubmit="event.preventDefault(); sendChatText();">
-                <input type="text" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
-                <button type="button" class="chat-btn" onclick="document.getElementById('chat-file').click()" title="Share Image">🖼️</button>
-                <input type="file" id="chat-file" hidden accept="image/*" onchange="uploadChatImg(this)">
-                <button type="submit" class="chat-btn btn-send">Send</button>
-            </form>
-        </div>
-        <div id="chat-icon" onclick="toggleChat()">💬<div id="chat-notif"></div></div>
-    </div>
-    
-    <style>
         #ada-chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: -apple-system, sans-serif; }
         #chat-icon { width: 56px; height: 56px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; }
         #chat-notif { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
@@ -77,6 +59,21 @@
         .chat-row.me .chat-bubble { background: #238636; color: white; border-bottom-right-radius: 2px; }
         .chat-user-label { font-size: 9px; opacity: 0.5; display: block; margin-bottom: 2px; }
     </style>
+</head>
+<body>
+    <div id="ada-chat-widget">
+        <div id="chat-window">
+            <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
+            <div id="chat-body"></div>
+            <form id="chat-footer" onsubmit="event.preventDefault(); sendChatText();">
+                <input type="text" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
+                <button type="button" class="chat-btn" onclick="document.getElementById('chat-file').click()" title="Share Image">🖼️</button>
+                <input type="file" id="chat-file" hidden accept="image/*" onchange="uploadChatImg(this)">
+                <button type="submit" class="chat-btn btn-send">Send</button>
+            </form>
+        </div>
+        <div id="chat-icon" onclick="toggleChat()">💬<div id="chat-notif"></div></div>
+    </div>
     
     <script>
         const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
@@ -181,25 +178,6 @@
 </div>
 
 <!-- FLOATING CHAT WIDGET -->
-<div id="ada-chat-widget">
-    <div id="chat-window">
-        <div id="chat-header">
-            <span>Archive Comms</span>
-            <span onclick="toggleChat()" style="cursor:pointer; opacity:0.7">✕</span>
-        </div>
-        <div id="chat-body"></div>
-        <form id="chat-footer" onsubmit="event.preventDefault(); sendText();">
-            <input type="text" id="chat-msg" placeholder="Type a message..." autocomplete="off">
-            <label for="chat-img" style="cursor:pointer; font-size:18px;" title="Share Image">🖼️</label>
-            <input type="file" id="chat-img" accept="image/*" style="display:none" onchange="uploadChatImg(this)">
-            <button type="submit">Send</button>
-        </form>
-    </div>
-    <div id="chat-icon" onclick="toggleChat()">
-        💬
-        <div id="chat-notif"></div>
-    </div>
-</div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
@@ -253,63 +231,13 @@
             });
 
             // Handle Chat Syncing for Widget
-            handleChatRefresh(data.messages);
 
         } catch (e) { console.error("Sync Error", e); }
     }
 
     // Widget Chat Functions
-    function toggleChat() {
-        chatOpen = !chatOpen;
-        document.getElementById('chat-window').style.display = chatOpen ? 'flex' : 'none';
-        if(chatOpen) {
-            document.getElementById('chat-notif').style.display = 'none';
-            const body = document.getElementById('chat-body');
-            body.scrollTop = body.scrollHeight;
-        }
-    }
 
-    function handleChatRefresh(messages) {
-        const latest = messages[messages.length - 1];
-        if(latest && latest.id > lastMsgId) {
-            if(!chatOpen && lastMsgId !== 0) document.getElementById('chat-notif').style.display = 'block';
-            lastMsgId = latest.id;
-            
-            const body = document.getElementById('chat-body');
-            body.innerHTML = messages.map(m => `
-                <div class="chat-bubble ${m.user_email === email ? 'me' : 'other'}">
-                    <span class="chat-user">${m.user_email}</span>
-                    ${m.is_image ? `<img src="${m.content}" class="chat-img-msg" onclick="window.open(this.src)">` : m.content}
-                </div>
-            `).join('');
-            if(chatOpen) body.scrollTop = body.scrollHeight;
-        }
-    }
 
-    async function sendText() {
-        const input = document.getElementById('chat-msg');
-        if(!input.value.trim()) return;
-        await fetch(`${API}/chat`, {
-            method: 'POST',
-            body: JSON.stringify({ email, content: input.value, isImage: false })
-        });
-        input.value = '';
-        loadData();
-    }
-
-    async function uploadChatImg(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                await fetch(`${API}/chat`, {
-                    method: 'POST',
-                    body: JSON.stringify({ email, content: e.target.result, isImage: true })
-                });
-                loadData();
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
 
     async function toggleLock(id) { await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: id }) }); loadData(); }
     function logout() { localStorage.clear(); window.location.href = '/login.html'; }
