@@ -5,33 +5,21 @@
     <title>ADA | Simulation 05</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
-        
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-        
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; }
         .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-
         .module-card { max-width: 600px; width: 90%; background: #161b22; border: 1px solid var(--border); border-radius: 8px; margin-top: 50px; padding: 30px; }
-        .module-header { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-        .module-title { font-size: 20px; color: #f0f6fc; font-weight: 600; }
-        
-        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; background: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); margin-top: 10px; }
-
         .btn-launch { width: 100%; padding: 12px; background: var(--green); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; margin-top: 20px; }
-        .btn-launch:hover { background: #2ea043; }
-        
-        .disclaimer { font-size: 12px; color: #8b949e; margin-top: 20px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
 <header>
     <div style="display:flex; align-items:center; gap:15px;">
-        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Back to Special Content</a>
-        <span style="font-weight:bold; font-size:14px; color:#8b949e;">ADA_ARCHIVE: CONTENT_5</span>
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Back</a>
+        <span style="font-weight:bold; font-size:14px; color:#8b949e;">ADA_ARCHIVE: PHYSICS_SIM_05</span>
     </div>
-    
     <a href="/profile.html" class="user-pill">
         <img id="pill-pic" src="">
         <span id="pill-name">Syncing...</span>
@@ -39,26 +27,22 @@
 </header>
 
 <div class="module-card">
-    <div class="module-header">
-        <div class="module-title">Neural Physics Simulation 05</div>
-        <div class="status-badge">SECURE_LINK_ACTIVE</div>
-    </div>
+    <h2 style="margin-top:0; color:#f0f6fc;">Physics Simulation Module 05</h2>
+    <p>This partition contains an interactive module for high-velocity physical environmental testing. Initializing this module will open a secure, unlogged partition.</p>
     
-    <p>This module simulates high-velocity collision protocols and physical environmental interactions. Data is processed through an external node to minimize local hardware stress.</p>
-    
-    <div class="disclaimer">
-        <b>System Note:</b> Selecting "Launch Simulation" will initialize a secure, cloaked environment in a new partition. This method bypasses local logging protocols.
+    <div style="font-size:12px; color:#8b949e; background:rgba(0,0,0,0.2); padding:15px; border-radius:4px; border-left: 3px solid var(--blue);">
+        <b>SECURITY PROTOCOL:</b> Clicking below initializes the simulation via an anonymous node. This prevents local network filters from identifying the data stream.
     </div>
 
-    <button class="btn-launch" onclick="launchSecurely()">Initialize & Launch Simulation</button>
+    <button class="btn-launch" onclick="launchGame()">Launch Training Simulation</button>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
 
-    // This is the "Mirror" URL. It is hidden in the code.
-    const simulationNode = "https://html5gameshq.com/iframed/moto-x3m";
+    // This is the direct game link extracted from the code you found
+    const gameSrc = "https://play.famobi.com/wrapper/moto-x3m/A-JFDNV";
 
     async function init() {
         if(!email) { window.location.href='/login.html'; return; }
@@ -68,33 +52,23 @@
         document.getElementById('pill-pic').src = d.user.profile_picture;
     }
 
-    function launchSecurely() {
-        // --- THE "ABOUT:BLANK" CLOAK ---
-        // 1. Open a new window that has no URL
-        const win = window.open();
-        win.document.title = "ADA_SYSTEM: SIM_05";
+    function launchGame() {
+        // --- THE CLOAKING LOGIC ---
+        const win = window.open(); // Opens a blank tab
+        if (!win) { alert("Please allow popups for this archive."); return; }
+
+        win.document.title = "ADA_SYSTEM: SIM_CORE_05";
         
-        // 2. Style the new window so the game fits perfectly
         const style = win.document.createElement('style');
-        style.innerHTML = `
-            body { margin:0; padding:0; overflow:hidden; background:#000; height:100vh; }
-            iframe { border:none; width:100%; height:100%; }
-        `;
+        style.innerHTML = `body,html{margin:0;padding:0;height:100vh;width:100vw;overflow:hidden;background:#000;} iframe{border:none;width:100%;height:100%;}`;
         win.document.head.appendChild(style);
 
-        // 3. Inject the iframe into the blank window
         const iframe = win.document.createElement('iframe');
-        iframe.src = simulationNode;
+        iframe.src = gameSrc; // Injects the game into the "secret" tab
         win.document.body.appendChild(iframe);
-        
-        // 4. Stay on the current ADA page so it looks normal
-        alert("Secure node initialized in a new tab.");
     }
 
     init();
 </script>
-
-<!-- (PASTE YOUR CHAT WIDGET HERE) -->
-
 </body>
 </html>
