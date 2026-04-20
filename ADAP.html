@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Neural Link</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
+        
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+
+        #terminal-area { padding: 40px 20px; flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .box { max-width: 800px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 30px; box-sizing: border-box; }
+        
+        .url-input-wrap { display: flex; gap: 10px; margin-top: 20px; }
+        input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
+        input:focus { border-color: var(--blue); }
+        
+        .btn-link { background: var(--green); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        #viewer-container { flex: 1; width: 100%; display: none; background: #fff; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        .status-msg { font-size: 12px; color: #8b949e; margin-top: 15px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
+        <span style="font-weight:bold; font-size:14px;">ADA_SYSTEM: NEURAL_LINK_v1</span>
+    </div>
+    <a href="/profile.html" class="user-pill">
+        <img id="pill-pic" src="">
+        <span id="pill-name">Syncing...</span>
+    </a>
+</header>
+
+<div id="terminal-area">
+    <div class="box" id="input-box">
+        <h2 style="margin-top:0;">Request Neural Link</h2>
+        <p style="font-size:14px; color:#8b949e;">Enter an external URL to establish a relayed connection through the ADA Archive nodes.</p>
+        
+        <div class="url-input-wrap">
+            <input type="text" id="target-url" placeholder="https://example.com" autocomplete="off">
+            <button class="btn-link" onclick="establishLink()">Connect</button>
+        </div>
+        <div class="status-msg" id="status">● STANDBY: WAITING_FOR_INPUT</div>
+    </div>
+</div>
+
+<div id="viewer-container">
+    <iframe id="relay-frame"></iframe>
+</div>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const email = localStorage.getItem('ada_user_email');
+
+    async function init() {
+        if(!email) { window.location.href='/login.html'; return; }
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const d = await res.json();
+        document.getElementById('pill-name').innerText = d.user.display_name || d.user.email;
+        document.getElementById('pill-pic').src = d.user.profile_picture;
+    }
+
+    function establishLink() {
+        const url = document.getElementById('target-url').value;
+        if (!url) return;
+
+        const status = document.getElementById('status');
+        const inputBox = document.getElementById('input-box');
+        const viewer = document.getElementById('viewer-container');
+        const frame = document.getElementById('relay-frame');
+
+        status.innerText = "● INITIALIZING_RELAY_STREAM...";
+        status.style.color = "var(--blue)";
+
+        // Construct the relay URL
+        // Browser talks to: ada-access.co.uk/relay/fetch?url=...
+        const relayURL = `${API}/relay/fetch?url=${encodeURIComponent(url)}`;
+
+        // Switch to viewer mode
+        document.getElementById('terminal-area').style.display = 'none';
+        viewer.style.display = 'block';
+        frame.src = relayURL;
+    }
+
+    init();
+</script>
+
+</body>
+</html>
