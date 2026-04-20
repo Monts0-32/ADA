@@ -2,59 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Neural Link</title>
+    <title>ADA | Neural Link v2</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
         
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 1100; }
         
         .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; }
         .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 
-        #terminal-area { padding: 40px 20px; flex: 1; display: flex; flex-direction: column; align-items: center; }
-        .box { max-width: 800px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 30px; box-sizing: border-box; }
+        #setup-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .terminal-box { max-width: 600px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         
-        .url-input-wrap { display: flex; gap: 10px; margin-top: 20px; }
-        input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
-        input:focus { border-color: var(--blue); }
+        .input-group { display: flex; gap: 10px; margin-top: 25px; }
+        input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px 15px; border-radius: 8px; outline: none; font-family: monospace; }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2); }
         
-        .btn-link { background: var(--green); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
-        #viewer-container { flex: 1; width: 100%; display: none; background: #fff; }
+        .btn-connect { background: var(--green); color: white; border: none; padding: 0 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-connect:hover { background: #2ea043; transform: translateY(-1px); }
+
+        /* Viewer Mode */
+        #viewer-wrap { flex: 1; width: 100%; display: none; position: relative; background: #fff; }
         iframe { width: 100%; height: 100%; border: none; }
         
-        .status-msg { font-size: 12px; color: #8b949e; margin-top: 15px; font-family: monospace; }
+        .nav-bar-mini { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: var(--header); padding: 5px 15px; border-radius: 30px; border: 1px solid var(--border); display: flex; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1200; }
+        .mini-link { color: var(--blue); text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <header>
     <div style="display:flex; align-items:center; gap:15px;">
-        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
-        <span style="font-weight:bold; font-size:14px;">ADA_SYSTEM: NEURAL_LINK_v1</span>
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive</a>
+        <span style="font-weight:bold; font-size:14px; color:#f0f6fc;">ADA_SYSTEM: NEURAL_RELAY_v2</span>
     </div>
+    
     <a href="/profile.html" class="user-pill">
         <img id="pill-pic" src="">
-        <span id="pill-name">Syncing...</span>
+        <span id="pill-name">...</span>
     </a>
 </header>
 
-<div id="terminal-area">
-    <div class="box" id="input-box">
-        <h2 style="margin-top:0;">Request Neural Link</h2>
-        <p style="font-size:14px; color:#8b949e;">Enter an external URL to establish a relayed connection through the ADA Archive nodes.</p>
+<div id="setup-screen">
+    <div class="terminal-box">
+        <h2 style="margin:0; font-size: 24px;">Establish Neural Link</h2>
+        <p style="color:#8b949e; margin-top:10px;">The Advanced Relay uses <b>Attribute Injection</b> to rewrite destination headers. This partition is encrypted and unlogged.</p>
         
-        <div class="url-input-wrap">
-            <input type="text" id="target-url" placeholder="https://example.com" autocomplete="off">
-            <button class="btn-link" onclick="establishLink()">Connect</button>
+        <div class="input-group">
+            <input type="text" id="target-input" placeholder="Enter destination URL (e.g. google.com)" onkeydown="if(event.key==='Enter') establishLink()">
+            <button class="btn-connect" onclick="establishLink()">Initialize</button>
         </div>
-        <div class="status-msg" id="status">● STANDBY: WAITING_FOR_INPUT</div>
+        <div id="status" style="margin-top:20px; font-family:monospace; font-size:12px; color:#8b949e;">● STATUS: READY_FOR_UPLINK</div>
     </div>
 </div>
 
-<div id="viewer-container">
-    <iframe id="relay-frame"></iframe>
+<div id="viewer-wrap">
+    <div class="nav-bar-mini">
+        <a href="#" class="mini-link" onclick="location.reload()">New Link</a>
+        <span style="color:var(--border)">|</span>
+        <a href="/specialcontent.html" class="mini-link">Kill Session</a>
+    </div>
+    <iframe id="viewer-frame"></iframe>
 </div>
 
 <script>
@@ -70,25 +79,21 @@
     }
 
     function establishLink() {
-        const url = document.getElementById('target-url').value;
-        if (!url) return;
+        const input = document.getElementById('target-input').value;
+        if(!input) return;
 
         const status = document.getElementById('status');
-        const inputBox = document.getElementById('input-box');
-        const viewer = document.getElementById('viewer-container');
-        const frame = document.getElementById('relay-frame');
-
-        status.innerText = "● INITIALIZING_RELAY_STREAM...";
+        status.innerText = "● REWRITING_DESTINATION_HEADERS...";
         status.style.color = "var(--blue)";
 
-        // Construct the relay URL
-        // Browser talks to: ada-access.co.uk/relay/fetch?url=...
-        const relayURL = `${API}/relay/fetch?url=${encodeURIComponent(url)}`;
+        // Construct the V2 Relay URL
+        const relayURL = `${API}/relay/v2?url=${encodeURIComponent(input)}`;
 
-        // Switch to viewer mode
-        document.getElementById('terminal-area').style.display = 'none';
-        viewer.style.display = 'block';
-        frame.src = relayURL;
+        setTimeout(() => {
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('viewer-wrap').style.display = 'block';
+            document.getElementById('viewer-frame').src = relayURL;
+        }, 800);
     }
 
     init();
