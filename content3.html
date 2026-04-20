@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Content 05</title>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; }
+        
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+
+        #module-container { flex: 1; position: relative; background: #000; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        .loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 10; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Exit</a>
+        <span style="font-weight:bold; font-size:13px; color:#8b949e;">MotoX3D</span>
+    </div>
+    
+    <a href="/profile.html" class="user-pill">
+        <img id="pill-pic" src="">
+        <span id="pill-name">Syncing...</span>
+    </a>
+</header>
+
+<div id="module-container">
+    <div id="loader" class="loading-overlay">Loading...</div>
+    <!-- Point this to a clean game URL -->
+    <iframe id="game-frame" src="https://moto-x3m.github.io/" onload="document.getElementById('loader').style.display='none'"></iframe>
+</div>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const email = localStorage.getItem('ada_user_email');
+
+    async function init() {
+        if(!email) { window.location.href='/login.html'; return; }
+
+        // Security Gatekeeper
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const d = await res.json();
+
+        // Admin or special_access required
+        if(!d.user.is_admin && !d.permissions.includes('special_access')) {
+            window.location.href = '/blocked.html';
+            return;
+        }
+
+        document.getElementById('pill-name').innerText = d.user.display_name || d.user.email;
+        document.getElementById('pill-pic').src = d.user.profile_picture;
+    }
+
+    init();
+</script>
+
+<!-- PASTE YOUR FLOATING CHAT WIDGET CODE HERE -->
+
+</body>
+</html>
