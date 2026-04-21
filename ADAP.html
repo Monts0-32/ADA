@@ -2,80 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Neural Relay v3</title>
+    <title>ADA | Neural Relay v4</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --warn-bg: rgba(187, 128, 9, 0.15); --warn-border: rgba(187, 128, 9, 0.4); }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --warn: #d29922; }
         
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
         
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; }
+        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
         .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 
         #setup { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; flex-direction: column; }
-        .box { max-width: 500px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; }
+        .box { max-width: 550px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         
-        /* BETA NOTIFICATION STYLING */
-        .beta-banner { 
-            background: var(--warn-bg); 
-            border: 1px solid var(--warn-border); 
-            color: #d29922; 
-            padding: 12px; 
-            border-radius: 6px; 
-            margin-bottom: 20px; 
-            font-size: 12px; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            text-align: left;
-            line-height: 1.4;
-        }
+        .beta-alert { background: rgba(210, 153, 34, 0.1); border: 1px solid var(--warn); color: var(--warn); padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: left; font-size: 12px; line-height: 1.5; }
 
         .input-group { display: flex; gap: 8px; margin-top: 20px; }
-        input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; font-family: monospace; }
-        input:focus { border-color: var(--blue); }
-        .btn { background: var(--green); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; font-family: monospace; font-size: 14px; }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1); }
+        
+        .btn { background: var(--green); color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn:hover { background: #2ea043; transform: translateY(-1px); }
 
+        /* VIEWER UI */
         #viewer { flex: 1; display: none; background: #fff; position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
-        .controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--header); border: 1px solid var(--border); padding: 8px 20px; border-radius: 50px; display: flex; gap: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        .controls a { color: var(--blue); text-decoration: none; font-size: 12px; font-weight: bold; }
+        
+        .floating-nav { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: #161b22; border: 1px solid var(--border); padding: 10px 25px; border-radius: 50px; display: flex; gap: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; }
+        .floating-nav a { color: var(--blue); text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
 <header>
     <div style="display:flex; align-items:center; gap:15px;">
-        <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive</a>
-        <span style="font-weight:bold; font-size:14px;">ADA_SYSTEM: NEURAL_RELAY_v3</span>
-        <a href="/profile.html" class="user-pill"><img id="pill-pic" src=""><span id="pill-name">...</span></a>
+        <a href="/specialcontent.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive</a>
+        <span style="font-weight:bold; font-size:14px; color:#f0f6fc;">ADA_SYSTEM: NEURAL_RELAY_v4</span>
     </div>
+    <a href="/profile.html" class="user-pill"><img id="pill-pic" src=""><span id="pill-name">...</span></a>
 </header>
 
 <div id="setup">
     <div class="box">
-        <!-- BETA NOTICE -->
-        <div class="beta-banner">
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8z"></path><path d="M7.25 11h1.5V9.5h-1.5V11zm0-3h1.5V4h-1.5v4z"></path></svg>
-            <div>
-                <strong>BETA FEATURE:</strong> Neural Relay v3 is in active development. Expect bugs and rendering errors on high-security or complex JS-heavy websites.
-            </div>
+        <div class="beta-alert">
+            <strong>BETA_NOTICE_v4:</strong> Neural Relay is in active development. We have implemented <b>Deep Asset Rewriting</b> for CSS stability. Use search queries for automated DuckDuckGo (HTML Edition) routing.
         </div>
 
-        <h2 style="margin:0;">Initialize Neural Uplink</h2>
-        <p style="color:#8b949e; font-size:13px; margin-top:10px;">Enter a URL to visit or a query to search via DuckDuckGo.</p>
+        <h2 style="margin:0; font-size: 24px;">Initialize Neural Link</h2>
+        <p style="color:#8b949e; font-size:13px; margin-top:10px;">Establishing unlogged, cloaked uplink to external nodes.</p>
+        
         <div class="input-group">
-            <input type="text" id="target" placeholder="Search or type URL..." onkeydown="if(event.key==='Enter') launch()">
-            <button class="btn" onclick="launch()">Link</button>
+            <input type="text" id="target" placeholder="Search query or destination URL..." onkeydown="if(event.key==='Enter') launch()">
+            <button class="btn" onclick="launch()">Initialize</button>
         </div>
     </div>
 </div>
 
 <div id="viewer">
     <iframe id="frame"></iframe>
-    <div class="controls">
-        <a href="#" onclick="location.reload()">New Session</a>
-        <a href="/dash.html">Kill Link</a>
+    <div class="floating-nav">
+        <a href="#" onclick="location.reload()">New Uplink</a>
+        <span style="color:var(--border)">|</span>
+        <a href="/specialcontent.html">Terminate Session</a>
     </div>
 </div>
 
@@ -85,7 +77,6 @@
     async function init() {
         const email = localStorage.getItem('ada_user_email');
         if(!email) { window.location.href='/login.html'; return; }
-
         const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
         const d = await res.json();
         document.getElementById('pill-name').innerText = d.user.display_name || d.user.email;
@@ -102,7 +93,8 @@
         if (isUrl) {
             finalUrl = val.startsWith('http') ? val : 'https://' + val;
         } else {
-            finalUrl = `https://duckduckgo.com/?q=${encodeURIComponent(val)}`;
+            // Using the "HTML" version of DuckDuckGo which bypasses almost all bot-checks
+            finalUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(val)}`;
         }
 
         document.getElementById('setup').style.display = 'none';
