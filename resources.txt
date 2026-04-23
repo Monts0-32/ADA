@@ -1,4 +1,4 @@
-Checker (perms): #####################################################
+Checker (perms): ##################################################### (REQUIRED IF PAGE LOADER IN USE)
 <script id="ada-security-init">
     async function establishNeuralLink() {
         if (typeof runNeuralGuard === 'function') {
@@ -14,7 +14,7 @@ Checker (perms): #####################################################
 #############################################################
 
 
-Checker (general): ##########################################
+Checker (general): ########################################## (REQUIRED IF PAGE LOADER IN USE)
 <script id="ada-security-init">
     async function establishNeuralLink() {
         if (typeof runNeuralGuard === 'function') {
@@ -31,5 +31,7 @@ Checker (general): ##########################################
 
 Script Links:#############################################
 
-<script src="/chat-widget.js">
-<script src="/
+<script src="/chat-widget.js"> <----- Chat Widget
+<script src="/uplink.js"> <--- Page Loader
+
+#########################################################
