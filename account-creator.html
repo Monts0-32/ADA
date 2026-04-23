@@ -12,6 +12,15 @@
     </style>
 </head>
 <body>
+    <script src="/uplink.js"></script>
+    <script>
+        async function start() {
+            if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+            // Admins can enter even without 'wiki_access'
+            await runNeuralGuard('wiki_access'); 
+        }
+        start();
+    </script>
         <div id="ada-chat-widget">
         <div id="chat-window">
             <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
