@@ -17,7 +17,7 @@
         async function start() {
             if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
             // Admins can enter even without 'wiki_access'
-            await runNeuralGuard('wiki_access'); 
+            await runNeuralGuard('account_manage'); 
         }
         start();
     </script>
