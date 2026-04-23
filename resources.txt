@@ -1,37 +1,32 @@
-Checker (perms): ##################################################### (REQUIRED IF PAGE LOADER IN USE)
-<script id="ada-security-init">
-    async function establishNeuralLink() {
-        if (typeof runNeuralGuard === 'function') {
-            // Change 'wiki_access' to whatever tag that specific page needs
-            const archiveData = await runNeuralGuard('wiki_access'); 
-            if (archiveData) {
-                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
-            }
-        }
-    }
-    establishNeuralLink();
-</script>
-#############################################################
-
-
-Checker (general): ########################################## (REQUIRED IF PAGE LOADER IN USE)
-<script id="ada-security-init">
-    async function establishNeuralLink() {
-        if (typeof runNeuralGuard === 'function') {
-            const archiveData = await runNeuralGuard();
-            if (archiveData) {
-                // This triggers a signal that the page is now safe to load its own data
-                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
-            }
-        }
-    }
-    establishNeuralLink();
-</script>
-##########################################################
 
 Script Links:#############################################
 
 <script src="/chat-widget.js"> <----- Chat Widget
-<script src="/uplink.js"> <--- Page Loader
+
+##########################################################
+
+<script src="/uplink.js"></script> <---- No perms gaurd system
+<script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+        await runNeuralGuard(); // No tag needed
+    }
+    start();
+</script>
+
+<script src="/uplink.js"></script> <----- Perms gaurd System
+<script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+        // Admins can enter even without 'wiki_access'
+        await runNeuralGuard('wiki_access'); 
+    }
+    start();
+</script>
+
+#########################################################
+
+<div id="ada-header-anchor"></div>  <----------- header
+<script src="/header-engine.js"></script> 
 
 #########################################################
