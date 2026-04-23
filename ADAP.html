@@ -37,19 +37,24 @@
     </style>
 </head>
 <body>
-<script id="ada-security-init">
+<script>
     async function establishNeuralLink() {
-        if (typeof runNeuralGuard === 'function') {
-            // Change 'wiki_access' to whatever tag that specific page needs
-            const archiveData = await runNeuralGuard('ADAP_access'); 
-            if (archiveData) {
-                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
-            }
+        // If uplink.js isn't ready yet, wait 100ms and try again
+        if (typeof runNeuralGuard !== 'function') {
+            setTimeout(establishNeuralLink, 100);
+            return;
+        }
+
+        // Call the guard (Add a tag here if the page is restricted, e.g. 'wiki_access')
+        const data = await runNeuralGuard('ADAP_access'); 
+        
+        if (data) {
+            // Signal to the rest of your page that it's safe to load
+            window.dispatchEvent(new CustomEvent('ada-ready', { detail: data }));
         }
     }
     establishNeuralLink();
 </script>
-<script>window.ADA_CONFIG = { requiredTag: 'ADAP_access' };</script>
 <script src="/uplink.js"></script>
 <script src="/chat-widget.js"></script>
 <header>
