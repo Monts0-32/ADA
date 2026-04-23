@@ -4,140 +4,65 @@
     <meta charset="UTF-8">
     <title>ADA | Archive Dashboard</title>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; }
-        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
         
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
         header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; font-size: 16px; }
         
-        /* USER PILL */
         .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill:hover { border-color: #8b949e; background: #30363d; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
+        .user-pill:hover { border-color: #8b949e; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 
-        .container { max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 40px 20px; }
-        h2 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 30px; font-weight: 400; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        .card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; position: relative; transition: 0.2s; }
-        .card:hover { border-color: #8b949e; }
+        .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box; }
+
+        /* WIDGETS SECTION */
+        .widgets-row { display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-bottom: 30px; }
+        .widget-box { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; }
+        .widget-title { font-size: 12px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; }
+
+        /* Forecast Styling */
+        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .day-card { text-align: center; background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
+        .day-name { font-size: 11px; color: #8b949e; font-weight: bold; }
+        .day-icon { font-size: 20px; margin: 8px 0; display: block; }
+        .day-status { font-size: 10px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Calendar Styling */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 11px; }
+        .cal-day-name { color: #8b949e; font-weight: bold; padding-bottom: 5px; }
+        .cal-date { padding: 5px; border-radius: 4px; border: 1px solid transparent; }
+        .cal-today { background: var(--blue); color: #000; font-weight: bold; }
+        .cal-note { font-size: 10px; color: #8b949e; margin-top: 10px; font-style: italic; border-top: 1px solid var(--border); padding-top: 8px; }
+
+        /* GALLERY SECTION */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; position: relative; }
         .card img { width: 100%; height: 160px; border-radius: 4px; object-fit: cover; background: #0d1117; margin-bottom: 15px; }
-        .card h3 { margin: 0 0 10px 0; font-size: 18px; color: #58a6ff; }
-        .card p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.5; }
+        .card h3 { margin: 0; font-size: 18px; color: var(--blue); }
+        .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; color: #f85149; display: none; background: rgba(248,81,73,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid #f85149; }
 
-        .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 11px; color: #f85149; display: none; background: rgba(248,81,73,0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid #f85149; }
-        
-        .btn { padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; }
         .btn-green { background: var(--btn-green); border: none; width: 100%; box-sizing: border-box; }
-        .btn-disabled { background-color: #21262d !important; color: #8b949e !important; cursor: not-allowed !important; opacity: 0.6; }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
         .admin-only { display: none; }
 
-        /* CHAT WIDGET STYLES */
-        #ada-chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: -apple-system, sans-serif; }
-        #chat-icon { width: 56px; height: 56px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; }
-        #chat-notif { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
-        
-        /* Bigger Window */
-        #chat-window { width: 380px; height: 550px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        #chat-header { background: #21262d; padding: 14px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; }
-        #chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #0d1117; }
-        #chat-footer { padding: 12px; border-top: 1px solid #30363d; display: flex; gap: 8px; align-items: center; background: #161b22; }
-        #chat-msg-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 13px; }
-        
-        /* Styled Buttons */
-        .chat-btn { background: #21262d; border: 1px solid #30363d; color: white; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
-        .chat-btn:hover { background: #30363d; border-color: #8b949e; }
-        .btn-send { background: #238636; border: none; }
-        .btn-send:hover { background: #2ea043; }
-    
-        /* Message Bubbles with Avatars */
-        .chat-row { display: flex; gap: 10px; align-items: flex-end; max-width: 90%; }
-        .chat-row.me { flex-direction: row-reverse; align-self: flex-end; }
-        .chat-row img.chat-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #30363d; background: #0d1117; flex-shrink: 0; }
-        .chat-bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; word-wrap: break-word; position: relative; }
-        .chat-row.other .chat-bubble { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-bottom-left-radius: 2px; }
-        .chat-row.me .chat-bubble { background: #238636; color: white; border-bottom-right-radius: 2px; }
-        .chat-user-label { font-size: 9px; opacity: 0.5; display: block; margin-bottom: 2px; }
+        /* ADMIN EDIT OVERLAY */
+        .edit-overlay { display: none; background: rgba(0,0,0,0.8); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 5; border-radius: 8px; padding: 20px; box-sizing: border-box; }
+        .edit-overlay input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 4px; font-size: 11px; }
+
     </style>
 </head>
 <body>
-    <div id="ada-chat-widget">
-        <div id="chat-window">
-            <div id="chat-header"><span>Archive Communications</span><span onclick="toggleChat()" style="cursor:pointer;opacity:0.6;">✕</span></div>
-            <div id="chat-body"></div>
-            <form id="chat-footer" onsubmit="event.preventDefault(); sendChatText();">
-                <input type="text" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
-                <button type="button" class="chat-btn" onclick="document.getElementById('chat-file').click()" title="Share Image">🖼️</button>
-                <input type="file" id="chat-file" hidden accept="image/*" onchange="uploadChatImg(this)">
-                <button type="submit" class="chat-btn btn-send">Send</button>
-            </form>
-        </div>
-        <div id="chat-icon" onclick="toggleChat()">💬<div id="chat-notif"></div></div>
-    </div>
-    
-    <script>
-        const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
-        const myChatEmail = localStorage.getItem('ada_user_email');
-        let isChatOpen = false;
-        let lastChatId = 0;
-    
-        function toggleChat() {
-            isChatOpen = !isChatOpen;
-            document.getElementById('chat-window').style.display = isChatOpen ? 'flex' : 'none';
-            if(isChatOpen) {
-                document.getElementById('chat-notif').style.display = 'none';
-                const body = document.getElementById('chat-body');
-                body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function syncWidget() {
-            if(!myChatEmail) return;
-            const res = await fetch(`${CHAT_API}/sync?email=${encodeURIComponent(myChatEmail)}`);
-            const data = await res.json();
-            
-            const latest = data.messages[data.messages.length - 1];
-            if(latest && latest.id > lastChatId) {
-                if(!isChatOpen && lastChatId !== 0) document.getElementById('chat-notif').style.display = 'block';
-                lastChatId = latest.id;
-                
-                const body = document.getElementById('chat-body');
-                body.innerHTML = data.messages.map(m => `
-                    <div class="chat-row ${m.user_email === myChatEmail ? 'me' : 'other'}">
-                        <img src="${m.profile_picture}" class="chat-avatar" title="${m.user_email}">
-                        <div class="chat-bubble">
-                            <span class="chat-user-label">${m.display_name || m.user_email}</span>
-                            ${m.is_image ? `<img src="${m.content}" style="max-width:100%;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="window.open(this.src)">` : m.content}
-                        </div>
-                    </div>
-                `).join('');
-                if(isChatOpen) body.scrollTop = body.scrollHeight;
-            }
-        }
-    
-        async function sendChatText() {
-            const inp = document.getElementById('chat-msg-input');
-            if(!inp.value.trim()) return;
-            await fetch(`${CHAT_API}/chat`, { method: 'POST', body: JSON.stringify({ email: myChatEmail, content: inp.value, isImage: false }) });
-            inp.value = ''; syncWidget();
-        }
-    
-        async function uploadChatImg(input) {
-            if (input.files && input.files[0]) {
-                const r = new FileReader();
-                r.onload = async (e) => {
-                    await fetch(`${CHAT_API}/chat`, { method: 'POST', body: JSON.stringify({ email: myChatEmail, content: e.target.result, isImage: true }) });
-                    syncWidget();
-                };
-                r.readAsDataURL(input.files[0]);
-            }
-        }
-    
-        setInterval(syncWidget, 3000); syncWidget();
-    </script>
+
 <header>
     <div style="display:flex; align-items:center; gap:20px;">
-        <a href="/" class="logo">ADA Archive System</a>
+        <a href="/" class="logo">ADA Archive</a>
         <div id="admin-tools" style="display:none; gap:8px;">
             <a href="/account-creator.html" class="btn">Creator</a>
             <a href="/account-manager.html" class="btn">Manager</a>
@@ -145,121 +70,175 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
         <a href="/profile.html" class="user-pill">
-            <img id="pill-avatar" src="https://via.placeholder.com/20">
-            <span id="pill-name">Syncing...</span>
+            <img id="pill-avatar" src="">
+            <span id="pill-name">...</span>
         </a>
         <button class="btn" style="color:#f85149" onclick="logout()">Logout</button>
     </div>
 </header>
 
 <div class="container">
-    <h2>Available Partitions</h2>
-    <div class="grid">
-        <!-- Wiki Card -->
-        <div class="card">
-            <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-            <img src="https://via.placeholder.com/300x160?text=Wiki+Archives" alt="Wikis">
-            <h3>Wiki Records</h3>
-            <p>Access collaborative archive documentation and community records.</p>
-            <button class="btn btn-green" id="nav-page1">Access Archives</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page1')">Toggle System Lock</button>
+    
+    <!-- TOP WIDGETS SECTION -->
+    <div class="widgets-row">
+        <!-- SYSTEM FORECAST -->
+        <div class="widget-box" id="forecast-widget">
+            <div class="widget-title">
+                Neural Load Forecast (Mon-Fri)
+                <button class="admin-only" style="font-size:9px; cursor:pointer;" onclick="toggleWidgetEdit('forecast')">Edit</button>
+            </div>
+            <div class="forecast-grid" id="forecast-display">
+                <!-- Days will be loaded here -->
+            </div>
+            <div class="edit-overlay" id="edit-forecast">
+                <div id="forecast-inputs"></div>
+                <button class="btn btn-green" style="font-size:10px; padding:4px;" onclick="saveForecast()">Apply Changes</button>
+            </div>
         </div>
 
-        <!-- Placeholder for other cards -->
+        <!-- ARCHIVE CALENDAR -->
+        <div class="widget-box">
+            <div class="widget-title">
+                Archive Calendar
+                <button class="admin-only" style="font-size:9px; cursor:pointer;" onclick="toggleWidgetEdit('calendar')">Edit Note</button>
+            </div>
+            <div class="calendar-grid" id="calendar-display"></div>
+            <div id="calendar-note-display" class="cal-note"></div>
+            <div class="edit-overlay" id="edit-calendar">
+                <textarea id="in-cal-note" style="width:100%; height:80px; background:#000; color:white; border:1px solid var(--border); font-size:12px;"></textarea>
+                <button class="btn btn-green" style="font-size:10px; padding:4px; margin-top:5px;" onclick="saveCalendarNote()">Update Global Note</button>
+            </div>
+        </div>
+    </div>
+
+    <h2>Archive Resources</h2>
+    <div class="grid">
+        <div class="card">
+            <span class="lock-badge" id="lock-page1">🔒 Locked</span>
+            <img src="https://via.placeholder.com/300x160?text=Wiki+Network" alt="1">
+            <h3>Wiki Records</h3>
+            <button class="btn btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Access Selector</button>
+            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
+        </div>
         <div class="card">
             <span class="lock-badge" id="lock-page2">🔒 Locked</span>
-            <img src="https://www.image2url.com/r2/default/images/1776629454923-3c0c04ea-50d7-4279-9b3b-e6d8795826da.png" alt="Logs">
-            <h3>The Content Page</h3>
-            <p>shhhh....</p>
-            <button class="btn btn-green" id="nav-page2" onclick="window.location.href='/visuals.html'">Go find some content!</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page2')">Toggle System Lock</button>
-        </div>
-        <div class="card">
-            <span class="lock-badge" id="lock-page3">🔒 Locked</span>
-            <img src="https://www.image2url.com/r2/default/images/1776629454923-3c0c04ea-50d7-4279-9b3b-e6d8795826da.png" alt="Logs">
-            <h3>Access To ADAP</h3>
-            <p>A. D. A. P. Andrew Dingle Archive Proxy</p>
-            <button class="btn btn-green" id="nav-page3" onclick="window.location.href='/ADAP.html'">Go To ADAP</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page3')">Toggle System Lock</button>
-        </div>
-        <div class="card">
-            <span class="lock-badge" id="lock-page4">🔒 Locked</span>
-            <img src="data:image/jpeg;base64,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" alt="Logs">
-            <h3>Education Place</h3>
-            <p>For andrew :)</p>
-            <button class="btn btn-green" id="nav-page4" onclick="window.location.href='/revision.html'">Go to education</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page4')">Toggle System Lock</button>
+            <img src="https://via.placeholder.com/300x160?text=Special+Content" alt="2">
+            <h3>Special Projects</h3>
+            <button class="btn btn-green" id="nav-page2" onclick="location.href='/specialcontent.html'">Access Special</button>
+            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page2')">Toggle Lock</button>
         </div>
     </div>
 </div>
 
-<!-- FLOATING CHAT WIDGET -->
-
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
-    if (!email) window.location.href = '/login.html';
+    let forecastData = {};
 
-    let chatOpen = false;
-    let lastMsgId = 0;
+    async function loadDashboard() {
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        const isAdmin = data.user.is_admin === 1;
 
-    async function loadData() {
-        try {
-            const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-            const data = await res.json();
-            const isAdmin = data.user.is_admin === 1;
+        // User Identity
+        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+        document.getElementById('pill-avatar').src = data.user.profile_picture;
 
-            // Security check
-            if (data.blocks.includes('dash.html') || data.blocks.includes('ALL')) window.location.href = '/blocked.html';
+        if (isAdmin) {
+            document.getElementById('admin-tools').style.display = 'flex';
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        }
 
-            // User identity
-            document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-            if(data.user.profile_picture) document.getElementById('pill-avatar').src = data.user.profile_picture;
-            
-            if(isAdmin) {
-                document.getElementById('admin-tools').style.display = 'flex';
-                document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-            }
+        // Handle Forecast
+        forecastData = JSON.parse(data.widgets.forecast || "{}");
+        renderForecast();
 
-            // Wiki Permission Gate
-            const wikiBtn = document.getElementById('nav-page1');
-            const hasWikiAccess = isAdmin || data.permissions.includes('wiki_access');
-            if(!hasWikiAccess) {
-                wikiBtn.classList.add('btn-disabled'); 
-                wikiBtn.innerText = "Access Restricted"; 
-                wikiBtn.onclick = () => alert("Permission 'wiki_access' required.");
-            } else {
-                wikiBtn.classList.remove('btn-disabled'); 
-                wikiBtn.innerText = "Access Archives"; 
-                wikiBtn.onclick = () => window.location.href = '/wikiselector.html';
-            }
+        // Handle Calendar
+        renderCalendar();
+        document.getElementById('calendar-note-display').innerText = data.widgets.calendar_note || "No system notifications.";
+        document.getElementById('in-cal-note').value = data.widgets.calendar_note || "";
 
-            // Lock rendering
-            data.locks.forEach(l => {
-                const b = document.getElementById(`lock-${l.page_id}`); 
-                if(b) b.style.display = l.is_locked ? 'block' : 'none';
-                
-                // If standard user and page locked, disable button
-                if(!isAdmin && l.is_locked) {
-                    const btn = document.getElementById(`nav-${l.page_id}`);
-                    if(btn) { btn.classList.add('btn-disabled'); btn.innerText = "System Locked"; btn.onclick = null; }
-                }
-            });
-
-            // Handle Chat Syncing for Widget
-
-        } catch (e) { console.error("Sync Error", e); }
+        // Handle Locks
+        data.locks.forEach(l => {
+            const b = document.getElementById(`lock-${l.page_id}`);
+            if(b) b.style.display = l.is_locked ? 'block' : 'none';
+        });
     }
 
-    // Widget Chat Functions
+    function renderForecast() {
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+        const display = document.getElementById('forecast-display');
+        const inputs = document.getElementById('forecast-inputs');
+        display.innerHTML = '';
+        inputs.innerHTML = '';
 
+        days.forEach(day => {
+            const status = forecastData[day] || "Stable";
+            let icon = "☀️";
+            if(status.toLowerCase().includes("cloud")) icon = "☁️";
+            if(status.toLowerCase().includes("spike") || status.toLowerCase().includes("error")) icon = "⚡";
+            if(status.toLowerCase().includes("storm")) icon = "⛈️";
 
+            display.innerHTML += `
+                <div class="day-card">
+                    <span class="day-name">${day.toUpperCase()}</span>
+                    <span class="day-icon">${icon}</span>
+                    <span class="day-status">${status}</span>
+                </div>
+            `;
+            inputs.innerHTML += `<input id="in-${day}" value="${status}" placeholder="${day.toUpperCase()} status">`;
+        });
+    }
 
-    async function toggleLock(id) { await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: id }) }); loadData(); }
-    function logout() { localStorage.clear(); window.location.href = '/login.html'; }
+    function renderCalendar() {
+        const display = document.getElementById('calendar-display');
+        const now = new Date();
+        const today = now.getDate();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+        
+        let html = ['S','M','T','W','T','F','S'].map(d => `<div class="cal-day-name">${d}</div>`).join('');
+        for(let i=1; i<=daysInMonth; i++) {
+            const isToday = i === today ? 'cal-today' : '';
+            html += `<div class="cal-date ${isToday}">${i}</div>`;
+        }
+        display.innerHTML = html;
+    }
 
-    setInterval(loadData, 3000);
-    loadData();
+    function toggleWidgetEdit(id) {
+        const el = document.getElementById(`edit-${id}`);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function saveForecast() {
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+        let newData = {};
+        days.forEach(d => newData[d] = document.getElementById(`in-${d}`).value);
+        
+        await fetch(`${API}/admin/system/save`, {
+            method: 'POST',
+            body: JSON.stringify({ id: 'forecast', content: JSON.stringify(newData) })
+        });
+        location.reload();
+    }
+
+    async function saveCalendarNote() {
+        const note = document.getElementById('in-cal-note').value;
+        await fetch(`${API}/admin/system/save`, {
+            method: 'POST',
+            body: JSON.stringify({ id: 'calendar_note', content: note })
+        });
+        location.reload();
+    }
+
+    async function toggleLock(id) {
+        await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: id }) });
+        loadDashboard();
+    }
+
+    function logout() { localStorage.clear(); location.href='/login.html'; }
+
+    loadDashboard();
 </script>
+
 </body>
 </html>
