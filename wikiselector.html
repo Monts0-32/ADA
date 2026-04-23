@@ -45,20 +45,8 @@
 <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
 <script src="/uplink.js"></script>
 <script src="/chat-widget.js"></script>
-<header>
-    <div style="display:flex; gap:20px; align-items:center;">
-        <a href="/dash.html" class="logo">ADA Archive Selector</a>
-        <button id="admin-edit-btn" class="edit-toggle-btn" onclick="toggleEditMode()">Edit Card Metadata</button>
-    </div>
-    
-    <div style="display:flex; gap:12px; align-items:center;">
-        <a href="/profile.html" class="user-pill">
-            <img id="pill-avatar" src="" alt="" style="display:none;">
-            <span id="pill-name">Syncing...</span>
-        </a>
-        <button class="btn" style="background:transparent; color:#f85149; border-color:rgba(248,81,73,0.3); width:auto; padding:4px 12px;" onclick="logout()">Logout</button>
-    </div>
-</header>
+<div id="ada-header-anchor"></div>
+<script src="/header-engine.js"></script>
 
 <div class="container" id="main-content" style="display:none;">
     <h1>Wiki Archive Partitions</h1>
