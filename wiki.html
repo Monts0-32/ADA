@@ -36,7 +36,58 @@
     </style>
 </head>
 <body>
+<!-- LOADING OVERLAY -->
+<div id="neural-guard" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0d1117; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; transition: opacity 0.5s;">
+    <div style="width:40px; height:40px; border:3px solid #30363d; border-top-color:#58a6ff; border-radius:50%; animation: spin 1s linear infinite;"></div>
+    <p style="color:#8b949e; font-family:monospace; font-size:12px; margin-top:20px; letter-spacing:2px;">SYNCHRONIZING ARCHIVE...</p>
+</div>
 
+<style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fade-out { opacity: 0; pointer-events: none; }
+</style>
+
+<script>
+async function initGuard(requiredTag = null) {
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const email = localStorage.getItem('ada_user_email');
+    const path = window.location.pathname.split("/").pop() || "index.html";
+
+    if (!email) { window.location.href = '/login.html'; return; }
+
+    try {
+        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        // 1. Check if Profile is Disabled
+        if (data.user.profile_disabled && !data.user.is_admin) {
+            document.body.innerHTML = `<div style="color:white; text-align:center; padding:100px;"><h1>Identity Disabled</h1><p>Contact Admin.</p></div>`;
+            return;
+        }
+
+        // 2. Check for Specific Path Block
+        if (data.blocks.includes(path) || data.blocks.includes('ALL')) {
+            window.location.href = '/blocked.html';
+            return;
+        }
+
+        // 3. Check Permissions
+        if (requiredTag && !data.user.is_admin && !data.permissions.includes(requiredTag)) {
+            window.location.href = '/blocked.html';
+            return;
+        }
+
+        // Success: Remove Loader
+        const guard = document.getElementById('neural-guard');
+        guard.classList.add('fade-out');
+        return data; // Return data so the page can use it immediately
+
+    } catch (e) {
+        console.error("Guard Sync Error", e);
+        document.body.innerHTML = `<div style="color:red; text-align:center; padding:100px;"><h1>Sync Failure</h1><p>Worker Offline.</p></div>`;
+    }
+}
+</script>
 <header>
     <a href="/wikiselector.html" style="color:var(--blue); text-decoration:none; font-size:14px;">← Back to Selector</a>
     <div id="p-label" style="font-weight:600;">Partition Editor</div>
