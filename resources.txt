@@ -1,0 +1,35 @@
+Checker (perms): #####################################################
+<script id="ada-security-init">
+    async function establishNeuralLink() {
+        if (typeof runNeuralGuard === 'function') {
+            // Change 'wiki_access' to whatever tag that specific page needs
+            const archiveData = await runNeuralGuard('wiki_access'); 
+            if (archiveData) {
+                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
+            }
+        }
+    }
+    establishNeuralLink();
+</script>
+#############################################################
+
+
+Checker (general): ##########################################
+<script id="ada-security-init">
+    async function establishNeuralLink() {
+        if (typeof runNeuralGuard === 'function') {
+            const archiveData = await runNeuralGuard();
+            if (archiveData) {
+                // This triggers a signal that the page is now safe to load its own data
+                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
+            }
+        }
+    }
+    establishNeuralLink();
+</script>
+##########################################################
+
+Script Links:#############################################
+
+<script src="/chat-widget.js">
+<script src="/
