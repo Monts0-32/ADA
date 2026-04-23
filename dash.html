@@ -82,22 +82,8 @@
     }
     start();
 </script>
-<header>
-    <div style="display:flex; align-items:center; gap:20px;">
-        <a href="/" class="logo">ADA Archive</a>
-        <div id="admin-tools" style="display:none; gap:8px;">
-            <a href="/account-creator.html" class="btn" style="width:auto; padding:4px 12px;">Creator</a>
-            <a href="/account-manager.html" class="btn" style="width:auto; padding:4px 12px;">Manager</a>
-        </div>
-    </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <a href="/profile.html" class="user-pill">
-            <img id="pill-pic" src="">
-            <span id="pill-name">...</span>
-        </a>
-        <button class="btn" style="color:var(--red); width:auto; padding:4px 12px;" onclick="logout()">Logout</button>
-    </div>
-</header>
+<div id="ada-header-anchor"></div>
+<script src="/header-engine.js"></script>
 
 <div class="container">
     
