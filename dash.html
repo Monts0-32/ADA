@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Archive Dashboard</title>
+    <title>ADA | Dashboard</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
         
-        /* CUSTOM SCROLLBAR */
+        /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
@@ -21,44 +21,39 @@
 
         .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box; }
 
-        /* WIDGETS SECTION */
+        /* WIDGETS */
         .widgets-row { display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-bottom: 30px; }
         .widget-box { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; }
-        .widget-title { font-size: 12px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .widget-title { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* Forecast Styling */
+        /* THEMED EDIT BUTTONS */
+        .btn-edit { background: #21262d; border: 1px solid var(--border); color: #8b949e; padding: 3px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-edit:hover { border-color: var(--blue); color: var(--blue); }
+
+        /* Forecast */
         .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .day-card { text-align: center; background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
-        .day-name { font-size: 11px; color: #8b949e; font-weight: bold; }
-        .day-icon { font-size: 20px; margin: 8px 0; display: block; }
-        .day-status { font-size: 10px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .day-img { width: 30px; height: 30px; margin: 8px auto; display: block; object-fit: contain; }
+        .day-status { font-size: 10px; color: var(--blue); font-family: monospace; }
 
-        /* Calendar Styling */
+        /* Calendar */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 11px; }
-        .cal-day-name { color: #8b949e; font-weight: bold; padding-bottom: 5px; }
-        .cal-date { padding: 5px; border-radius: 4px; border: 1px solid transparent; }
-        .cal-today { background: var(--blue); color: #000; font-weight: bold; }
-        .cal-note { font-size: 10px; color: #8b949e; margin-top: 10px; font-style: italic; border-top: 1px solid var(--border); padding-top: 8px; }
+        .cal-today { background: var(--blue); color: #000; font-weight: bold; border-radius: 4px; }
 
-        /* GALLERY SECTION */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; position: relative; }
-        .card img { width: 100%; height: 160px; border-radius: 4px; object-fit: cover; background: #0d1117; margin-bottom: 15px; }
-        .card h3 { margin: 0; font-size: 18px; color: var(--blue); }
-        .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; color: #f85149; display: none; background: rgba(248,81,73,0.1); padding: 2px 6px; border-radius: 4px; border: 1px solid #f85149; }
+        /* Admin Overlay */
+        .edit-overlay { display: none; background: rgba(13, 17, 23, 0.95); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 10; border-radius: 8px; padding: 20px; box-sizing: border-box; }
+        .edit-input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .edit-input-group input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 5px; font-size: 11px; border-radius: 4px; }
 
+        /* Standard Controls */
         .btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; }
-        .btn-green { background: var(--btn-green); border: none; width: 100%; box-sizing: border-box; }
-        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-green { background: var(--btn-green); border: none; }
         .admin-only { display: none; }
-
-        /* ADMIN EDIT OVERLAY */
-        .edit-overlay { display: none; background: rgba(0,0,0,0.8); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 5; border-radius: 8px; padding: 20px; box-sizing: border-box; }
-        .edit-overlay input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 5px; padding: 4px; font-size: 11px; }
-
     </style>
 </head>
 <body>
+
+<!-- PASTE THE NEURAL GUARD HTML/CSS/JS HERE -->
 
 <header>
     <div style="display:flex; align-items:center; gap:20px;">
@@ -79,114 +74,94 @@
 
 <div class="container">
     
-    <!-- TOP WIDGETS SECTION -->
     <div class="widgets-row">
-        <!-- SYSTEM FORECAST -->
-        <div class="widget-box" id="forecast-widget">
+        <!-- FORECAST -->
+        <div class="widget-box">
             <div class="widget-title">
-                Neural Load Forecast (Mon-Fri)
-                <button class="admin-only" style="font-size:9px; cursor:pointer;" onclick="toggleWidgetEdit('forecast')">Edit</button>
+                System Load Forecast
+                <button class="admin-only btn-edit" onclick="toggleEdit('forecast')">Edit Forecast</button>
             </div>
-            <div class="forecast-grid" id="forecast-display">
-                <!-- Days will be loaded here -->
-            </div>
+            <div class="forecast-grid" id="forecast-display"></div>
+            
             <div class="edit-overlay" id="edit-forecast">
-                <div id="forecast-inputs"></div>
-                <button class="btn btn-green" style="font-size:10px; padding:4px;" onclick="saveForecast()">Apply Changes</button>
+                <div id="forecast-edit-list" style="max-height: 200px; overflow-y:auto;"></div>
+                <button class="btn btn-green" style="margin-top:10px; font-size:11px;" onclick="saveForecast()">Save Forecast Data</button>
             </div>
         </div>
 
-        <!-- ARCHIVE CALENDAR -->
+        <!-- CALENDAR -->
         <div class="widget-box">
             <div class="widget-title">
                 Archive Calendar
-                <button class="admin-only" style="font-size:9px; cursor:pointer;" onclick="toggleWidgetEdit('calendar')">Edit Note</button>
+                <button class="admin-only btn-edit" onclick="toggleEdit('calendar')">Edit Note</button>
             </div>
             <div class="calendar-grid" id="calendar-display"></div>
-            <div id="calendar-note-display" class="cal-note"></div>
+            <div id="calendar-note" style="font-size:11px; color:#8b949e; margin-top:10px; font-style:italic;"></div>
+            
             <div class="edit-overlay" id="edit-calendar">
-                <textarea id="in-cal-note" style="width:100%; height:80px; background:#000; color:white; border:1px solid var(--border); font-size:12px;"></textarea>
-                <button class="btn btn-green" style="font-size:10px; padding:4px; margin-top:5px;" onclick="saveCalendarNote()">Update Global Note</button>
+                <textarea id="in-cal-note" style="width:100%; height:100px; background:#000; color:white; border:1px solid var(--border); border-radius:6px;"></textarea>
+                <button class="btn btn-green" style="margin-top:10px; font-size:11px;" onclick="saveCalendarNote()">Update System Note</button>
             </div>
         </div>
     </div>
 
-    <h2>Archive Resources</h2>
-    <div class="grid">
-        <div class="card">
-            <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-            <img src="https://via.placeholder.com/300x160?text=Wiki+Network" alt="1">
-            <h3>Wiki Records</h3>
-            <button class="btn btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Access Selector</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page1')">Toggle Lock</button>
-        </div>
-        <div class="card">
-            <span class="lock-badge" id="lock-page2">🔒 Locked</span>
-            <img src="https://via.placeholder.com/300x160?text=Special+Content" alt="2">
-            <h3>Special Projects</h3>
-            <button class="btn btn-green" id="nav-page2" onclick="location.href='/specialcontent.html'">Access Special</button>
-            <button class="btn admin-only" style="margin-top:10px; width:100%" onclick="toggleLock('page2')">Toggle Lock</button>
+    <!-- MAIN CARDS -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
+        <div class="widget-box">
+            <img src="https://via.placeholder.com/300x160?text=Wiki" style="width:100%; border-radius:4px; margin-bottom:15px;">
+            <h3 style="margin:0; color:var(--blue);">Wiki Network</h3>
+            <button class="btn btn-green" style="margin-top:15px;" onclick="location.href='/wikiselector.html'">Launch Archives</button>
         </div>
     </div>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const email = localStorage.getItem('ada_user_email');
-    let forecastData = {};
+    let forecastJSON = {};
 
-    async function loadDashboard() {
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        const isAdmin = data.user.is_admin === 1;
+    async function start() {
+        // --- RUN NEURAL GUARD ---
+        const data = await initGuard(); // No specific tag needed for dash
+        if(!data) return;
 
-        // User Identity
+        // Populate User Info
         document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
         document.getElementById('pill-avatar').src = data.user.profile_picture;
 
-        if (isAdmin) {
+        if (data.user.is_admin) {
             document.getElementById('admin-tools').style.display = 'flex';
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         }
 
-        // Handle Forecast
-        forecastData = JSON.parse(data.widgets.forecast || "{}");
+        // Render Widgets
+        forecastJSON = JSON.parse(data.widgets.forecast || "{}");
         renderForecast();
-
-        // Handle Calendar
         renderCalendar();
-        document.getElementById('calendar-note-display').innerText = data.widgets.calendar_note || "No system notifications.";
+        document.getElementById('calendar-note').innerText = data.widgets.calendar_note || "Status: Nominal.";
         document.getElementById('in-cal-note').value = data.widgets.calendar_note || "";
-
-        // Handle Locks
-        data.locks.forEach(l => {
-            const b = document.getElementById(`lock-${l.page_id}`);
-            if(b) b.style.display = l.is_locked ? 'block' : 'none';
-        });
     }
 
     function renderForecast() {
         const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
         const display = document.getElementById('forecast-display');
-        const inputs = document.getElementById('forecast-inputs');
-        display.innerHTML = '';
-        inputs.innerHTML = '';
+        const editor = document.getElementById('forecast-edit-list');
+        display.innerHTML = ''; editor.innerHTML = '';
 
-        days.forEach(day => {
-            const status = forecastData[day] || "Stable";
-            let icon = "☀️";
-            if(status.toLowerCase().includes("cloud")) icon = "☁️";
-            if(status.toLowerCase().includes("spike") || status.toLowerCase().includes("error")) icon = "⚡";
-            if(status.toLowerCase().includes("storm")) icon = "⛈️";
-
+        days.forEach(d => {
+            const dayData = forecastJSON[d] || { text: "Stable", img: "" };
             display.innerHTML += `
                 <div class="day-card">
-                    <span class="day-name">${day.toUpperCase()}</span>
-                    <span class="day-icon">${icon}</span>
-                    <span class="day-status">${status}</span>
-                </div>
-            `;
-            inputs.innerHTML += `<input id="in-${day}" value="${status}" placeholder="${day.toUpperCase()} status">`;
+                    <div style="font-size:10px; font-weight:bold; color:#8b949e;">${d.toUpperCase()}</div>
+                    <img src="${dayData.img || 'https://via.placeholder.com/30?text=?'}" class="day-img">
+                    <div class="day-status">${dayData.text}</div>
+                </div>`;
+            
+            editor.innerHTML += `
+                <div class="edit-input-group">
+                    <label style="font-size:10px; color:var(--blue)">${d.toUpperCase()}</label>
+                    <input type="text" id="edit-text-${d}" value="${dayData.text}" placeholder="Status Text">
+                    <input type="text" id="edit-img-${d}" value="${dayData.img}" placeholder="Icon Image URL (or Base64)">
+                </div>`;
         });
     }
 
@@ -195,50 +170,46 @@
         const now = new Date();
         const today = now.getDate();
         const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-        
-        let html = ['S','M','T','W','T','F','S'].map(d => `<div class="cal-day-name">${d}</div>`).join('');
+        let html = ['S','M','T','W','T','F','S'].map(d => `<div style="color:#8b949e; font-weight:bold;">${d}</div>`).join('');
         for(let i=1; i<=daysInMonth; i++) {
-            const isToday = i === today ? 'cal-today' : '';
-            html += `<div class="cal-date ${isToday}">${i}</div>`;
+            html += `<div class="${i === today ? 'cal-today' : ''}" style="padding:4px;">${i}</div>`;
         }
         display.innerHTML = html;
     }
 
-    function toggleWidgetEdit(id) {
+    function toggleEdit(id) {
         const el = document.getElementById(`edit-${id}`);
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
     async function saveForecast() {
         const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-        let newData = {};
-        days.forEach(d => newData[d] = document.getElementById(`in-${d}`).value);
-        
+        let updated = {};
+        days.forEach(d => {
+            updated[d] = {
+                text: document.getElementById(`edit-text-${d}`).value,
+                img: document.getElementById(`edit-img-${d}`).value
+            };
+        });
         await fetch(`${API}/admin/system/save`, {
             method: 'POST',
-            body: JSON.stringify({ id: 'forecast', content: JSON.stringify(newData) })
+            body: JSON.stringify({ id: 'forecast', content: JSON.stringify(updated) })
         });
         location.reload();
     }
 
     async function saveCalendarNote() {
-        const note = document.getElementById('in-cal-note').value;
+        const content = document.getElementById('in-cal-note').value;
         await fetch(`${API}/admin/system/save`, {
             method: 'POST',
-            body: JSON.stringify({ id: 'calendar_note', content: note })
+            body: JSON.stringify({ id: 'calendar_note', content })
         });
         location.reload();
     }
 
-    async function toggleLock(id) {
-        await fetch(`${API}/admin/lock`, { method: 'POST', body: JSON.stringify({ page_id: id }) });
-        loadDashboard();
-    }
-
     function logout() { localStorage.clear(); location.href='/login.html'; }
 
-    loadDashboard();
+    start();
 </script>
-
 </body>
 </html>
