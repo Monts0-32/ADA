@@ -139,7 +139,16 @@ async function runNeuralGuard(requiredTag = null) {
     <div id="visual-editor" contenteditable="true"></div>
     <textarea id="source-editor"></textarea>
 </div>
+<script>
+    async function init() {
+        const data = await runNeuralGuard('wiki_access');
+        if(!data) return;
 
+        // Run your wiki loading code
+        load(); 
+    }
+    init();
+</script>
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const urlParams = new URLSearchParams(window.location.search);
