@@ -255,6 +255,11 @@ async function runNeuralGuard(requiredTag = null) {
 
     async function init() {
         if (!email) { window.location.href = '/login.html'; return; }
+        const data = await runNeuralGuard('wiki_access'); 
+        if(!data) return;
+        
+        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
+        loadCards(); 
 
         try {
             console.log("ADA: Initiating Security Sync...");
