@@ -3,74 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <title>ADA | Archive Dashboard</title>
-    <!-- 1. THE SECURITY BOOTSTRAP -->
-    <script src="/uplink.js"></script>
     
+    <!-- 1. SECURITY & UI BOOTSTRAP -->
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
         
         /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #444c56; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* HEADER */
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; font-size: 16px; }
-        
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill:hover { border-color: #8b949e; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
-
         .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 30px 20px; box-sizing: border-box; }
 
-        /* WIDGETS ROW */
+        /* WIDGETS SECTION */
         .widgets-row { display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-bottom: 30px; }
         .widget-box { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; }
         .widget-title { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* THEMED EDIT BUTTONS */
-        .btn-edit { background: #21262d; border: 1px solid var(--border); color: #8b949e; padding: 3px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; transition: 0.2s; }
-        .btn-edit:hover { border-color: var(--blue); color: var(--blue); }
+        .btn-edit-tool { background: #21262d; border: 1px solid var(--border); color: #8b949e; padding: 3px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; display: none; }
+        .btn-edit-tool:hover { border-color: var(--blue); color: var(--blue); }
 
-        /* FORECAST STYLING */
+        /* Forecast */
         .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .day-card { text-align: center; background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
         .day-name { font-size: 10px; color: #8b949e; font-weight: bold; }
         .day-img { width: 30px; height: 30px; margin: 8px auto; display: block; object-fit: contain; }
         .day-status { font-size: 10px; color: var(--blue); font-family: monospace; }
 
-        /* CALENDAR STYLING */
+        /* Calendar */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 11px; }
         .cal-day-name { color: #8b949e; font-weight: bold; padding-bottom: 5px; }
         .cal-date { padding: 4px; border-radius: 4px; }
         .cal-today { background: var(--blue); color: #000; font-weight: bold; }
         .cal-note { font-size: 11px; color: #8b949e; margin-top: 10px; font-style: italic; border-top: 1px solid var(--border); padding-top: 10px; }
 
-        /* ADMIN OVERLAYS */
+        /* Admin Overlays */
         .edit-overlay { display: none; background: rgba(13, 17, 23, 0.98); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 10; border-radius: 8px; padding: 20px; box-sizing: border-box; }
         .edit-input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
         .edit-input-group input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 6px; font-size: 11px; border-radius: 4px; outline: none; }
-        .edit-input-group input:focus { border-color: var(--blue); }
 
-        /* GALLERY CARDS */
+        /* Resource Grid */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
         .card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; }
         .card:hover { border-color: #8b949e; }
-        .card-img { width: 100%; height: 160px; border-radius: 4px; background: #0d1117; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #30363d; font-weight: bold; border: 1px solid var(--border); }
+        .card-img-fallback { width: 100%; height: 160px; border-radius: 4px; background: #0d1117; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #30363d; font-weight: bold; border: 1px solid var(--border); letter-spacing: 2px; font-size: 12px; }
         .card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
         .card p { font-size: 13px; color: #8b949e; line-height: 1.5; margin-bottom: 20px; }
 
         .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; color: #f85149; display: none; background: rgba(248,81,73,0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid #f85149; }
 
-        .btn { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; width: 100%; box-sizing: border-box; }
+        .btn-action { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; width: 100%; box-sizing: border-box; transition: 0.2s; }
         .btn-green { background: var(--btn-green); border: none; }
         .btn-green:hover { background: #2ea043; }
         .btn-disabled { opacity: 0.4; cursor: not-allowed !important; }
-        .admin-only { display: none; }
     </style>
 </head>
 <body>
@@ -82,6 +73,7 @@
     }
     start();
 </script>
+<!-- Header injection anchor -->
 <div id="ada-header-anchor"></div>
 <script src="/header-engine.js"></script>
 
@@ -93,15 +85,15 @@
         <div class="widget-box">
             <div class="widget-title">
                 Neural Load Forecast
-                <button class="admin-only btn-edit" onclick="toggleOverlay('edit-forecast')">Edit Forecast</button>
+                <button id="edit-f-btn" class="btn-edit-tool" onclick="toggleOverlay('edit-forecast')">Edit</button>
             </div>
             <div class="forecast-grid" id="forecast-display"></div>
             
             <div class="edit-overlay" id="edit-forecast">
                 <div id="forecast-inputs" style="max-height: 220px; overflow-y:auto; padding-right:10px;"></div>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn btn-green" style="font-size:11px;" onclick="saveForecast()">Save Changes</button>
-                    <button class="btn" style="font-size:11px;" onclick="toggleOverlay('edit-forecast')">Cancel</button>
+                    <button class="btn-action btn-green" style="font-size:11px;" onclick="saveForecast()">Save</button>
+                    <button class="btn-action" style="font-size:11px;" onclick="toggleOverlay('edit-forecast')">Cancel</button>
                 </div>
             </div>
         </div>
@@ -110,42 +102,41 @@
         <div class="widget-box">
             <div class="widget-title">
                 Archive Calendar
-                <button class="admin-only btn-edit" onclick="toggleOverlay('edit-calendar')">Edit Note</button>
+                <button id="edit-c-btn" class="btn-edit-tool" onclick="toggleOverlay('edit-calendar')">Edit</button>
             </div>
             <div class="calendar-grid" id="calendar-display"></div>
             <div id="calendar-note-text" class="cal-note"></div>
             
             <div class="edit-overlay" id="edit-calendar">
-                <label style="font-size:10px; color:var(--blue); display:block; margin-bottom:5px;">SYSTEM NOTE</label>
                 <textarea id="in-cal-note" style="width:100%; height:120px; background:#000; color:white; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; padding:10px; box-sizing:border-box;"></textarea>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn btn-green" style="font-size:11px;" onclick="saveCalendarNote()">Update Note</button>
-                    <button class="btn" style="font-size:11px;" onclick="toggleOverlay('edit-calendar')">Cancel</button>
+                    <button class="btn-action btn-green" style="font-size:11px;" onclick="saveCalendarNote()">Update</button>
+                    <button class="btn-action" style="font-size:11px;" onclick="toggleOverlay('edit-calendar')">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <h2>Archive Resources</h2>
+    <h2>Active Partitions</h2>
     <div class="grid">
         <!-- Wiki Card -->
         <div class="card">
             <span class="lock-badge" id="lock-page1">🔒 Locked</span>
-            <div class="card-img" style="border-left: 4px solid var(--blue);">WIKI_NET</div>
+            <div class="card-img-fallback" style="border-left: 4px solid var(--blue);">WIKI_SEC</div>
             <h3>Wiki Records</h3>
-            <p>Publicly editable documentation partitions for archive data and system logs.</p>
-            <button class="btn btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Launch Archives</button>
-            <button class="btn admin-only" style="margin-top:10px;" onclick="toggleLock('page1')">Toggle Lock</button>
+            <p>Access collaborative archive documentation and community system logs.</p>
+            <button class="btn-action btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Launch Archives</button>
+            <button class="btn-action admin-btn" style="display:none; margin-top:10px;" onclick="toggleLock('page1')">Toggle System Lock</button>
         </div>
 
-        <!-- Special Card -->
+        <!-- Special Content Card -->
         <div class="card">
             <span class="lock-badge" id="lock-page2">🔒 Locked</span>
-            <div class="card-img" style="border-left: 4px solid var(--green);">SPEC_OPS</div>
+            <div class="card-img-fallback" style="border-left: 4px solid var(--green);">SPEC_OPS</div>
             <h3>Special Projects</h3>
-            <p>Access neural training modules, encrypted simulations, and relay uplink nodes.</p>
-            <button class="btn btn-green" id="nav-page2" onclick="location.href='/specialcontent.html'">Access Special</button>
-            <button class="btn admin-only" style="margin-top:10px;" onclick="toggleLock('page2')">Toggle Lock</button>
+            <p>Access neural training modules, encrypted simulations, and relay nodes.</p>
+            <button class="btn-action btn-green" id="nav-page2" onclick="location.href='/specialcontent.html'">Access Special</button>
+            <button class="btn-action admin-btn" style="display:none; margin-top:10px;" onclick="toggleLock('page2')">Toggle System Lock</button>
         </div>
     </div>
 </div>
@@ -154,18 +145,18 @@
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     let forecastJSON = {};
 
-    async function start() {
-        // 1. Run Security Guard from uplink.js
+    async function init() {
+        // 1. Run the Security Guard (from uplink.js)
         const data = await runNeuralGuard(); 
         if(!data) return;
 
-        // 2. Populate User Header
-        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-        document.getElementById('pill-pic').src = data.user.profile_picture;
-        
-        if (data.user.is_admin) {
-            document.getElementById('admin-tools').style.display = 'flex';
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        const isAdmin = data.user.is_admin === 1;
+
+        // 2. Show Admin Tools
+        if (isAdmin) {
+            document.getElementById('edit-f-btn').style.display = 'block';
+            document.getElementById('edit-c-btn').style.display = 'block';
+            document.querySelectorAll('.admin-btn').forEach(el => el.style.display = 'block');
         }
 
         // 3. Render Forecast
@@ -183,10 +174,10 @@
             const btn = document.getElementById(`nav-${l.page_id}`);
             if(badge) badge.style.display = l.is_locked ? 'block' : 'none';
             
-            if (l.is_locked && !data.user.is_admin && btn) {
+            if (l.is_locked && !isAdmin && btn) {
                 btn.classList.add('btn-disabled');
                 btn.innerText = "Access Locked";
-                btn.onclick = (e) => { e.preventDefault(); alert("Cleared personnel only."); };
+                btn.onclick = (e) => { e.preventDefault(); alert("Access Restricted."); };
             }
         });
     }
@@ -209,8 +200,8 @@
             editor.innerHTML += `
                 <div class="edit-input-group">
                     <label style="font-size:10px; color:var(--blue); font-weight:bold;">${d.toUpperCase()}</label>
-                    <input type="text" id="edit-text-${d}" value="${dayData.text}" placeholder="Status (e.g. Sunny)">
-                    <input type="text" id="edit-img-${d}" value="${dayData.img}" placeholder="Image URL / Base64">
+                    <input type="text" id="edit-text-${d}" value="${dayData.text}" placeholder="Status">
+                    <input type="text" id="edit-img-${d}" value="${dayData.img}" placeholder="Image URL">
                 </div>`;
         });
     }
@@ -264,12 +255,11 @@
         location.reload();
     }
 
-    function logout() { localStorage.clear(); location.href='/login.html'; }
-
-    start();
+    init();
 </script>
 
-<!-- CHAT WIDGET -->
+<!-- Floating Chat -->
 <script src="/chat-widget.js"></script>
+
 </body>
 </html>
