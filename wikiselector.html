@@ -6,7 +6,7 @@
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
         
-        /* CUSTOM SCROLLBAR */
+        /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
@@ -14,14 +14,7 @@
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; font-size: 14px; }
-        
-        /* USER PILL */
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill:hover { border-color: #8b949e; background: #30363d; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
-
+        /* The header-engine.js will inject the header here */
         .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
         h1 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 40px; font-weight: 400; font-size: 24px; }
         
@@ -35,85 +28,59 @@
         .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
         .btn:hover { background: #2ea043; }
         
+        /* Admin Edit Panel */
         .admin-edit-panel { background: #21262d; border: 1px solid var(--blue); padding: 12px; border-radius: 6px; margin-top: 12px; display: none; }
         .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 8px; padding: 6px; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
-        
-        .edit-toggle-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 5px 15px; border-radius: 6px; cursor: pointer; display: none; font-size: 12px; }
     </style>
 </head>
 <body>
+
+<!-- SCRIPTS LOADED IN ORDER -->
 <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
 <script src="/uplink.js"></script>
 <script src="/chat-widget.js"></script>
+
+<!-- The anchor for header-engine.js -->
 <div id="ada-header-anchor"></div>
 <script src="/header-engine.js"></script>
 
 <div class="container" id="main-content" style="display:none;">
     <h1>Wiki Archive Partitions</h1>
-    <div class="grid" id="wiki-grid"></div>
-</div>
-
-<div id="error-screen" style="display:none; padding:100px; text-align:center; color:#f85149;">
-    <h3>Authentication Failed</h3>
-    <p id="error-msg">You do not have permission to view this partition.</p>
-    <a href="/dash.html" style="color:var(--blue)">Return to Dashboard</a>
+    <div class="grid" id="wiki-grid">
+        <!-- Cards loaded via Worker -->
+    </div>
 </div>
 
 <script>
-    // IMPORTANT: Update this to your exact Worker URL
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const email = localStorage.getItem('ada_user_email');
     let editModeActive = false;
 
     async function init() {
-        if (!email) { window.location.href = '/login.html'; return; }
-        const data = await runNeuralGuard('wiki_access'); 
-        if(!data) return;
-        
-        document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-        loadCards(); 
-
-        try {
-            console.log("ADA: Initiating Security Sync...");
-            const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-            
-            if (!res.ok) throw new Error("Worker responded with an error.");
-            const data = await res.json();
-
-            if (!data.user) {
-                document.getElementById('pill-name').innerText = "Unknown User";
-                throw new Error("User record not found in database.");
-            }
-
-            // Security Check
-            const isAdmin = data.user.is_admin === 1;
-            const hasAccess = isAdmin || data.permissions.includes('wiki_access');
-            const isBlocked = data.blocks.includes('wikiselector.html') || data.blocks.includes('ALL');
-
-            if (!hasAccess || isBlocked) {
-                window.location.href = '/blocked.html';
-                return;
-            }
-
-            // Populate UI
-            document.getElementById('pill-name').innerText = data.user.display_name || data.user.email;
-            const avatar = document.getElementById('pill-avatar');
-            if (data.user.profile_picture) {
-                avatar.src = data.user.profile_picture;
-                avatar.style.display = 'block';
-            }
-
-            if (isAdmin) document.getElementById('admin-edit-btn').style.display = 'block';
-
-            document.getElementById('main-content').style.display = 'block';
-            loadCards();
-
-        } catch (e) {
-            console.error("Sync Error:", e);
-            document.getElementById('pill-name').innerText = "Sync Failed";
-            document.getElementById('error-screen').style.display = 'block';
-            document.getElementById('error-msg').innerText = "System Error: " + e.message;
+        // 1. Run the Security Guard (Handled via uplink.js)
+        // This function will automatically redirect to /blocked if unauthorized
+        if (typeof runNeuralGuard !== 'function') {
+            setTimeout(init, 100);
+            return;
         }
+
+        const data = await runNeuralGuard('wiki_access'); 
+        if(!data) return; // Guard will have redirected the user
+
+        // 2. Clear the loading screen and show content
+        document.getElementById('main-content').style.display = 'block';
+
+        // 3. Admin Tools Setup
+        // Check for admin toggle button in the injected header or add one to the page
+        // Since we want an edit button, we can check if data says they are admin
+        if(data.user.is_admin) {
+            // Note: If you want the "Edit" button in the header, 
+            // you'd add it to header-engine.js. For now, we'll look for it on page.
+            const btn = document.getElementById('admin-edit-btn');
+            if(btn) btn.style.display = 'block';
+        }
+
+        // 4. Load the cards
+        loadCards();
     }
 
     async function loadCards() {
@@ -124,7 +91,7 @@
             
             grid.innerHTML = cards.map(c => `
                 <div class="wiki-card">
-                    <img src="${c.image_url}" alt="Partition">
+                    <img src="${c.image_url}" alt="Partition" onerror="this.src='https://via.placeholder.com/260x140?text=No+Image'">
                     <h3>${c.title}</h3>
                     <p>${c.description || 'System Documentation Partition'}</p>
                     <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
@@ -132,17 +99,21 @@
                     <div class="admin-edit-panel" id="panel-${c.id}">
                         <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Partition Title">
                         <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
-                        <button class="btn" style="background:var(--blue)" onclick="saveCard('${c.id}')">Save Metadata</button>
+                        <button class="btn" style="background:var(--blue); border:none;" onclick="saveCard('${c.id}')">Save Metadata</button>
                     </div>
                 </div>
             `).join('');
+
+            // Keep panels open if edit mode was active during a refresh
+            if (editModeActive) toggleEditMode(true);
         } catch (e) {
             console.error("Cards failed to load", e);
         }
     }
 
-    function toggleEditMode() {
-        editModeActive = !editModeActive;
+    // This function can be called from a button you add or a console command
+    window.toggleEditMode = function(forceShow = false) {
+        if (!forceShow) editModeActive = !editModeActive;
         document.querySelectorAll('.admin-edit-panel').forEach(panel => {
             panel.style.display = editModeActive ? 'block' : 'none';
         });
@@ -160,11 +131,7 @@
         loadCards();
     }
 
-    function logout() {
-        localStorage.clear();
-        window.location.href = '/login.html';
-    }
-
+    // Start the process
     init();
 </script>
 </body>
