@@ -17,55 +17,80 @@
     </style>
 </head>
 <body>
-<!-- LOADING OVERLAY -->
-<div id="neural-guard" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0d1117; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; transition: opacity 0.5s;">
+<!-- NEURAL GUARD SYSTEM -->
+<div id="neural-guard" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0d1117; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
     <div style="width:40px; height:40px; border:3px solid #30363d; border-top-color:#58a6ff; border-radius:50%; animation: spin 1s linear infinite;"></div>
-    <p style="color:#8b949e; font-family:monospace; font-size:12px; margin-top:20px; letter-spacing:2px;">SYNCHRONIZING ARCHIVE...</p>
+    <p id="guard-text" style="color:#8b949e; font-family:monospace; font-size:12px; margin-top:20px; letter-spacing:2px;">ESTABLISHING SECURE UPLINK...</p>
 </div>
 
-<style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .fade-out { opacity: 0; pointer-events: none; }
-</style>
+<style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 
 <script>
-async function initGuard(requiredTag = null) {
-    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const email = localStorage.getItem('ada_user_email');
-    const path = window.location.pathname.split("/").pop() || "index.html";
+async function runNeuralGuard(requiredTag = null) {
+    const API_URL = "https://ada-relay.andrewdinglearchive.workers.dev"; // Confirm this is your worker URL
+    const userEmail = localStorage.getItem('ada_user_email');
+    const currentPath = window.location.pathname.split("/").pop() || "index.html";
 
-    if (!email) { window.location.href = '/login.html'; return; }
+    // Prevent loops on login/blocked pages
+    if (currentPath === "login.html" || currentPath === "blocked.html") {
+        const loader = document.getElementById('neural-guard');
+        if(loader) loader.style.display = 'none';
+        return;
+    }
+
+    if (!userEmail) {
+        window.location.href = '/login.html';
+        return;
+    }
 
     try {
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
+        const response = await fetch(`${API_URL}/sync?email=${encodeURIComponent(userEmail)}`);
+        const data = await response.json();
 
-        // 1. Check if Profile is Disabled
-        if (data.user.profile_disabled && !data.user.is_admin) {
-            document.body.innerHTML = `<div style="color:white; text-align:center; padding:100px;"><h1>Identity Disabled</h1><p>Contact Admin.</p></div>`;
+        // 1. Check if account exists
+        if (!data.user) {
+            localStorage.clear();
+            window.location.href = '/login.html';
             return;
         }
 
-        // 2. Check for Specific Path Block
-        if (data.blocks.includes(path) || data.blocks.includes('ALL')) {
+        // 2. Check for Global or Path Bans
+        const isBanned = data.blocks.includes(currentPath) || data.blocks.includes('ALL');
+        if (isBanned) {
             window.location.href = '/blocked.html';
             return;
         }
 
-        // 3. Check Permissions
-        if (requiredTag && !data.user.is_admin && !data.permissions.includes(requiredTag)) {
-            window.location.href = '/blocked.html';
-            return;
+        // 3. Check specific Permission Tag
+        if (requiredTag && !data.user.is_admin) {
+            if (!data.permissions.includes(requiredTag)) {
+                window.location.href = '/blocked.html';
+                return;
+            }
         }
 
-        // Success: Remove Loader
-        const guard = document.getElementById('neural-guard');
-        guard.classList.add('fade-out');
-        return data; // Return data so the page can use it immediately
+        // 4. Check for Profile Disabled (Admins bypass)
+        if (data.user.profile_disabled && !data.user.is_admin && currentPath === "profile.html") {
+            const params = new URLSearchParams(window.location.search);
+            const target = params.get('email');
+            if (target && target !== userEmail) {
+                // If viewing someone else who is disabled
+                window.location.href = '/blocked.html';
+                return;
+            }
+        }
 
-    } catch (e) {
-        console.error("Guard Sync Error", e);
-        document.body.innerHTML = `<div style="color:red; text-align:center; padding:100px;"><h1>Sync Failure</h1><p>Worker Offline.</p></div>`;
+        // Success: Hide the Loader
+        console.log("ADA Guard: Access Granted.");
+        const loader = document.getElementById('neural-guard');
+        if(loader) loader.style.display = 'none';
+        
+        return data; // Return the data so the page can use it
+
+    } catch (error) {
+        console.error("ADA Guard Error:", error);
+        document.getElementById('guard-text').innerText = "NODE CONNECTION FAILURE";
+        document.getElementById('guard-text').style.color = "#f85149";
     }
 }
 </script>
