@@ -56,6 +56,14 @@
     establishNeuralLink();
 </script>
 <script src="/uplink.js"></script>
+<script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+        // Admins can enter even without 'wiki_access'
+        await runNeuralGuard('ADAP_access'); 
+    }
+    start();
+</script>
 <script src="/chat-widget.js"></script>
 <header>
     <div style="display:flex; align-items:center; gap:15px;">
