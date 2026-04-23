@@ -40,9 +40,9 @@
 <script id="ada-security-init">
     async function establishNeuralLink() {
         if (typeof runNeuralGuard === 'function') {
-            const archiveData = await runNeuralGuard();
+            // Change 'wiki_access' to whatever tag that specific page needs
+            const archiveData = await runNeuralGuard('ADAP_access'); 
             if (archiveData) {
-                // This triggers a signal that the page is now safe to load its own data
                 window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
             }
         }
