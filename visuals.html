@@ -17,19 +17,14 @@
     </style>
 </head>
 <body>
-<script id="ada-security-init">
-    async function establishNeuralLink() {
-        if (typeof runNeuralGuard === 'function') {
-            const archiveData = await runNeuralGuard();
-            if (archiveData) {
-                // This triggers a signal that the page is now safe to load its own data
-                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
-            }
-        }
-    }
-    establishNeuralLink();
-</script>
 <script src="/uplink.js"></script>
+<script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+        await runNeuralGuard(); // No tag needed
+    }
+    start();
+</script>
 <script src="/chat-widget.js"></script>
 <header>
     <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-weight:600;">← Archive Dashboard</a>
