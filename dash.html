@@ -74,7 +74,19 @@
     </style>
 </head>
 <body>
-
+<script id="ada-security-init">
+    async function establishNeuralLink() {
+        if (typeof runNeuralGuard === 'function') {
+            const archiveData = await runNeuralGuard();
+            if (archiveData) {
+                // This triggers a signal that the page is now safe to load its own data
+                window.dispatchEvent(new CustomEvent('ada-uplink-complete', { detail: archiveData }));
+            }
+        }
+    }
+    establishNeuralLink();
+</script>
+<script src="/">
 <header>
     <div style="display:flex; align-items:center; gap:20px;">
         <a href="/" class="logo">ADA Archive</a>
