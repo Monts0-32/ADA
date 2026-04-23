@@ -1,8 +1,9 @@
 // --- ADA GLOBAL CONFIG ---
 const API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
 
-// 1. Setup the UI immediately
+// 1. Setup the UI immediately upon script execution
 (function injectLoader() {
+    if (document.getElementById('neural-guard')) return;
     const style = document.createElement('style');
     style.innerHTML = `
         #neural-guard { position:fixed; top:0; left:0; width:100%; height:100%; background:#0d1117; z-index:1000000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
@@ -18,25 +19,21 @@ const API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
     document.body.appendChild(div);
 })();
 
-// 2. Clear Guard Function
 window.clearGuard = function() {
     const el = document.getElementById('neural-guard');
     if (el) el.classList.add('guard-hidden');
-    console.log("ADA: Guard Cleared.");
 };
 
-// 3. The Master Guard Function
 window.runNeuralGuard = async function(requiredTag = null) {
     const email = localStorage.getItem('ada_user_email');
     const path = window.location.pathname.split("/").pop() || "index.html";
 
-    // EMERGENCY FAIL-SAFE: If the database is slow, show page after 3 seconds anyway
+    // FAIL-SAFE: 3 seconds max. If blocker breaks our script, show the site anyway.
     const failSafe = setTimeout(() => {
-        console.warn("ADA: Fail-safe triggered.");
+        console.warn("ADA: Security Timeout - Forcing Display.");
         window.clearGuard();
     }, 3000);
 
-    // Skip check for login/blocked
     if (path === "login.html" || path === "blocked.html") {
         clearTimeout(failSafe);
         window.clearGuard();
@@ -50,29 +47,31 @@ window.runNeuralGuard = async function(requiredTag = null) {
 
     try {
         const res = await fetch(`${API_URL}/sync?email=${encodeURIComponent(email)}`);
-        if (!res.ok) throw new Error("Sync Failed");
+        if (!res.ok) throw new Error("Database Link Failed");
         const data = await res.json();
 
-        // Security Checks
+        // BLOCK CHECK (Applies to everyone including Admins)
         if (data.blocks.includes(path) || data.blocks.includes('ALL')) {
             window.location.href = '/blocked.html';
             return null;
         }
 
+        // --- ADMIN PERMISSION BYPASS ---
+        // If a tag is required AND user is NOT an admin AND user doesn't have the tag...
         if (requiredTag && !data.user.is_admin && !data.permissions.includes(requiredTag)) {
             window.location.href = '/blocked.html';
             return null;
         }
 
-        // Access Granted
+        // SUCCESS
         clearTimeout(failSafe);
         window.ADA_CONFIG = data; 
         window.clearGuard();
         return data;
 
     } catch (e) {
-        console.error("ADA: Sync Error", e);
-        // On error, let the fail-safe clear the screen so the user isn't stuck
+        console.error("ADA: Guard Error", e);
+        // On error, let failSafe clear the screen
         return null;
     }
 };
