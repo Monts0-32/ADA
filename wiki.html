@@ -85,32 +85,36 @@
 
     async function loadWiki() {
         const email = localStorage.getItem('ada_user_email');
+        // Pass email to worker so it can calculate your specific perms
         const res = await fetch(`${API}/wiki/load?id=${wikiId}&email=${encodeURIComponent(email)}`);
         const data = await res.json();
-    
-        // 1. HARD SECURITY CHECK (Path Protection)
+
+        // 1. HARD SECURITY: REDIRECT IF NO ACCESS
         if (data.accessLevel === 'none') {
             window.location.href = '/blocked.html';
             return;
         }
-    
-        // 2. RENDER CONTENT
-        visual.innerHTML = data.content.content;
-        source.value = data.content.content;
-    
-        // 3. APPLY PERMISSION RESTRICTIONS
+
+        // 2. LOAD CONTENT
+        visual.innerHTML = data.content.content || "<h1>Empty Sector</h1>";
+
+        // 3. ENFORCE VIEW-ONLY MODE
         if (data.accessLevel === 'view') {
-            // Disable Editing
+            // Lock the text area
             visual.contentEditable = "false";
-            // Hide Toolbar and Save button
+            // Hide the entire toolbar and save buttons
             const toolbar = document.querySelector('.toolbar');
-            if (toolbar) toolbar.style.display = 'none';
-            // Adjust layout for viewing only
-            document.querySelector('.editor-wrap').style.marginTop = '20px';
-            document.getElementById('p-label').innerText += " (READ ONLY)";
+            if(toolbar) toolbar.style.display = 'none';
+            // Visual indicator
+            document.getElementById('p-label').innerText += " [READ-ONLY]";
+            console.log("ADA: Restricted access applied.");
+        } else {
+            // Full access
+            visual.contentEditable = "true";
+            attachInteractions(); // Enable drag/resize
         }
-    
-        attachInteractions(); // Only allows dragging if activeId is set
+
+        renderLogs(data.logs);
     }
 
     function toggleSource() {
@@ -174,13 +178,22 @@
     }
 
     async function save() {
-        visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
-        const html = isSource ? source.value : visual.innerHTML;
-        await fetch(`${API}/wiki/save`, {
+        // Double-check if the UI was tampered with
+        if (visual.contentEditable === "false") return;
+
+        const content = visual.innerHTML;
+        const res = await fetch(`${API}/wiki/save`, {
             method: 'POST',
-            body: JSON.stringify({ id: wikiId, content: html, user: localStorage.getItem('ada_user_email') })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id: wikiId, 
+                content: content, 
+                user: localStorage.getItem('ada_user_email') 
+            })
         });
-        alert("Partition Saved.");
+        const result = await res.json();
+        if(!result.success) alert("Critical: " + result.error);
+        else alert("Data Synchronized.");
     }
 
     function exec(c, v=null) { document.execCommand(c, false, v); visual.focus(); }
