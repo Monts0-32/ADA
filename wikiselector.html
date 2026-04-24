@@ -17,46 +17,51 @@
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
-        #main-content { display: none; max-width: 1200px; margin: 40px auto; padding: 0 40px; }
+        #main-content { display: none; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         
-        /* GRID & CARDS */
+        /* GRID & CARD ALIGNMENT */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; display: flex; flex-direction: column; min-height: 400px; box-sizing: border-box; transition: 0.2s; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; display: flex; flex-direction: column; min-height: 420px; box-sizing: border-box; }
         .wiki-card:hover { border-color: #8b949e; }
         .card-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
         
         .user-pill-mini { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--blue); background: rgba(88, 166, 255, 0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 15px; width: fit-content; }
-        .user-pill-mini img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+        .user-pill-mini img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blue); }
+
+        .wiki-title { margin: 0 0 10px 0; font-size: 18px; color: #f0f6fc; }
+        .wiki-desc { font-size: 13px; color: #8b949e; flex-grow: 1; line-height: 1.4; overflow: hidden; margin-bottom: 20px; }
 
         .card-footer { margin-top: auto; width: 100%; padding-right: 40px; box-sizing: border-box; }
         .btn { padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; text-decoration: none; display: block; box-sizing: border-box; font-size: 13px; }
         .btn-green { background: var(--btn-green); border: none; }
 
+        /* THREE DOTS MENU (Pinned Bottom Right) */
         .menu-btn { position: absolute; bottom: 12px; right: 12px; cursor: pointer; color: #8b949e; font-size: 24px; padding: 5px; z-index: 10; line-height: 1; }
+        .menu-btn:hover { color: white; }
         .dropdown { position: absolute; bottom: 50px; right: 12px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 170px; box-shadow: 0 8px 24px #000; overflow: hidden; }
         .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); color: #c9d1d9; }
         .dropdown div:hover { background: #30363d; color: var(--blue); }
 
+        /* MODALS */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 2000; width: 450px; box-shadow: 0 0 100px #000; }
-        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1900; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1900; backdrop-filter: blur(4px); }
         
         input, textarea, select { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 13px; }
 
-        /* ACCESS LIST & PERMS DROPDOWN */
-        .access-list { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; max-height: 220px; overflow-y: auto; }
-        .access-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1c2128; }
-        .access-user { display: flex; align-items: center; gap: 10px; font-size: 12px; }
-        .access-user img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
-        
-        .perm-select { width: auto; margin-bottom: 0; padding: 4px 8px; font-size: 11px; background: #21262d; border-color: #444c56; }
-        .rem-btn { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; font-size: 16px; }
-
+        /* SMART SEARCH BOX & ACCESS LIST */
         .search-wrap { position: relative; width: 100%; margin-bottom: 15px; }
-        .suggest-box { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 100%; left: 0; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px #000; margin-top: 5px; }
+        .suggest-box { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 100%; left: 0; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px #000; margin-top: 5px; max-height: 200px; overflow-y: auto; }
         .suggest-item { padding: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 12px; }
         .suggest-item:hover { background: #30363d; }
         .suggest-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        .access-list { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; max-height: 180px; overflow-y: auto; }
+        .access-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1c2128; }
+        .access-user { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #f0f6fc; }
+        .access-user img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+        .perm-select-mini { width: auto; margin: 0; padding: 4px; font-size: 10px; background: #161b22; }
+        .rem-btn { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -73,15 +78,14 @@
 
 <div class="overlay" id="modal-overlay" onclick="window.closeModals()"></div>
 
-<!-- CREATE MODAL -->
+<!-- MODALS -->
 <div class="modal" id="create-modal">
     <h3 style="margin-top:0">Initialize Partition</h3>
     <input type="text" id="new-title" placeholder="Sector Title...">
-    <button class="btn btn-green" id="btn-create-submit" onclick="window.submitCreate()">Initialize Sector</button>
+    <button class="btn btn-green" id="btn-create-submit" onclick="window.submitCreate()">Initialize</button>
     <button class="btn" onclick="window.closeModals()">Cancel</button>
 </div>
 
-<!-- EDIT MODAL -->
 <div class="modal" id="edit-modal">
     <h3 style="margin-top:0">Edit Card Meta</h3>
     <input type="text" id="edit-title" placeholder="Title">
@@ -92,11 +96,10 @@
     <button class="btn" onclick="window.closeModals()">Cancel</button>
 </div>
 
-<!-- SETTINGS MODAL -->
 <div class="modal" id="settings-modal">
-    <h3 style="margin-top:0">Access Control List</h3>
+    <h3 style="margin-top:0">Access Control</h3>
     <div class="search-wrap">
-        <input type="text" id="u-search" placeholder="Search user to grant access..." oninput="window.searchUsers(this.value)">
+        <input type="text" id="u-search" placeholder="Search user by name..." oninput="window.searchUsers(this.value)">
         <div id="suggestions" class="suggest-box"></div>
     </div>
     <div id="access-list-ui" class="access-list"></div>
@@ -111,21 +114,19 @@
     let activeId = null;
     let currentUserData = null;
 
-    // --- INITIALIZATION ---
-    async function init() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-        const data = await runNeuralGuard('wiki_access');
-        if(!data) return;
-        currentUserData = data.user;
-        document.getElementById('main-content').style.display = 'block';
-        window.loadCards();
-    }
+    // --- ATTACH ALL FUNCTIONS TO WINDOW OBJECT IMMEDIATELY ---
 
-    // --- UI CONTROLLERS ---
-    window.openModal = (id) => { document.getElementById('modal-overlay').style.display = 'block'; document.getElementById(id).style.display = 'block'; };
-    window.closeModals = () => { document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none'); document.getElementById('suggestions').style.display = 'none'; };
+    window.openModal = function(id) {
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById(id).style.display = 'block';
+    };
 
-    window.toggleMenu = (id) => {
+    window.closeModals = function() {
+        document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none');
+        document.getElementById('suggestions').style.display = 'none';
+    };
+
+    window.toggleMenu = function(id) {
         event.stopPropagation();
         const m = document.getElementById(`menu-${id}`);
         const open = m.style.display === 'block';
@@ -133,10 +134,35 @@
         if(!open) m.style.display = 'block';
     };
 
-    // --- DATA ACTIONS ---
+    window.submitCreate = async function() {
+        const title = document.getElementById('new-title').value.trim();
+        const btn = document.getElementById('btn-create-submit');
+        const email = localStorage.getItem('ada_user_email');
+        if(!title) return alert("Title required.");
+        
+        btn.disabled = true; btn.innerText = "Syncing...";
+        const res = await fetch(`${API}/wiki/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, title: title })
+        });
+        const d = await res.json();
+        if(d.success) {
+            window.closeModals(); 
+            window.loadCards();
+            document.getElementById('new-title').value = '';
+        } else { alert("Error: " + d.error); }
+        btn.disabled = false; btn.innerText = "Initialize";
+    };
+
     window.loadCards = async function() {
-        const res = await fetch(`${API}/wiki/metadata`);
-        const cards = await res.json();
+        const [mRes, uRes] = await Promise.all([
+            fetch(`${API}/wiki/metadata`),
+            fetch(`${API}/admin/list-users`)
+        ]);
+        const cards = await mRes.json();
+        const users = await uRes.json();
+        
         const grid = document.getElementById('wiki-grid');
         const myEmail = localStorage.getItem('ada_user_email');
         const isAdmin = currentUserData?.is_admin === 1;
@@ -151,7 +177,7 @@
                         <span>${c.display_name || c.creator_email}</span>
                     </div>
                     <h3 class="wiki-title">${c.title}</h3>
-                    <p class="wiki-desc">${c.description || 'Sector initialized.'}</p>
+                    <p class="wiki-desc">${c.description || 'Sector initialized. Data pending.'}</p>
                     <div class="card-footer">
                         <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
                     </div>
@@ -165,23 +191,10 @@
         }).join('');
     };
 
-    window.submitCreate = async function() {
-        const title = document.getElementById('new-title').value.trim();
-        const btn = document.getElementById('btn-create-submit');
-        const myEmail = localStorage.getItem('ada_user_email');
-        if(!title) return alert("Title required.");
-        btn.disabled = true; btn.innerText = "Syncing...";
-        const res = await fetch(`${API}/wiki/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: myEmail, title: title }) });
-        const d = await res.json();
-        if(d.success) { window.closeModals(); window.loadCards(); document.getElementById('new-title').value = ''; }
-        btn.disabled = false; btn.innerText = "Initialize";
-    };
-
     window.openEdit = (id, t, d, img) => { activeId = id; document.getElementById('edit-title').value = t; document.getElementById('edit-desc').value = d; document.getElementById('edit-img-data').value = img; window.openModal('edit-modal'); };
     window.handleImg = (i) => { if(i.files[0]){ const r=new FileReader(); r.onload=(e)=>document.getElementById('edit-img-data').value=e.target.result; r.readAsDataURL(i.files[0]); }};
     window.saveMetadata = async () => { await fetch(`${API}/wiki/metadata/save`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: activeId, title: document.getElementById('edit-title').value, description: document.getElementById('edit-desc').value, image_url: document.getElementById('edit-img-data').value }) }); window.closeModals(); window.loadCards(); };
 
-    // --- ACCESS CONTROL LIST LOGIC ---
     window.openSettings = async (id) => { activeId = id; window.openModal('settings-modal'); window.refreshAccessList(); };
 
     window.refreshAccessList = async function() {
@@ -200,9 +213,9 @@
                         <span>${p.user_email}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <select class="perm-select" onchange="window.updatePermLevel('${p.user_email}', this.value)">
-                            <option value="view" ${p.access_level === 'view' ? 'selected' : ''}>Can View</option>
-                            <option value="edit" ${p.access_level === 'edit' ? 'selected' : ''}>Can Edit</option>
+                        <select class="perm-select-mini" onchange="window.updatePermLevel('${p.user_email}', this.value)">
+                            <option value="view" ${p.access_level === 'view' ? 'selected' : ''}>View</option>
+                            <option value="edit" ${p.access_level === 'edit' ? 'selected' : ''}>Edit</option>
                         </select>
                         <span class="rem-btn" onclick="window.removeAccess('${p.user_email}')">×</span>
                     </div>
@@ -216,18 +229,14 @@
         if(q.length < 2) { box.style.display = 'none'; return; }
         const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
         const users = await res.json();
-        box.innerHTML = users.map(u => `
-            <div class="suggest-item" onclick="window.grant('${u.email}')">
-                <img src="${u.profile_picture}">
-                <span>${u.display_name || u.email}</span>
-            </div>`).join(''); 
+        box.innerHTML = users.map(u => `<div class="suggest-item" onclick="window.grant('${u.email}')"><img src="${u.profile_picture}"><span>${u.email}</span></div>`).join(''); 
         box.style.display = 'block'; 
     };
 
     window.grant = async (e) => { 
         await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: e, level: 'view' }) }); 
         document.getElementById('u-search').value = '';
-        document.getElementById('suggestions').style.display = 'none'; // Hides suggestions immediately
+        document.getElementById('suggestions').style.display = 'none';
         window.refreshAccessList();
     };
 
@@ -244,8 +253,8 @@
     };
 
     window.transferOwnership = async () => {
-        const e = prompt("New owner email:");
-        if(e && confirm(`Transfer ownership to ${e}?`)) {
+        const e = prompt("Enter new owner email:");
+        if(e && confirm(`TRANSFER WARNING: Hand control of this sector to ${e}?`)) {
             await fetch(`${API}/wiki/transfer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: activeId, newOwner: e }) });
             window.closeModals(); window.loadCards();
         }
@@ -253,7 +262,19 @@
 
     window.deleteWiki = async (id) => { if(confirm("Permanently wipe?")) { await fetch(`${API}/wiki/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); window.loadCards(); }};
 
-    window.onclick = (e) => { if (!e.target.matches('.menu-btn')) window.closeModals(); };
+    // --- SECURITY BOOTSTRAP ---
+    async function init() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+        const data = await runNeuralGuard('wiki_access');
+        if(!data) return;
+        currentUserData = data.user;
+        document.getElementById('main-content').style.display = 'block';
+        window.loadCards();
+    }
+
+    // Global click listener to close menus
+    window.onclick = function(e) { if (!e.target.matches('.menu-btn')) window.closeModals(); };
+    
     init();
 </script>
 </body>
