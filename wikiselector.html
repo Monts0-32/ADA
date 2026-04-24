@@ -2,136 +2,207 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Wiki Selector</title>
+    <title>ADA | Wiki Partitions</title>
+    <script src="/uplink.js"></script>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
-        
-        /* THEMED SCROLLBAR */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
-
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         
-        /* The header-engine.js will inject the header here */
-        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; text-align: center; }
-        h1 { border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 40px; font-weight: 400; font-size: 24px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; justify-content: center; align-items: start; }
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 20px; text-align: left; width: 100%; box-sizing: border-box; transition: 0.2s; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        
+        /* CARD STYLING */
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; }
         .wiki-card:hover { border-color: #8b949e; }
-        .wiki-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 15px; background: #0d1117; display: block; }
-        .wiki-card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
-        .wiki-card p { font-size: 13px; color: #8b949e; margin-bottom: 20px; line-height: 1.4; }
+        .card-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
         
-        .btn { display: block; width: 100%; padding: 10px; background: var(--btn-green); color: white; border: none; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600; box-sizing: border-box; }
-        .btn:hover { background: #2ea043; }
+        /* CREATOR TAG */
+        .creator-tag { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; width: fit-content; border: 1px solid var(--border); }
+        .creator-tag img { width: 14px; height: 14px; border-radius: 50%; }
+
+        /* THREE DOTS MENU */
+        .menu-btn { position: absolute; top: 15px; right: 15px; cursor: pointer; color: #8b949e; padding: 5px; }
+        .menu-btn:hover { color: white; }
+        .dropdown { position: absolute; top: 40px; right: 15px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .dropdown div { padding: 10px; font-size: 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .dropdown div:hover { background: #30363d; color: var(--blue); }
+
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 1000; width: 450px; box-shadow: 0 0 100px rgba(0,0,0,0.8); }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:900; }
         
-        /* Admin Edit Panel */
-        .admin-edit-panel { background: #21262d; border: 1px solid var(--blue); padding: 12px; border-radius: 6px; margin-top: 12px; display: none; }
-        .admin-edit-panel input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; margin-bottom: 8px; padding: 6px; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
+        input, textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
+        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; border: 1px solid var(--border); width: 100%; margin-bottom: 10px; }
+        .btn-green { background: var(--btn-green); color: white; border: none; }
+
+        .search-suggest { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 40px; z-index: 10; border-radius: 4px; display: none; }
+        .suggest-item { padding: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px; }
+        .suggest-item:hover { background: #30363d; }
     </style>
 </head>
 <body>
 
-<!-- SCRIPTS LOADED IN ORDER -->
-<script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
-<script src="/uplink.js"></script>
-<script src="/chat-widget.js"></script>
-
-<!-- The anchor for header-engine.js -->
 <div id="ada-header-anchor"></div>
 <script src="/header-engine.js"></script>
-
-<div class="container" id="main-content" style="display:none;">
-    <h1>Wiki Archive Partitions</h1>
-    <div class="grid" id="wiki-grid">
-        <!-- Cards loaded via Worker -->
+<script src="/uplink.js"></script>
+<script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+        // Admins can enter even without 'wiki_access'
+        await runNeuralGuard('wiki_access'); 
+    }
+    start();
+</script>
+<script src="/chat-widget.js"> 
+<div class="container">
+    <div class="header-row">
+        <h1>Partition Network</h1>
+        <button class="btn btn-green" style="width:auto;" onclick="createPartition()">+ New Partition</button>
     </div>
+    <div class="grid" id="wiki-grid"></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="overlay" id="modal-overlay" onclick="closeModals()"></div>
+<div class="modal" id="edit-modal">
+    <h3>Edit Partition Metadata</h3>
+    <input type="text" id="edit-title" placeholder="Title">
+    <textarea id="edit-desc" placeholder="Description"></textarea>
+    <label class="btn" style="display:block; text-align:center;">Upload Image<input type="file" hidden onchange="handleImg(this)"></label>
+    <input type="hidden" id="edit-img">
+    <button class="btn btn-green" onclick="saveMetadata()">Apply Changes</button>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settings-modal">
+    <h3>Partition Settings</h3>
+    <div style="font-size:12px; color:#8b949e; margin-bottom:10px;">MANAGE ACCESS</div>
+    <div style="position:relative;">
+        <input type="text" id="user-search" placeholder="Search user..." oninput="searchUsers(this.value)">
+        <div id="suggestions" class="search-suggest"></div>
+    </div>
+    <div id="access-list" style="max-height:100px; overflow-y:auto; margin-bottom:15px;"></div>
+    
+    <button class="btn" onclick="transferOwnership()">Transfer Ownership</button>
+    <button class="btn" style="color:var(--red)" onclick="deleteWiki()">Delete Partition</button>
 </div>
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    let editModeActive = false;
+    let activeWiki = null;
+    let myData = null;
 
     async function init() {
-        // 1. Run the Security Guard (Handled via uplink.js)
-        // This function will automatically redirect to /blocked if unauthorized
-        if (typeof runNeuralGuard !== 'function') {
-            setTimeout(init, 100);
-            return;
-        }
-
-        const data = await runNeuralGuard('wiki_access'); 
-        if(!data) return; // Guard will have redirected the user
-
-        // 2. Clear the loading screen and show content
-        document.getElementById('main-content').style.display = 'block';
-
-        // 3. Admin Tools Setup
-        // Check for admin toggle button in the injected header or add one to the page
-        // Since we want an edit button, we can check if data says they are admin
-        if(data.user.is_admin) {
-            // Note: If you want the "Edit" button in the header, 
-            // you'd add it to header-engine.js. For now, we'll look for it on page.
-            const btn = document.getElementById('admin-edit-btn');
-            if(btn) btn.style.display = 'block';
-        }
-
-        // 4. Load the cards
+        myData = await runNeuralGuard('wiki_access');
+        if(!myData) return;
         loadCards();
     }
 
     async function loadCards() {
-        try {
-            const res = await fetch(`${API}/wiki/metadata`);
-            const cards = await res.json();
-            const grid = document.getElementById('wiki-grid');
-            
-            grid.innerHTML = cards.map(c => `
-                <div class="wiki-card">
-                    <img src="${c.image_url}" alt="Partition" onerror="this.src='https://via.placeholder.com/260x140?text=No+Image'">
-                    <h3>${c.title}</h3>
-                    <p>${c.description || 'System Documentation Partition'}</p>
-                    <a href="/wiki.html?id=${c.id}" class="btn">Open Partition</a>
-                    
-                    <div class="admin-edit-panel" id="panel-${c.id}">
-                        <input type="text" id="in-title-${c.id}" value="${c.title}" placeholder="Partition Title">
-                        <input type="text" id="in-img-${c.id}" value="${c.image_url}" placeholder="Image URL">
-                        <button class="btn" style="background:var(--blue); border:none;" onclick="saveCard('${c.id}')">Save Metadata</button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Keep panels open if edit mode was active during a refresh
-            if (editModeActive) toggleEditMode(true);
-        } catch (e) {
-            console.error("Cards failed to load", e);
-        }
-    }
-
-    // This function can be called from a button you add or a console command
-    window.toggleEditMode = function(forceShow = false) {
-        if (!forceShow) editModeActive = !editModeActive;
-        document.querySelectorAll('.admin-edit-panel').forEach(panel => {
-            panel.style.display = editModeActive ? 'block' : 'none';
-        });
-    }
-
-    async function saveCard(id) {
-        const title = document.getElementById(`in-title-${id}`).value;
-        const image_url = document.getElementById(`in-img-${id}`).value;
-
-        await fetch(`${API}/wiki/metadata/save`, {
-            method: 'POST',
-            body: JSON.stringify({ id, title, image_url, description: "Documentation Sector" })
-        });
+        const res = await fetch(`${API}/admin/list-users`); // Using existing list-users for the creator tags
+        const allUsers = await res.json();
         
+        const mRes = await fetch(`${API}/wiki/metadata`);
+        const cards = await mRes.json();
+        
+        const grid = document.getElementById('wiki-grid');
+        grid.innerHTML = cards.map(c => {
+            const creator = allUsers.find(u => u.email === c.creator_email) || { display_name: 'Unknown', profile_picture: '' };
+            const isOwner = myData.user.email === c.creator_email || myData.user.is_admin;
+            
+            return `
+                <div class="wiki-card">
+                    ${isOwner ? `<div class="menu-btn" onclick="toggleMenu('${c.id}')">⋮</div>` : ''}
+                    <div class="dropdown" id="menu-${c.id}">
+                        <div onclick="openEdit('${c.id}', '${c.title}', '${c.description}')">Edit Card</div>
+                        <div onclick="openSettings('${c.id}')">Settings</div>
+                    </div>
+                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=Partition'}" class="card-img">
+                    <div class="creator-tag">
+                        <img src="${creator.profile_picture}"> <span>${creator.display_name || creator.email}</span>
+                    </div>
+                    <h3>${c.title}</h3>
+                    <p style="font-size:12px; color:#8b949e">${c.description}</p>
+                    <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function createPartition() {
+        await fetch(`${API}/wiki/create`, { method: 'POST', body: JSON.stringify({ email: myData.user.email }) });
         loadCards();
     }
 
-    // Start the process
+    function toggleMenu(id) {
+        const m = document.getElementById(`menu-${id}`);
+        m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function openEdit(id, t, d) {
+        activeWiki = id;
+        document.getElementById('edit-title').value = t;
+        document.getElementById('edit-desc').value = d;
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('edit-modal').style.display = 'block';
+    }
+
+    function handleImg(input) {
+        const r = new FileReader();
+        r.onload = (e) => document.getElementById('edit-img').value = e.target.result;
+        r.readAsDataURL(input.files[0]);
+    }
+
+    async function saveMetadata() {
+        const title = document.getElementById('edit-title').value;
+        const description = document.getElementById('edit-desc').value;
+        const image_url = document.getElementById('edit-img').value;
+        await fetch(`${API}/wiki/metadata/save`, { method: 'POST', body: JSON.stringify({ id: activeWiki, title, description, image_url }) });
+        location.reload();
+    }
+
+    function openSettings(id) {
+        activeWiki = id;
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('settings-modal').style.display = 'block';
+    }
+
+    async function searchUsers(q) {
+        if(q.length < 2) return;
+        const res = await fetch(`${API}/search/suggest?q=${q}`);
+        const users = await res.json();
+        const box = document.getElementById('suggestions');
+        box.innerHTML = users.map(u => `<div class="suggest-item" onclick="grantAccess('${u.email}')"><img src="${u.profile_picture}" width="15"> ${u.display_name || u.email}</div>`).join('');
+        box.style.display = 'block';
+    }
+
+    async function grantAccess(targetEmail) {
+        const level = confirm("Grant Edit access? (Cancel for View only)") ? 'edit' : 'view';
+        await fetch(`${API}/wiki/access/update`, { method: 'POST', body: JSON.stringify({ wikiId: activeWiki, targetEmail, level }) });
+        alert("Permissions updated.");
+    }
+
+    async function transferOwnership() {
+        const newOwner = prompt("Enter new owner email:");
+        if(newOwner) {
+            await fetch(`${API}/wiki/transfer`, { method: 'POST', body: JSON.stringify({ id: activeWiki, newOwner }) });
+            location.reload();
+        }
+    }
+
+    async function deleteWiki() {
+        if(confirm("Permanently wipe this partition?")) {
+            await fetch(`${API}/wiki/delete`, { method: 'POST', body: JSON.stringify({ id: activeWiki }) });
+            location.reload();
+        }
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal, .overlay').forEach(el => el.style.display = 'none');
+    }
+
     init();
 </script>
 </body>
