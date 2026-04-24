@@ -64,6 +64,35 @@
         .access-user img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
         .perm-select-mini { width: auto; margin: 0; padding: 4px; font-size: 10px; background: #161b22; }
         .rem-btn { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; font-size: 16px; }
+        /* Align suggestions exactly below input */
+        .search-wrap { position: relative; width: 100%; margin-bottom: 15px; }
+        
+        .suggest-box { 
+            position: absolute; 
+            background: #21262d; 
+            border: 1px solid var(--border); 
+            width: 100%; 
+            top: 100%; /* Fixes offset */
+            left: 0; 
+            z-index: 2100; 
+            border-radius: 6px; 
+            display: none; 
+            box-shadow: 0 10px 30px #000;
+        }
+        
+        /* Ensure partition button is always at the bottom */
+        .wiki-card { display: flex; flex-direction: column; }
+        .card-footer { margin-top: auto; width: 100%; }
+        
+        /* Style the perms dropdown */
+        .perm-select-mini { 
+            background: #161b22; 
+            color: #8b949e; 
+            border: 1px solid var(--border); 
+            border-radius: 4px; 
+            font-size: 10px; 
+            padding: 2px 4px; 
+        }
     </style>
 </head>
 <body>
@@ -110,8 +139,8 @@
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const IMG_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
-    
     let activeId = null;
     let currentUserData = null;
 
@@ -120,15 +149,15 @@
         document.getElementById('modal-overlay').style.display = 'block';
         document.getElementById(id).style.display = 'block';
     };
-
+    
     window.closeModals = () => {
         document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none');
         const sug = document.getElementById('suggestions');
         if(sug) sug.style.display = 'none';
     };
-
+    
     window.toggleMenu = (e, id) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevents clicking the card behind the menu
         const m = document.getElementById(`menu-${id}`);
         const open = m.style.display === 'block';
         document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
@@ -139,20 +168,17 @@
     window.submitCreate = async function() {
         const title = document.getElementById('new-title').value.trim();
         const btn = document.getElementById('btn-create-submit');
-        const myEmail = localStorage.getItem('ada_user_email');
-
-        if(!title) { alert("Title is required."); return; }
+        const email = localStorage.getItem('ada_user_email');
+        if(!title) return alert("Title required.");
+        
         btn.disabled = true; btn.innerText = "Syncing...";
-        
-        await fetch(`${API}/wiki/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: myEmail, title: title })
+        await fetch(`${API}/wiki/create`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ email, title }) 
         });
-        
         window.closeModals(); 
-        window.loadCards();
-        document.getElementById('new-title').value = '';
+        await window.loadCards();
         btn.disabled = false; btn.innerText = "Initialize";
     };
 
@@ -226,20 +252,51 @@
         if(q.length < 2) { box.style.display = 'none'; return; }
         const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
         const users = await res.json();
-        box.innerHTML = users.map(u => `<div class="suggest-item" onclick="window.grant('${u.email}')"><img src="${u.profile_picture}"><span>${u.email}</span></div>`).join(''); 
+        box.innerHTML = users.map(u => `
+            <div class="suggest-item" onclick="window.grant('${u.email}')">
+                <img src="${u.profile_picture || DEFAULT_ICON}" width="20" style="border-radius:50%">
+                <span>${u.display_name || u.email}</span>
+            </div>`).join(''); 
         box.style.display = 'block'; 
     };
-
-    window.grant = async (e) => { 
-        await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: e, level: 'view' }) }); 
-        document.getElementById('u-search').value = '';
+    
+    window.grant = async (targetEmail) => { 
+        // Clear search and hide suggestions instantly
         document.getElementById('suggestions').style.display = 'none';
-        window.refreshAccessList();
+        document.getElementById('u-search').value = '';
+    
+        await fetch(`${API}/wiki/access/update`, { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({ wikiId: activeId, targetEmail, level: 'view' }) 
+        }); 
+        window.refreshAccessList(); 
     };
-
-    window.updatePermLevel = async (email, level) => {
-        await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: email, level: level }) });
-        window.refreshAccessList();
+    
+    window.refreshAccessList = async function() {
+        const email = localStorage.getItem('ada_user_email');
+        const res = await fetch(`${API}/wiki/load?id=${activeId}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        
+        document.getElementById('access-list-ui').innerHTML = data.allowedUsers.map(p => `
+            <div class="access-row">
+                <div class="access-user"><span>${p.user_email}</span></div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <select class="perm-select-mini" onchange="window.updatePermLevel('${p.user_email}', this.value)">
+                        <option value="view" ${p.access_level === 'view' ? 'selected' : ''}>Can View</option>
+                        <option value="edit" ${p.access_level === 'edit' ? 'selected' : ''}>Can Edit</option>
+                    </select>
+                    <span class="rem-btn" onclick="window.removeAccess('${p.user_email}')">×</span>
+                </div>
+            </div>`).join('') || '<p style="text-align:center; font-size:11px; opacity:0.5; padding:10px;">Private Partition</p>';
+    };
+    
+    window.updatePermLevel = async (targetEmail, level) => {
+        await fetch(`${API}/wiki/access/update`, { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({ wikiId: activeId, targetEmail, level }) 
+        });
     };
 
     window.removeAccess = async (e) => {
