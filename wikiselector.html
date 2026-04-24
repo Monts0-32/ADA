@@ -186,12 +186,31 @@
     };
 
     async function init() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-        const data = await runNeuralGuard('wiki_access');
-        if(!data) return;
-        currentUser = data.user;
-        document.getElementById('main-content').style.display = 'block';
-        window.loadCards();
+        try {
+            if (typeof runNeuralGuard !== 'function') {
+                console.warn("runNeuralGuard not ready...");
+                setTimeout(init, 100);
+                return;
+            }
+    
+            const data = await runNeuralGuard('wiki_access');
+            console.log("INIT DATA:", data);
+    
+            if (!data) {
+                console.error("No data from guard");
+                return;
+            }
+    
+            currentUser = data.user;
+    
+            document.getElementById('main-content').style.display = 'block';
+    
+            console.log("Loading cards...");
+            await window.loadCards();
+    
+        } catch (err) {
+            console.error("INIT CRASH:", err);
+        }
     }
 
     window.onclick = (e) => {
