@@ -174,7 +174,16 @@
     window.grant = async (e) => { await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: e, level: 'edit' }) }); document.getElementById('u-search').value = ''; window.refreshAccessList(); };
     window.removeAccess = async (e) => { if(confirm("Revoke?")) { await fetch(`${API}/wiki/access/delete`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, userEmail: e }) }); window.refreshAccessList(); } };
     window.transferOwnership = async () => { const e = prompt("New owner email:"); if(e && confirm(`Transfer?`)) { await fetch(`${API}/wiki/transfer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: activeId, newOwner: e }) }); window.closeModals(); window.loadCards(); }};
-    window.deleteWiki = async (id) => { if(confirm("Wipe?")) { await fetch(`${API}/wiki/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); window.loadCards(); }};
+    window.deleteWiki = async (id) => {
+      if(confirm("Wipe?")) {
+        await fetch(`${API}/wiki/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        window.loadCards();
+      }
+    };
 
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
@@ -185,8 +194,11 @@
         window.loadCards();
     }
 
-    window.onclick = (e) => { if (!e.target.matches('.menu-btn')) window.closeModals(); };
-    init();
+    window.onclick = (e) => {
+      if (!e.target.closest('.menu-btn') && !e.target.closest('.dropdown') && !e.target.closest('.modal')) {
+        window.closeModals();
+      }
+    };
 </script>
 </body>
 </html>
