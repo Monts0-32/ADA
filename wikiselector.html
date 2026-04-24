@@ -3,23 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>ADA | Partition Network</title>
+    
     <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/chat-widget.js"></script>
+
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         #main-content { display: none; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        
+        /* GRID & CARD FIXES */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; min-height: 350px; display: flex; flex-direction: column; }
-        .wiki-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
-        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; display: block; box-sizing: border-box; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; display: flex; flex-direction: column; min-height: 400px; box-sizing: border-box; }
+        .wiki-card:hover { border-color: #8b949e; }
+        .card-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
+        
+        .user-pill-mini { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--blue); background: rgba(88, 166, 255, 0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 15px; width: fit-content; }
+        .user-pill-mini img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+
+        .card-footer { margin-top: auto; width: 100%; }
+        .btn { padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; text-decoration: none; display: block; box-sizing: border-box; font-size: 13px; }
         .btn-green { background: var(--btn-green); border: none; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 2000; width: 400px; box-shadow: 0 0 100px #000; }
-        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1900; }
-        input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 20px; box-sizing: border-box; outline: none; }
+
+        .menu-btn { position: absolute; bottom: 12px; right: 12px; cursor: pointer; color: #8b949e; font-size: 24px; padding: 5px; line-height: 1; }
+        .dropdown { position: absolute; bottom: 50px; right: 12px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 170px; box-shadow: 0 8px 24px #000; overflow: hidden; }
+        .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .dropdown div:hover { background: #30363d; color: var(--blue); }
+
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 2000; width: 450px; box-shadow: 0 0 100px #000; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1900; }
+        input, textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; outline: none; }
+
+        /* FIXED SEARCH OFFSET */
+        .search-wrap { position: relative; width: 100%; margin-bottom: 15px; }
+        .suggest-box { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 100%; left: 0; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px #000; margin-top: 5px; }
+        .suggest-item { padding: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+        
+        .access-list { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; }
+        .access-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1c2128; font-size: 12px; }
+        .rem-btn { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; }
     </style>
 </head>
 <body>
@@ -29,122 +59,117 @@
 <div id="main-content">
     <div class="header-row">
         <h1>Partition Network</h1>
-        <!-- THIS BUTTON CALLS window.openCreate -->
-        <button class="btn btn-green" style="width:auto;" onclick="window.submitCreate()">+ Create Partition</button>
+        <!-- THIS ONE OPENS THE POPUP -->
+        <button class="btn btn-green" style="width:auto;" onclick="window.openCreatePopup()">+ Create Partition</button>
     </div>
     <div class="grid" id="wiki-grid"></div>
 </div>
 
 <div class="overlay" id="modal-overlay" onclick="window.closeModals()"></div>
 
+<!-- THE POPUP (asks for title) -->
 <div class="modal" id="create-modal">
     <h3 style="margin-top:0">Initialize Partition</h3>
-    <input type="text" id="new-title" placeholder="Sector Title...">
-    <button class="btn btn-green" id="btn-create-submit" onclick="window.submitCreate()">Initialize</button>
-    <button class="btn" style="margin-top:10px;" onclick="window.closeModals()">Cancel</button>
+    <input type="text" id="new-partition-title" placeholder="Enter Sector Title (e.g. Operation Alpha)">
+    <!-- THIS ONE SUBMITS DATA -->
+    <button class="btn btn-green" id="btn-submit-action" onclick="window.confirmCreation()">Initialize Sector</button>
+    <button class="btn" onclick="window.closeModals()">Cancel</button>
 </div>
+
+<!-- OTHER MODALS (EDIT/SETTINGS) ... -->
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    let activeId = null;
+    let isAdmin = false;
 
-    // --- GLOBAL SCOPE FUNCTIONS (Defined FIRST so buttons can see them) ---
-    window.submitCreate = async function() {
-        const titleInput = document.getElementById('new-title');
-        const title = titleInput.value.trim();
-        const btn = document.getElementById('btn-create-submit');
-        const email = localStorage.getItem('ada_user_email');
-    
-        if(!title) { alert("Title is required."); return; }
-        
-        btn.disabled = true;
-        btn.innerText = "Syncing...";
-    
-        try {
-            const res = await fetch(`${API}/wiki/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, title })
-            });
-            
-            const d = await res.json();
-            
-            if(d.success) {
-                window.closeModals();
-                window.loadCards();
-                titleInput.value = '';
-            } else {
-                // This will now tell you exactly what column is missing or what went wrong
-                alert("Archive Database Error: " + d.error);
-            }
-        } catch(e) {
-            alert("Network Error: Could not reach Relay Node.");
-            console.error(e);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Initialize";
-        }
+    // --- 1. POPUP HANDLERS ---
+    window.openCreatePopup = function() {
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('create-modal').style.display = 'block';
+        document.getElementById('new-partition-title').focus();
     };
 
     window.closeModals = function() {
-        document.getElementById('modal-overlay').style.display = 'none';
-        document.getElementById('create-modal').style.display = 'none';
+        document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none');
     };
 
-    window.submitCreate = async function() {
-        const title = document.getElementById('new-title').value.trim();
-        const email = localStorage.getItem('ada_user_email');
-        const btn = document.getElementById('btn-create-submit');
+    // --- 2. DATA ACTION: CREATE ---
+    window.confirmCreation = async function() {
+        const titleBox = document.getElementById('new-partition-title');
+        const title = titleBox.value.trim();
+        const btn = document.getElementById('btn-submit-action');
+        const myEmail = localStorage.getItem('ada_user_email');
 
-        if(!title) { alert("Title is required."); return; }
+        if(!title) { alert("Initialization Error: Title required."); return; }
         
-        btn.disabled = true;
-        btn.innerText = "Syncing...";
-
+        btn.disabled = true; btn.innerText = "Syncing...";
+        
         try {
             const res = await fetch(`${API}/wiki/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, title })
+                body: JSON.stringify({ email: myEmail, title: title })
             });
             const d = await res.json();
             if(d.success) {
                 window.closeModals();
                 window.loadCards();
-                document.getElementById('new-title').value = '';
+                titleBox.value = '';
+            } else {
+                alert("Database Error: " + d.error);
             }
         } catch(e) {
-            alert("Connection Error. Check Worker.");
+            alert("Uplink failed. Check Worker status.");
         } finally {
-            btn.disabled = false;
-            btn.innerText = "Initialize";
+            btn.disabled = false; btn.innerText = "Initialize Sector";
         }
     };
 
+    // --- 3. DATA ACTION: LOAD ---
     window.loadCards = async function() {
-        try {
-            const res = await fetch(`${API}/wiki/metadata`);
-            const cards = await res.json();
-            const grid = document.getElementById('wiki-grid');
-            grid.innerHTML = cards.map(c => `
+        const res = await fetch(`${API}/wiki/metadata`);
+        const cards = await res.json();
+        const myEmail = localStorage.getItem('ada_user_email');
+        
+        document.getElementById('wiki-grid').innerHTML = cards.map(c => {
+            const isOwner = myEmail === c.creator_email || isAdmin;
+            return `
                 <div class="wiki-card">
-                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=ADA+Partition'}">
-                    <h3>${c.title}</h3>
-                    <p style="font-size:12px; color:#8b949e; flex:1;">${c.description || 'Sector initialized.'}</p>
-                    <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
+                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=Partition'}" class="card-img">
+                    <div class="user-pill-mini">
+                        <img src="${c.profile_picture}">
+                        <span>${c.display_name || c.creator_email}</span>
+                    </div>
+                    <h3 class="wiki-title">${c.title}</h3>
+                    <p class="wiki-desc">${c.description || 'Sector online.'}</p>
+                    <div class="card-footer">
+                        <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
+                    </div>
+                    ${isOwner ? `<div class="menu-btn" onclick="window.toggleMenu('${c.id}')">⋮</div>` : ''}
+                    <div class="dropdown" id="menu-${c.id}">
+                        <div onclick="window.openEdit('${c.id}')">Edit Card</div>
+                        <div onclick="window.openSettings('${c.id}')">Permissions</div>
+                        <div style="color:var(--red)" onclick="window.deleteWiki('${c.id}')">Wipe Sector</div>
+                    </div>
                 </div>
-            `).join('');
-        } catch(e) { console.error("Load Error", e); }
+            `;
+        }).join('');
     };
 
-    // --- PAGE INITIALIZATION ---
-    async function init() {
-        if (typeof runNeuralGuard !== 'function') {
-            setTimeout(init, 100);
-            return;
-        }
-        const data = await runNeuralGuard('wiki_access');
-        if(!data) return; // runNeuralGuard handles redirects
+    window.toggleMenu = (id) => {
+        event.stopPropagation();
+        const m = document.getElementById(`menu-${id}`);
+        const open = m.style.display === 'block';
+        document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
+        if(!open) m.style.display = 'block';
+    };
 
+    async function init() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+        const data = await runNeuralGuard('wiki_access');
+        if(!data) return;
+        isAdmin = data.user.is_admin === 1;
         document.getElementById('main-content').style.display = 'block';
         window.loadCards();
     }
