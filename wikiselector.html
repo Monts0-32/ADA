@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <title>ADA | Partition Network</title>
     <script src="/uplink.js"></script>
+    <script>
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') { 
+            setTimeout(start, 100); 
+            return; 
+        }
+    
+        const data = await runNeuralGuard('wiki_access');
+    
+        if (!data) return; // blocked or redirected
+    
+        // ✅ START YOUR APP HERE
+        if (typeof init === 'function') {
+            init();
+        }
+    }
+    start();
+    </script>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
@@ -184,17 +202,10 @@
 
     async function init() {
         try {
-            if (typeof runNeuralGuard !== 'function') {
-                console.warn("runNeuralGuard not ready...");
-                setTimeout(init, 100);
-                return;
-            }
-    
-            const data = await runNeuralGuard('wiki_access');
-            console.log("INIT DATA:", data);
+            const data = window.ADA_CONFIG;
     
             if (!data) {
-                console.error("No data from guard");
+                console.error("No ADA_CONFIG found");
                 return;
             }
     
@@ -202,7 +213,6 @@
     
             document.getElementById('main-content').style.display = 'block';
     
-            console.log("Loading cards...");
             await window.loadCards();
     
         } catch (err) {
