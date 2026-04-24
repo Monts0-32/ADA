@@ -157,17 +157,20 @@
     };
 
     window.loadCards = async function() {
-        const res = await fetch(`${API}/wiki/metadata`);
+        const myEmail = localStorage.getItem('ada_user_email');
+        // We pass our email to the worker to check our specific perms
+        const res = await fetch(`${API}/wiki/metadata?email=${encodeURIComponent(myEmail)}`);
         const cards = await res.json();
         const grid = document.getElementById('wiki-grid');
-        const myEmail = localStorage.getItem('ada_user_email');
         const isAdmin = currentUserData?.is_admin === 1;
-
+    
         grid.innerHTML = cards.map(c => {
             const isOwner = myEmail === c.creator_email || isAdmin;
+            const hasAccess = isOwner || c.user_access !== null;
+            
             return `
                 <div class="wiki-card">
-                    <img src="${c.image_url || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}" class="card-img" onerror="this.src='https://via.placeholder.com/300x160?text=System+Resource'">
+                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=ADA+Partition'}" class="card-img">
                     <div class="user-pill-mini">
                         <img src="${c.profile_picture || DEFAULT_ICON}">
                         <span>${c.display_name || c.creator_email}</span>
@@ -175,7 +178,10 @@
                     <h3 class="wiki-title">${c.title}</h3>
                     <p class="wiki-desc">${c.description || 'Sector initialized.'}</p>
                     <div class="card-footer">
-                        <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
+                        ${hasAccess ? 
+                            `<a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>` : 
+                            `<button class="btn btn-disabled" onclick="alert('Access Restricted. Request permission from owner.')">🔒 Private Sector</button>`
+                        }
                     </div>
                     ${isOwner ? `<div class="menu-btn" onclick="window.toggleMenu(event, '${c.id}')">⋮</div>` : ''}
                     <div class="dropdown" id="menu-${c.id}">
