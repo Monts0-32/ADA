@@ -7,26 +7,29 @@
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
         
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
         #main-content { display: none; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
         
-        /* CARD STYLING */
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; min-height: 320px; display: flex; flex-direction: column; }
+        /* GRID & CARDS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; min-height: 340px; display: flex; flex-direction: column; }
         .wiki-card:hover { border-color: #8b949e; }
         .card-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
         
-        /* CREATOR TAG */
-        .creator-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--blue); background: rgba(88, 166, 255, 0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 10px; width: fit-content; }
+        .creator-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; color: var(--blue); background: rgba(88, 166, 255, 0.05); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 12px; width: fit-content; }
 
-        /* THREE DOTS (Moved to bottom right) */
-        .menu-btn { position: absolute; bottom: 15px; right: 15px; cursor: pointer; color: #8b949e; padding: 5px; font-size: 20px; z-index: 5; }
-        .menu-btn:hover { color: white; }
+        /* THREE DOTS (Bottom Right) */
+        .menu-btn { position: absolute; bottom: 15px; right: 15px; cursor: pointer; color: #8b949e; padding: 5px; font-size: 22px; transition: 0.2s; z-index: 10; }
+        .menu-btn:hover { color: white; transform: scale(1.2); }
         
-        .dropdown { position: absolute; bottom: 45px; right: 15px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-        .dropdown div { padding: 10px 15px; font-size: 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .dropdown { position: absolute; bottom: 50px; right: 15px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 170px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); color: #c9d1d9; }
         .dropdown div:hover { background: #30363d; color: var(--blue); }
         .dropdown .danger-opt { color: var(--red); border-bottom: none; }
 
@@ -38,15 +41,19 @@
         input:focus { border-color: var(--blue); }
         
         .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; border: 1px solid var(--border); width: 100%; margin-bottom: 10px; color: white; background: #21262d; transition: 0.2s; }
+        .btn:hover { border-color: #8b949e; }
         .btn-green { background: var(--btn-green); border: none; }
         .btn-green:hover { background: #2ea043; }
 
-        /* PERMS EDITOR */
-        .perms-container { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 15px; max-height: 120px; overflow-y: auto; }
-        .perm-row { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #161b22; font-size: 12px; }
-        .search-suggest { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 45px; z-index: 2010; border-radius: 6px; display: none; }
-        .suggest-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 12px; }
+        /* PERMS LIST */
+        .perms-list { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; }
+        .perm-entry { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #161b22; font-size: 12px; }
+        .perm-entry:last-child { border-bottom: none; }
+        
+        .search-suggest { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 48px; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .suggest-item { padding: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
         .suggest-item:hover { background: #30363d; }
+        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; }
     </style>
 </head>
 <body>
@@ -57,7 +64,11 @@
 <div id="main-content">
     <div class="header-row">
         <h1>Partition Network</h1>
-        <button class="btn btn-green" style="width:auto;" onclick="openCreateModal()">+ Create Partition</button>
+        <button id="create-init-btn" class="btn btn-green" style="width:auto;" onclick="openCreateModal()">+ Create Partition</button>
+    </div>
+    <div id="empty-notice" style="display:none; text-align:center; padding:100px; color:#8b949e;">
+        <h3>No Partitions Found</h3>
+        <p>Initialize your first data sector to begin archiving.</p>
     </div>
     <div class="grid" id="wiki-grid"></div>
 </div>
@@ -66,20 +77,24 @@
 
 <!-- CREATE MODAL -->
 <div class="modal" id="create-modal">
-    <h3 style="margin-top:0">Initialize New Partition</h3>
-    <input type="text" id="new-partition-title" placeholder="Enter Partition Name...">
-    <button class="btn btn-green" onclick="submitCreate()">Initialize Sector</button>
-    <button class="btn" onclick="closeModals()">Cancel</button>
+    <h3 style="margin-top:0">Initialize Partition</h3>
+    <p style="font-size:12px; color:#8b949e; margin-bottom:15px;">Enter a unique identifier for this data sector.</p>
+    <input type="text" id="new-partition-title" placeholder="Partition Name (e.g. Project X)">
+    <button id="submit-create-btn" class="btn btn-green" onclick="submitCreate()">Initialize Sector</button>
+    <button class="btn" onclick="closeModals()">Discard</button>
 </div>
 
 <!-- EDIT MODAL -->
 <div class="modal" id="edit-modal">
     <h3 style="margin-top:0">Edit Card Meta</h3>
-    <input type="text" id="edit-title" placeholder="Partition Title">
-    <textarea id="edit-desc" placeholder="Partition Description" style="height:80px; resize:none;"></textarea>
-    <label class="btn" style="display:block; text-align:center;">Upload Cover Image<input type="file" id="img-input" hidden onchange="handleImg(this)"></label>
+    <input type="text" id="edit-title" placeholder="Title">
+    <textarea id="edit-desc" placeholder="Description" style="height:80px; resize:none;"></textarea>
+    <label class="btn" style="display:block; text-align:center; background:#0d1117;">
+        Change Cover Image
+        <input type="file" id="img-input" hidden onchange="handleImg(this)">
+    </label>
     <input type="hidden" id="edit-img-data">
-    <button class="btn btn-green" onclick="saveMetadata()">Apply Changes</button>
+    <button class="btn btn-green" onclick="saveMetadata()">Save Changes</button>
     <button class="btn" onclick="closeModals()">Cancel</button>
 </div>
 
@@ -88,16 +103,16 @@
     <h3 style="margin-top:0">Access Control List</h3>
     
     <div style="position:relative; margin-bottom:15px;">
-        <input type="text" id="user-search" placeholder="Search user to grant access..." oninput="searchUsers(this.value)">
+        <input type="text" id="user-search" placeholder="Search user to invite..." oninput="searchUsers(this.value)">
         <div id="suggestions" class="search-suggest"></div>
     </div>
 
-    <div class="perms-container" id="access-list">
-        <!-- List of users with access -->
+    <div class="perms-list" id="access-list-ui">
+        <!-- JS will populate this -->
     </div>
     
-    <button class="btn" onclick="transferOwnership()">Transfer Ownership</button>
-    <button class="btn" onclick="closeModals()">Cancel Settings</button>
+    <button class="btn" onclick="transferOwnership()" style="border-color:var(--blue); color:var(--blue);">Transfer Ownership</button>
+    <button class="btn" onclick="closeModals()">Close Settings</button>
 </div>
 
 <script>
@@ -109,6 +124,7 @@
         if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
         const data = await runNeuralGuard('wiki_access'); 
         if(!data) return;
+        
         currentUser = data.user;
         document.getElementById('main-content').style.display = 'block';
         loadCards();
@@ -117,13 +133,22 @@
     async function loadCards() {
         const mRes = await fetch(`${API}/wiki/metadata`);
         const cards = await mRes.json();
-        const grid = document.getElementById('wiki-grid');
         
+        const grid = document.getElementById('wiki-grid');
+        const empty = document.getElementById('empty-notice');
+        
+        if (cards.length === 0) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
         grid.innerHTML = cards.map(c => {
             const isOwner = currentUser.email === c.creator_email || currentUser.is_admin === 1;
             return `
                 <div class="wiki-card">
-                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=Partition+Empty'}" class="card-img">
+                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=ADA+Partition'}" class="card-img" onerror="this.src='https://via.placeholder.com/300x160?text=System+Resource'">
                     <div class="creator-tag">
                         <span>BY: ${c.creator_email}</span>
                     </div>
@@ -141,7 +166,6 @@
         }).join('');
     }
 
-    // CREATE LOGIC
     function openCreateModal() {
         document.getElementById('modal-overlay').style.display = 'block';
         document.getElementById('create-modal').style.display = 'block';
@@ -149,17 +173,34 @@
 
     async function submitCreate() {
         const title = document.getElementById('new-partition-title').value;
-        if(!title) return alert("Title required.");
-        
-        const res = await fetch(`${API}/wiki/create`, { 
-            method: 'POST', 
-            body: JSON.stringify({ email: currentUser.email, title: title }) 
-        });
-        closeModals();
-        loadCards();
+        const btn = document.getElementById('submit-create-btn');
+        if(!title) return alert("Partition title required.");
+
+        btn.innerText = "Initializing...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API}/wiki/create`, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    email: currentUser ? currentUser.email : localStorage.getItem('ada_user_email'), 
+                    title: title 
+                }) 
+            });
+            const d = await res.json();
+            if(d.success) {
+                closeModals();
+                loadCards();
+            }
+        } catch(e) {
+            alert("System Error: Could not initialize partition.");
+        } finally {
+            btn.innerText = "Initialize Sector";
+            btn.disabled = false;
+            document.getElementById('new-partition-title').value = '';
+        }
     }
 
-    // MENU LOGIC
     function toggleMenu(id) {
         event.stopPropagation();
         const m = document.getElementById(`menu-${id}`);
@@ -168,7 +209,6 @@
         m.style.display = isVisible ? 'none' : 'block';
     }
 
-    // EDIT LOGIC
     function openEdit(id, title, desc, img) {
         activeWikiId = id;
         document.getElementById('edit-title').value = title;
@@ -187,18 +227,19 @@
     }
 
     async function saveMetadata() {
-        const title = document.getElementById('edit-title').value;
-        const description = document.getElementById('edit-desc').value;
-        const image_url = document.getElementById('edit-img-data').value;
         await fetch(`${API}/wiki/metadata/save`, { 
             method: 'POST', 
-            body: JSON.stringify({ id: activeWikiId, title, description, image_url }) 
+            body: JSON.stringify({ 
+                id: activeWikiId, 
+                title: document.getElementById('edit-title').value, 
+                description: document.getElementById('edit-desc').value, 
+                image_url: document.getElementById('edit-img-data').value 
+            }) 
         });
         closeModals();
         loadCards();
     }
 
-    // SETTINGS / PERMS LOGIC
     function openSettings(id) {
         activeWikiId = id;
         document.getElementById('modal-overlay').style.display = 'block';
@@ -212,7 +253,7 @@
         const users = await res.json();
         box.innerHTML = users.map(u => `
             <div class="suggest-item" onclick="grantAccess('${u.email}')">
-                <img src="${u.profile_picture}" width="20">
+                <img src="${u.profile_picture}">
                 <span>${u.display_name || u.email}</span>
             </div>
         `).join('');
@@ -225,18 +266,15 @@
             method: 'POST', 
             body: JSON.stringify({ wikiId: activeWikiId, targetEmail, level }) 
         });
-        alert("Access level updated for " + targetEmail);
+        alert("Access granted to: " + targetEmail);
         document.getElementById('suggestions').style.display = 'none';
     }
 
     async function transferOwnership() {
-        const newOwner = prompt("Enter email of the new owner entity:");
+        const newOwner = prompt("Enter email for ownership transfer:");
         if(newOwner) {
-            if(confirm(`WARNING: You are transferring full control of this partition to ${newOwner}. This cannot be reversed. Proceed?`)) {
-                await fetch(`${API}/wiki/transfer`, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ id: activeWikiId, newOwner }) 
-                });
+            if(confirm(`TRANSFER WARNING: You will lose control of this partition. Transfer to ${newOwner}?`)) {
+                await fetch(`${API}/wiki/transfer`, { method: 'POST', body: JSON.stringify({ id: activeWikiId, newOwner }) });
                 closeModals();
                 loadCards();
             }
@@ -244,11 +282,8 @@
     }
 
     async function deleteWiki(id) {
-        if(confirm("CRITICAL WARNING: This will permanently wipe all data in this partition. There is no recovery. Proceed?")) {
-            await fetch(`${API}/wiki/delete`, { 
-                method: 'POST', 
-                body: JSON.stringify({ id: id }) 
-            });
+        if(confirm("CRITICAL: Permanently delete this partition? This cannot be undone.")) {
+            await fetch(`${API}/wiki/delete`, { method: 'POST', body: JSON.stringify({ id: id }) });
             loadCards();
         }
     }
@@ -257,7 +292,6 @@
         document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none');
     }
 
-    // Global click listener to close menus
     window.onclick = function(e) { if (!e.target.matches('.menu-btn')) closeModals(); };
 
     start();
