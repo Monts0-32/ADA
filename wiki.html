@@ -71,7 +71,7 @@
         if(!data) return;
 
         // Run your wiki loading code
-        load(); 
+        loadWiki(); 
     }
     init();
 </script>
@@ -83,11 +83,34 @@
     const source = document.getElementById('source-editor');
     let isSource = false;
 
-    async function load() {
-        const res = await fetch(`${API}/wiki/load?id=${wikiId}`);
+    async function loadWiki() {
+        const email = localStorage.getItem('ada_user_email');
+        const res = await fetch(`${API}/wiki/load?id=${wikiId}&email=${encodeURIComponent(email)}`);
         const data = await res.json();
+    
+        // 1. HARD SECURITY CHECK (Path Protection)
+        if (data.accessLevel === 'none') {
+            window.location.href = '/blocked.html';
+            return;
+        }
+    
+        // 2. RENDER CONTENT
         visual.innerHTML = data.content.content;
-        attachInteractions();
+        source.value = data.content.content;
+    
+        // 3. APPLY PERMISSION RESTRICTIONS
+        if (data.accessLevel === 'view') {
+            // Disable Editing
+            visual.contentEditable = "false";
+            // Hide Toolbar and Save button
+            const toolbar = document.querySelector('.toolbar');
+            if (toolbar) toolbar.style.display = 'none';
+            // Adjust layout for viewing only
+            document.querySelector('.editor-wrap').style.marginTop = '20px';
+            document.getElementById('p-label').innerText += " (READ ONLY)";
+        }
+    
+        attachInteractions(); // Only allows dragging if activeId is set
     }
 
     function toggleSource() {
@@ -161,7 +184,7 @@
     }
 
     function exec(c, v=null) { document.execCommand(c, false, v); visual.focus(); }
-    load();
+    loadWiki();
 </script>
 </body>
 </html>
