@@ -3,62 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <title>ADA | Partition Network</title>
+    
+    <!-- MASTER BOOTSTRAP -->
+    <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
     <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/chat-widget.js"></script>
+
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
+        
+        /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; }
+        
         #main-content { display: none; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
         
-        /* GRID - FIXED OFFSET */
+        /* GRID & CARD ALIGNMENT */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        
-        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; display: flex; flex-direction: column; min-height: 380px; box-sizing: border-box; }
+        .wiki-card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; display: flex; flex-direction: column; min-height: 400px; box-sizing: border-box; }
         .wiki-card:hover { border-color: #8b949e; }
         .card-img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; background: #0d1117; margin-bottom: 15px; border: 1px solid var(--border); }
         
-        /* CREATOR TAG WITH PIC */
-        .creator-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--blue); background: rgba(88, 166, 255, 0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 15px; width: fit-content; }
-        .creator-tag img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blue); }
+        /* USER PILLS */
+        .user-pill-mini { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--blue); background: rgba(88, 166, 255, 0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(88, 166, 255, 0.2); margin-bottom: 15px; width: fit-content; }
+        .user-pill-mini img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blue); }
 
         .wiki-title { margin: 0 0 10px 0; font-size: 18px; color: #f0f6fc; }
         .wiki-desc { font-size: 13px; color: #8b949e; flex-grow: 1; line-height: 1.4; overflow: hidden; margin-bottom: 20px; }
 
         /* BUTTONS AT BOTTOM */
         .card-footer { margin-top: auto; width: 100%; }
-        .btn { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; text-decoration: none; display: block; box-sizing: border-box; font-size: 13px; }
+        .btn { padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; text-decoration: none; display: block; box-sizing: border-box; font-size: 13px; transition: 0.1s; }
         .btn-green { background: var(--btn-green); border: none; }
         .btn-green:hover { background: #2ea043; }
 
-        /* MENU POSITIONING */
+        /* THREE DOTS MENU (Bottom Right) */
         .menu-btn { position: absolute; bottom: 12px; right: 12px; cursor: pointer; color: #8b949e; font-size: 24px; padding: 5px; z-index: 10; }
         .menu-btn:hover { color: white; }
-        .dropdown { position: absolute; bottom: 50px; right: 12px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 170px; box-shadow: 0 8px 24px #000; }
-        .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .dropdown { position: absolute; bottom: 50px; right: 12px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 100; width: 170px; box-shadow: 0 8px 24px #000; overflow: hidden; }
+        .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); color: #c9d1d9; }
         .dropdown div:hover { background: #30363d; color: var(--blue); }
 
         /* MODALS */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 2000; width: 450px; box-shadow: 0 0 100px #000; }
-        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1900; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1900; backdrop-filter: blur(4px); }
         
-        input { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; outline: none; }
-        
-        /* SMART SEARCH BOX - FIXED OFFSETS */
+        input, textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 13px; }
+        input:focus { border-color: var(--blue); }
+
+        /* SMART SEARCH BOX - FIXED */
         .search-wrap { position: relative; width: 100%; margin-bottom: 15px; }
-        .suggest-box { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 100%; left: 0; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px #000; margin-top: 5px; }
+        .suggest-box { position: absolute; background: #21262d; border: 1px solid var(--border); width: 100%; top: 100%; left: 0; z-index: 2010; border-radius: 6px; display: none; box-shadow: 0 10px 30px #000; margin-top: 5px; max-height: 200px; overflow-y: auto; }
         .suggest-item { padding: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 12px; }
         .suggest-item:hover { background: #30363d; }
         .suggest-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        /* ACCESS LIST */
+        .access-list { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 20px; max-height: 180px; overflow-y: auto; }
+        .access-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #1c2128; }
+        .access-user { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #f0f6fc; }
+        .access-user img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+        .perm-tag { font-size: 9px; font-weight: bold; background: #21262d; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+        .perm-tag:hover { border-color: var(--blue); }
+        .rem-btn { color: var(--red); cursor: pointer; font-weight: bold; padding: 0 10px; font-size: 16px; }
     </style>
 </head>
 <body>
 
 <div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
 
 <div id="main-content">
     <div class="header-row">
@@ -70,21 +87,34 @@
 
 <div class="overlay" id="modal-overlay" onclick="closeModals()"></div>
 
-<!-- CREATE -->
+<!-- CREATE MODAL -->
 <div class="modal" id="create-modal">
-    <h3>Initialize Partition</h3>
+    <h3 style="margin-top:0">Initialize Partition</h3>
     <input type="text" id="new-title" placeholder="Sector Title...">
     <button class="btn btn-green" id="btn-create-submit" onclick="submitCreate()">Initialize</button>
+    <button class="btn" onclick="closeModals()">Cancel</button>
 </div>
 
-<!-- SETTINGS -->
+<!-- EDIT MODAL -->
+<div class="modal" id="edit-modal">
+    <h3 style="margin-top:0">Edit Card Metadata</h3>
+    <input type="text" id="edit-title" placeholder="Title">
+    <textarea id="edit-desc" placeholder="Description" style="height:80px; resize:none;"></textarea>
+    <label class="btn" style="display:block; text-align:center; background:#0d1117;">Upload Image<input type="file" id="img-in" hidden onchange="handleImg(this)"></label>
+    <input type="hidden" id="edit-img-data">
+    <button class="btn btn-green" onclick="saveMetadata()">Save Changes</button>
+    <button class="btn" onclick="closeModals()">Cancel</button>
+</div>
+
+<!-- SETTINGS MODAL -->
 <div class="modal" id="settings-modal">
-    <h3>Access Control</h3>
+    <h3 style="margin-top:0">Access Control</h3>
     <div class="search-wrap">
-        <input type="text" id="u-search" placeholder="Search user to grant access..." oninput="searchUsers(this.value)">
+        <input type="text" id="u-search" placeholder="Search user by name..." oninput="searchUsers(this.value)">
         <div id="suggestions" class="suggest-box"></div>
     </div>
-    <div id="access-list-ui" style="margin-bottom:15px; max-height:150px; overflow-y:auto; background:#0d1117; padding:10px; border-radius:6px; border:1px solid var(--border);"></div>
+    <div id="access-list-ui" class="access-list"></div>
+    <button class="btn" onclick="transferOwnership()" style="color:var(--blue); border-color:var(--blue);">Transfer Ownership</button>
     <button class="btn" onclick="closeModals()">Close Settings</button>
 </div>
 
@@ -105,13 +135,14 @@
     async function loadCards() {
         const res = await fetch(`${API}/wiki/metadata`);
         const cards = await res.json();
+        const grid = document.getElementById('wiki-grid');
         
-        document.getElementById('wiki-grid').innerHTML = cards.map(c => {
+        grid.innerHTML = cards.map(c => {
             const isOwner = currentUser.email === c.creator_email || currentUser.is_admin === 1;
             return `
                 <div class="wiki-card">
-                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=ADA+Partition'}" class="card-img">
-                    <div class="creator-tag">
+                    <img src="${c.image_url || 'https://via.placeholder.com/300x160?text=ADA+Partition'}" class="card-img" onerror="this.src='https://via.placeholder.com/300x160?text=System+Resource'">
+                    <div class="user-pill-mini">
                         <img src="${c.profile_picture || DEFAULT_ICON}">
                         <span>${c.display_name || c.creator_email}</span>
                     </div>
@@ -122,8 +153,9 @@
                     </div>
                     ${isOwner ? `<div class="menu-btn" onclick="toggleMenu('${c.id}')">⋮</div>` : ''}
                     <div class="dropdown" id="menu-${c.id}">
+                        <div onclick="openEdit('${c.id}','${c.title.replace(/'/g, "\\'")}','${c.description.replace(/'/g, "\\'")}','${c.image_url}')">Edit Card</div>
                         <div onclick="openSettings('${c.id}')">Permissions</div>
-                        <div style="color:var(--red)" onclick="deleteWiki('${c.id}')">Wipe Partition</div>
+                        <div style="color:var(--red)" onclick="deleteWiki('${c.id}')">Delete Sector</div>
                     </div>
                 </div>
             `;
@@ -142,32 +174,10 @@
         });
         closeModals(); loadCards();
         btn.disabled = false; btn.innerText = "Initialize";
+        document.getElementById('new-title').value = '';
     }
 
-    async function searchUsers(q) {
-        const box = document.getElementById('suggestions');
-        if(q.length < 2) { box.style.display = 'none'; return; }
-        const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
-        const users = await res.json();
-        box.innerHTML = users.map(u => `
-            <div class="suggest-item" onclick="grant('${u.email}')">
-                <img src="${u.profile_picture}">
-                <span>${u.display_name || u.email}</span>
-            </div>
-        `).join('');
-        box.style.display = 'block';
-    }
-
-    async function grant(e) {
-        const l = confirm("Grant Edit access? (Cancel for View only)") ? 'edit' : 'view';
-        await fetch(`${API}/wiki/access/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ wikiId: activeId, targetEmail: e, level: l })
-        });
-        closeModals(); alert("Access linked.");
-    }
-
+    // MODAL & MENU HANDLERS
     function toggleMenu(id) {
         event.stopPropagation();
         const m = document.getElementById(`menu-${id}`);
@@ -177,18 +187,99 @@
     }
 
     function openModal(id) { document.getElementById('modal-overlay').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
-    function closeModals() { document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none'); }
-    function openSettings(id) { activeId = id; openModal('settings-modal'); }
+    function closeModals() { document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none'); document.getElementById('suggestions').style.display = 'none'; }
+
+    function openEdit(id, t, d, img) { 
+        activeId = id; 
+        document.getElementById('edit-title').value = t; 
+        document.getElementById('edit-desc').value = d; 
+        document.getElementById('edit-img-data').value = img; 
+        openModal('edit-modal'); 
+    }
+
+    function handleImg(i) { if(i.files[0]){ const r=new FileReader(); r.onload=(e)=>document.getElementById('edit-img-data').value=e.target.result; r.readAsDataURL(i.files[0]); }}
+    
+    async function saveMetadata() { 
+        await fetch(`${API}/wiki/metadata/save`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: activeId, title: document.getElementById('edit-title').value, description: document.getElementById('edit-desc').value, image_url: document.getElementById('edit-img-data').value }) }); 
+        closeModals(); loadCards(); 
+    }
+
+    // ACCESS CONTROL LOGIC
+    async function openSettings(id) { 
+        activeId = id; 
+        openModal('settings-modal'); 
+        refreshAccessList();
+    }
+
+    async function refreshAccessList() {
+        const res = await fetch(`${API}/wiki/load?id=${activeId}`);
+        const data = await res.json();
+        const uRes = await fetch(`${API}/admin/list-users`);
+        const allUsers = await uRes.json();
+        
+        const listUi = document.getElementById('access-list-ui');
+        listUi.innerHTML = data.allowedUsers.map(p => {
+            const u = allUsers.find(user => user.email === p.user_email) || { profile_picture: DEFAULT_ICON };
+            return `
+                <div class="access-row">
+                    <div class="access-user">
+                        <img src="${u.profile_picture || DEFAULT_ICON}">
+                        <span>${p.user_email}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="perm-tag" onclick="togglePerm('${p.user_email}', '${p.access_level}')">${p.access_level.toUpperCase()}</span>
+                        <span class="rem-btn" onclick="removeAccess('${p.user_email}')">×</span>
+                    </div>
+                </div>
+            `;
+        }).join('') || '<p style="text-align:center; font-size:11px; opacity:0.5; padding:10px;">Private Partition</p>';
+    }
+
+    async function searchUsers(q) { 
+        const box = document.getElementById('suggestions');
+        if(q.length < 2) { box.style.display = 'none'; return; }
+        const res = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
+        const users = await res.json();
+        box.innerHTML = users.map(u => `<div class="suggest-item" onclick="grant('${u.email}')"><img src="${u.profile_picture}"><span>${u.email}</span></div>`).join(''); 
+        box.style.display = 'block'; 
+    }
+
+    async function grant(e) { 
+        await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: e, level: 'view' }) }); 
+        document.getElementById('u-search').value = '';
+        refreshAccessList();
+    }
+
+    async function togglePerm(email, current) {
+        const level = current === 'view' ? 'edit' : 'view';
+        await fetch(`${API}/wiki/access/update`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, targetEmail: email, level }) }); 
+        refreshAccessList();
+    }
+
+    async function removeAccess(e) {
+        if(confirm(`Revoke access for ${e}?`)) {
+            await fetch(`${API}/wiki/access/delete`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ wikiId: activeId, userEmail: e }) }); 
+            refreshAccessList();
+        }
+    }
+
+    async function transferOwnership() {
+        const e = prompt("Enter email of the new owner entity:");
+        if(e && confirm(`TRANSFER WARNING: Hand control of this sector to ${e}?`)) {
+            await fetch(`${API}/wiki/transfer`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: activeId, newOwner: e }) });
+            closeModals(); loadCards();
+        }
+    }
 
     async function deleteWiki(id) {
-        if(confirm("Permanently wipe partition?")) {
+        if(confirm("CRITICAL WARNING: Permanently wipe this partition?")) {
             await fetch(`${API}/wiki/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
             loadCards();
         }
     }
 
+    window.onclick = function(e) { if (!e.target.matches('.menu-btn')) closeModals(); };
     init();
 </script>
-<script src="/chat-widget.js"></script>
 </body>
 </html>
