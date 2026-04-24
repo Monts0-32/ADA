@@ -114,12 +114,43 @@
             padding-right: 35px; /* Create space for the dots */
             box-sizing: border-box; 
         }
+        /* Styling for the locked state */
+        .btn-locked {
+            background: #21262d !important;
+            border: 1px solid #30363d !important;
+            color: #8b949e !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-locked:hover {
+            border-color: var(--red) !important;
+            color: var(--red) !important;
+        }
+        
+        /* Ensure the three dots ⋮ don't overlap the buttons */
+        .card-footer {
+            margin-top: auto;
+            width: 100%;
+            padding-right: 35px;
+            box-sizing: border-box;
+        }
+        
+        .menu-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
 
 <div id="ada-header-anchor"></div>
-
 <div id="main-content">
     <div class="header-row">
         <h1>Partition Network</h1>
@@ -204,18 +235,18 @@
     };
 
     window.loadCards = async function() {
-        const res = await fetch(`${API}/wiki/metadata`);
+        const myEmail = localStorage.getItem('ada_user_email');
+        const res = await fetch(`${API}/wiki/metadata?email=${encodeURIComponent(myEmail)}`);
         const cards = await res.json();
         const grid = document.getElementById('wiki-grid');
-        const myEmail = localStorage.getItem('ada_user_email');
-        
-        // Check admin status from our global variable
-        const isAdmin = currentUserData && currentUserData.is_admin === 1;
+        const isAdmin = currentUserData?.is_admin === 1;
     
         grid.innerHTML = cards.map(c => {
-            // Ownership Logic
+            // PERMISSION LOGIC
             const isOwner = (myEmail === c.creator_email) || isAdmin;
-            
+            const hasPermission = c.my_access !== null; // If they have 'view' or 'edit'
+            const canEnter = isOwner || hasPermission;
+    
             return `
                 <div class="wiki-card">
                     <img src="${c.image_url || IMG_PLACEHOLDER}" class="card-img" onerror="this.src='${IMG_PLACEHOLDER}'">
@@ -227,10 +258,12 @@
                     <p class="wiki-desc">${c.description || 'Sector initialized.'}</p>
                     
                     <div class="card-footer">
-                        <a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>
+                        ${canEnter ? 
+                            `<a href="/wiki.html?id=${c.id}" class="btn btn-green">Open Partition</a>` : 
+                            `<button class="btn btn-locked" onclick="alert('Access Restricted: Clearance required from sector owner.')">🔒 Access Restricted</button>`
+                        }
                     </div>
     
-                    <!-- Three dots only show if isOwner is true -->
                     ${isOwner ? `<div class="menu-btn" onclick="window.toggleMenu(event, '${c.id}')">⋮</div>` : ''}
                     
                     <div class="dropdown" id="menu-${c.id}">
