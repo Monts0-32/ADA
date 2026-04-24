@@ -149,7 +149,7 @@
                     ${isOwner ? `<div class="menu-btn" onclick="window.toggleMenu('${c.id}')">⋮</div>` : ''}
                     <div class="dropdown" id="menu-${c.id}">
                         <div onclick="window.openEdit('${c.id}')">Edit Card</div>
-                        <div onclick="window.openSettings('${c.id}')">Permissions</div>
+                        <div onclick="window.toggleMenu('${c.id}')">Permissions</div>
                         <div style="color:var(--red)" onclick="window.deleteWiki('${c.id}')">Wipe Sector</div>
                     </div>
                 </div>
