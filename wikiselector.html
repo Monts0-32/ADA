@@ -48,10 +48,41 @@
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
 
     // --- GLOBAL SCOPE FUNCTIONS (Defined FIRST so buttons can see them) ---
-    window.openCreate = function() {
-        console.log("ADA: Opening Create Modal");
-        document.getElementById('modal-overlay').style.display = 'block';
-        document.getElementById('create-modal').style.display = 'block';
+    window.submitCreate = async function() {
+        const titleInput = document.getElementById('new-title');
+        const title = titleInput.value.trim();
+        const btn = document.getElementById('btn-create-submit');
+        const email = localStorage.getItem('ada_user_email');
+    
+        if(!title) { alert("Title is required."); return; }
+        
+        btn.disabled = true;
+        btn.innerText = "Syncing...";
+    
+        try {
+            const res = await fetch(`${API}/wiki/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, title })
+            });
+            
+            const d = await res.json();
+            
+            if(d.success) {
+                window.closeModals();
+                window.loadCards();
+                titleInput.value = '';
+            } else {
+                // This will now tell you exactly what column is missing or what went wrong
+                alert("Archive Database Error: " + d.error);
+            }
+        } catch(e) {
+            alert("Network Error: Could not reach Relay Node.");
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Initialize";
+        }
     };
 
     window.closeModals = function() {
