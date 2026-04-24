@@ -171,24 +171,45 @@
     };
 
     window.submitCreate = async function() {
-        const title = document.getElementById('new-title').value.trim();
+        const titleInput = document.getElementById('new-title');
+        const title = titleInput.value.trim();
         const btn = document.getElementById('btn-create-submit');
+        
+        // Fallback: Pull directly from local storage if the sync didn't finish on time
         const myEmail = localStorage.getItem('ada_user_email');
 
-        if(!title) { alert("Please provide a sector title."); return; }
+        if(!title) { 
+            alert("Please provide a sector title."); 
+            return; 
+        }
         
-        btn.disabled = true; btn.innerText = "Syncing...";
+        btn.disabled = true; 
+        btn.innerText = "Syncing...";
         
-        const res = await fetch(`${API}/wiki/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: myEmail, title: title })
-        });
-        
-        window.closeModals(); 
-        window.loadCards();
-        document.getElementById('new-title').value = '';
-        btn.disabled = false; btn.innerText = "Initialize";
+        try {
+            const res = await fetch(`${API}/wiki/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: myEmail, title: title })
+            });
+            
+            const d = await res.json();
+            
+            if(d.success) {
+                window.closeModals(); 
+                window.loadCards();
+                titleInput.value = '';
+            } else {
+                // This alerts the exact error from the D1 database
+                alert("Database Error: " + (d.error || "Unknown error"));
+            }
+        } catch(e) {
+            alert("Connection failed. Check your browser console for the full error.");
+            console.error("ADA Network Error:", e);
+        } finally {
+            btn.disabled = false; 
+            btn.innerText = "Initialize";
+        }
     };
 
     window.toggleMenu = function(id) {
