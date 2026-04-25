@@ -3,383 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <title>ADA | Identity Profile</title>
+    
+    <!-- MASTER BOOTSTRAP -->
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/chat-widget.js"></script>
+
     <style>
-        :root {
-            --bg: #0d1117;
-            --header: #161b22;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --btn-green: #238636;
-            --blue: #58a6ff;
-            --red: #f85149;
-            --gold: #d29922;
+        :root { 
+            --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; 
+            --btn-green: #238636; --blue: #58a6ff; --red: #f85149; --gold: #d29922; 
         }
         
         /* THEMED SCROLLBAR */
-        ::-webkit-scrollbar {
-            width: 10px;
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+            transition: background 0.3s; 
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #30363d;
-            border-radius: 5px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #444c56;
-        }
-        
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            margin: 0;
-            min-height: 100vh;
-            overflow-x: hidden;
-            transition: background 0.3s;
-        }
-        
-        header {
-            background: var(--header);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1100;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 40px;
-            padding: 0 20px;
-        }
-        
-        /* SIDEBAR LAYOUT */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .avatar-lg {
-            width: 320px;
-            height: 320px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            object-fit: cover;
-            background: #0d1117;
-            margin-bottom: 5px;
-        }
-        
-        /* BUTTON STYLING */
-        .btn-gh {
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #444c56;
-            background: #21262d;
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: 0.2s;
-            box-sizing: border-box;
-            text-align: center;
-            display: block;
-            text-decoration: none;
-        }
-        
-        .btn-gh:hover {
-            background: #30363d;
-            border-color: #8b949e;
-        }
-        
-        .btn-primary {
-            background: var(--btn-green);
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background: #2ea043;
-        }
-        
-        .btn-danger {
-            color: var(--red);
-            border-color: rgba(248, 81, 73, 0.3);
-        }
-        
-        .btn-danger:hover {
-            background: rgba(248, 81, 73, 0.1);
-            border-color: var(--red);
-        }
-        
-        /* SEARCH AREA & SUGGESTIONS */
-        .search-area {
-            background: #161b22;
-            border: 1px solid var(--border);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .search-wrap {
-            position: relative;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        
-        .inp {
-            width: 100%;
-            padding: 8px 12px;
-            background: #0d1117;
-            border: 1px solid var(--border);
-            color: white;
-            border-radius: 6px;
-            box-sizing: border-box;
-            outline: none;
-            font-size: 13px;
-        }
-        
-        .inp:focus {
-            border-color: var(--blue);
-        }
-        
-        .suggest-box {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: #161b22;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            z-index: 1200;
-            display: none;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            margin-top: 4px;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        
-        .suggest-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border);
-            font-size: 12px;
-        }
-        
-        .suggest-item:last-child {
-            border-bottom: none;
-        }
-        
-        .suggest-item:hover {
-            background: #21262d;
-        }
-        
-        .suggest-item img {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        /* THEMED COLOR PICKER */
-        .color-picker-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #21262d;
-            border: 1px solid #444c56;
-            border-radius: 6px;
-            padding: 4px 10px;
-            cursor: pointer;
-            height: 38px;
+
+        .container { 
+            max-width: 1200px; 
+            margin: 40px auto; 
+            display: grid; 
+            grid-template-columns: 320px 1fr; 
+            gap: 40px; 
+            padding: 0 20px; 
             box-sizing: border-box;
         }
         
-        .color-preview {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-        }
+        /* --- SIDEBAR & SEARCH --- */
+        .sidebar { display: flex; flex-direction: column; gap: 15px; }
+        .avatar-lg { width: 320px; height: 320px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; background: #0d1117; margin-bottom: 5px; }
         
-        input[type="color"] {
-            border: none;
-            width: 0;
-            height: 0;
-            padding: 0;
-            visibility: hidden;
-            position: absolute;
-        }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-left: 8px; }
+        .online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .offline { background: #8b949e; }
+
+        .search-area { background: #161b22; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .search-wrap { position: relative; width: 100%; margin-bottom: 8px; }
+        .inp { width: 100%; padding: 8px 12px; background: #0d1117; border: 1px solid var(--border); color: white; border-radius: 6px; box-sizing: border-box; outline: none; font-size: 13px; }
+        .inp:focus { border-color: var(--blue); }
+
+        .suggest-box { position: absolute; top: 100%; left: 0; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 6px; z-index: 1200; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 4px; box-sizing: border-box; }
+        .suggest-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); }
+        .suggest-item:hover { background: #21262d; }
+        .suggest-item img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        /* --- BUTTON STYLING --- */
+        .btn-gh { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #444c56; background: #21262d; color: white; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; box-sizing: border-box; text-align: center; display: block; text-decoration: none; }
+        .btn-gh:hover { background: #30363d; border-color: #8b949e; }
+        .btn-primary { background: var(--btn-green); border: none; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-danger { color: var(--red); border-color: rgba(248, 81, 73, 0.3); }
+
+        /* --- BIO & EDITOR --- */
+        .bio-container { background: rgba(22, 27, 34, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 40px; min-height: 600px; position: relative; backdrop-filter: blur(10px); }
         
-        /* BIO CONTAINER & EDITOR */
-        .bio-container {
-            background: rgba(22, 27, 34, 0.8);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 40px;
-            min-height: 600px;
-            position: relative;
-            backdrop-filter: blur(10px);
-        }
-        
-        .toolbar {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-        
-        .toolbar select, .toolbar button {
-            background: #21262d;
-            border: 1px solid var(--border);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            height: 32px;
-            font-size: 12px;
-        }
-        
-        #bio-edit, #bio-raw {
-            width: 100%;
-            min-height: 450px;
-            background: #0d1117;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 30px;
-            outline: none;
-            position: relative;
-            overflow: visible;
-            line-height: 1.6;
-            box-sizing: border-box;
-        }
-        
-        #bio-raw {
-            color: #79c0ff;
-            font-family: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, monospace;
-            display: none;
-        }
-        
+        .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+        .toolbar select, .toolbar button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
+
+        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; box-sizing: border-box; color: white; }
+        #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
+
         /* --- NEURAL IMAGE ENGINE --- */
-        .img-wrapper {
-            position: absolute;
-            display: inline-block;
-            line-height: 0;
-            padding: 2px;
-            cursor: move;
-            user-select: none;
-            border: 2px solid transparent;
-            z-index: 10;
-        }
+        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; }
+        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; }
+        .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); z-index: 100; }
         
-        .img-wrapper img {
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            border-radius: 4px;
-        }
+        .resizer { position: absolute; width: 14px; height: 14px; background: var(--blue); right: -7px; bottom: -7px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); }
+        .remover { position: absolute; width: 22px; height: 22px; background: var(--red); color: white; right: -11px; top: -11px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); }
         
-        .img-wrapper.active {
-            border: 2px solid var(--blue);
-            background: rgba(88, 166, 255, 0.1);
-            z-index: 100;
-        }
-        
-        /* Circular Handles */
-        .resizer {
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            background: var(--blue);
-            right: -7px;
-            bottom: -7px;
-            cursor: nwse-resize;
-            border-radius: 50%;
-            display: none;
-            border: 2px solid var(--bg);
-        }
-        
-        .remover {
-            position: absolute;
-            width: 22px;
-            height: 22px;
-            background: var(--red);
-            color: white;
-            right: -11px;
-            top: -11px;
-            cursor: pointer;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: bold;
-            border: 2px solid var(--bg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        
-        /* Toggle visibility based on active state */
-        .img-wrapper.active .resizer, 
-        .img-wrapper.active .remover {
-            display: flex !important;
-        }
-        
-        /* BADGE STYLING */
-        .badge-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 5px;
-        }
-        
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #161b22;
-            border: 1px solid var(--border);
-        }
-        
-        /* PAGE STATES */
-        .editor-panel {
-            display: none;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
+        /* Only show handles if editor is active */
+        #editor-ui[style*="display: flex"] .img-wrapper.active .resizer, 
+        #editor-ui[style*="display: flex"] .img-wrapper.active .remover { display: flex !important; }
+
+        /* --- THEMED COLOR PICKER --- */
+        .color-picker-wrapper { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid #444c56; border-radius: 6px; padding: 4px 10px; cursor: pointer; height: 38px; box-sizing: border-box; }
+        .color-preview { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); }
+        input[type="color"] { border: none; width: 0; height: 0; padding: 0; visibility: hidden; position: absolute; }
+
+        .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
     </style>
 </head>
 <body id="p-body">
-<script src="/uplink.js"></script>
-<script>
-    async function start() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
-        await runNeuralGuard(); // No tag needed
-    }
-    start();
-</script>
-<script src="/chat-widget.js"></script>
+
 <div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
 
 <div class="container">
+    <!-- SIDEBAR -->
     <div class="sidebar">
         <img id="avatar-view" class="avatar-lg" src="">
         
@@ -389,24 +111,23 @@
             <div class="badge-list" id="badges-view"></div>
         </div>
 
-        <!-- REORDERED: MANAGEMENT BUTTONS AT TOP -->
         <button id="edit-btn" class="btn-gh" style="display:none; border-color:var(--blue); color:var(--blue);" onclick="toggleEdit()">Edit My Profile</button>
         
         <div id="admin-actions" style="display:none;">
             <button id="toggle-disabled-btn" class="btn-gh btn-danger" onclick="toggleProfileStatus()">Disable Profile Access</button>
         </div>
 
-        <!-- SEARCH AT BOTTOM OF SIDEBAR -->
         <div class="search-area">
-            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px; text-transform: uppercase; letter-spacing: 0.5px;">Locate Identity</div>
+            <div style="font-size:11px; font-weight:bold; color:#8b949e; margin-bottom:10px; text-transform: uppercase;">Locate Identity</div>
             <div class="search-wrap">
-                <input type="text" id="sq" class="search-input" placeholder="Name or email..." oninput="doSuggest(this.value)">
+                <input type="text" id="sq" class="inp" placeholder="Name or email..." oninput="doSuggest(this.value)">
                 <div id="suggest" class="suggest-box"></div>
             </div>
             <button class="btn-gh btn-primary" onclick="search()">Search Database</button>
         </div>
     </div>
 
+    <!-- BIO AREA -->
     <div class="bio-container">
         <div id="bio-display"></div>
 
@@ -415,13 +136,12 @@
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
                 <div>
                     <label style="font-size:11px; color:#8b949e; display:block; margin-bottom:5px;">Display Name</label>
-                    <input type="text" id="in-name" class="search-input" placeholder="Display Name">
+                    <input type="text" id="in-name" class="inp" placeholder="Display Name">
                 </div>
                 <div>
-                    <label style="font-size:11px; color:#8b949e; display:block; margin-bottom:5px;">Background Style (Gradient Support)</label>
+                    <label style="font-size:11px; color:#8b949e; display:block; margin-bottom:5px;">Background Style</label>
                     <div style="display:flex; gap:8px;">
-                        <input type="text" id="in-bg" class="search-input" style="flex:1" placeholder="#0d1117 or gradient...">
-                        <!-- THEMED COLOR PICKER -->
+                        <input type="text" id="in-bg" class="inp" style="flex:1" placeholder="#0d1117 or gradient...">
                         <label class="color-picker-wrapper">
                             <div id="picker-preview" class="color-preview"></div>
                             <input type="color" onchange="updateBgFromPicker(this.value)">
@@ -437,14 +157,14 @@
                     <option value="H2">Header (H2)</option>
                     <option value="P">Text (P)</option>
                 </select>
-                <button onclick="exec('bold')">B</button>
-                <button onclick="exec('italic')">I</button>
-                <button onclick="exec('underline')">U</button>
+                <button onclick="exec('bold')"><b>B</b></button>
+                <button onclick="exec('italic')"><i>I</i></button>
+                <button onclick="exec('underline')"><u>U</u></button>
                 <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
                 <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
-                <button onclick="document.getElementById('f-pic').click()">Change Avatar</button>
-                <button onclick="document.getElementById('f-bio').click()">Add Image</button>
-                <button onclick="toggleSource()" id="src-btn">Source Code</button>
+                <button onclick="document.getElementById('f-pic').click()">Avatar</button>
+                <button onclick="document.getElementById('f-bio').click()">+Image</button>
+                <button onclick="toggleBioSource()" id="src-btn">HTML Source</button>
             </div>
             
             <input type="file" id="f-pic" hidden onchange="upAvatar(this)">
@@ -465,33 +185,35 @@
     const target = params.get('email') || myEmail;
     let isSrc = false;
     let currentProfile = null;
+
     async function load() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(load, 100); return; }
+        await runNeuralGuard();
+
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
+
+        // Security check for disabled profile
         if (d.disabled) { 
-                    document.body.innerHTML = `
-                        <div style="text-align:center; padding:100px; color:white; background:#0d1117; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                            <h1 style="font-size: 32px; margin-bottom: 10px;">Profile Disabled</h1>
-                            <p style="color:#8b949e; margin-bottom: 30px; font-size: 16px;">This profile is not available. Please return to the system dashboard.</p>
-                            <button class="btn-gh btn-primary" style="width:auto; padding:12px 30px;" onclick="window.location.href='/dash.html'">
-                                Return to Dashboard
-                            </button>
-                        </div>
-                    `; 
-                    return; 
-                }
+            document.body.innerHTML = `<div style="text-align:center; padding:100px; color:white; background:#0d1117; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <h1>Profile Disabled</h1><p style="color:#8b949e;">This profile is not available. Return to dashboard.</p>
+                <button class="btn-gh btn-primary" style="width:auto; padding:12px 30px;" onclick="location.href='/dash.html'">Return</button></div>`; 
+            return; 
+        }
         
         currentProfile = d.user;
         document.getElementById('p-body').style.background = currentProfile.bg_style || "#0d1117";
         document.getElementById('avatar-view').src = currentProfile.profile_picture;
-        document.getElementById('name-view').innerText = currentProfile.display_name || currentProfile.email;
         document.getElementById('email-view').innerText = currentProfile.email;
-        document.getElementById('bio-display').innerHTML = currentProfile.bio_html || "This record is currently empty.";
+        document.getElementById('bio-display').innerHTML = currentProfile.bio_html || "Entity record is empty.";
+
+        // Online Status Calculation
+        const isOnline = currentProfile.is_online === true;
+        document.getElementById('name-view').innerHTML = `${currentProfile.display_name || currentProfile.email} <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>`;
 
         // Badges
-        const br = document.getElementById('badges-view');
-        br.innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
-        if(currentProfile.is_admin) br.innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
+        document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
+        if(currentProfile.is_admin) document.getElementById('badges-view').innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
 
         // Admin checks
         if(localStorage.getItem('ada_admin') === '1') {
@@ -499,6 +221,7 @@
             document.getElementById('toggle-disabled-btn').innerText = currentProfile.profile_disabled ? "Enable Profile Access" : "Disable Profile Access";
         }
 
+        // Ownership checks
         if(target === myEmail) {
             document.getElementById('edit-btn').style.display = 'block';
             document.getElementById('in-name').value = currentProfile.display_name || "";
@@ -510,10 +233,10 @@
     }
 
     async function doSuggest(q) {
-        if(q.length < 2) { document.getElementById('suggest').style.display='none'; return; }
+        const box = document.getElementById('suggest');
+        if(q.length < 2) { box.style.display='none'; return; }
         const r = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
         const items = await r.json();
-        const box = document.getElementById('suggest');
         box.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
         box.style.display = items.length ? 'block' : 'none';
     }
@@ -534,49 +257,16 @@
         const ui = document.getElementById('editor-ui');
         const view = document.getElementById('bio-display');
         const active = ui.style.display === 'flex';
-        
-        if (!active) {
-            // Opening Editor
-            ui.style.display = 'flex';
-            view.style.display = 'none';
-            attachLogic(); // Attach logic only when opening
-        } else {
-            // Closing Editor
-            ui.style.display = 'none';
-            view.style.display = 'block';
-        }
+        ui.style.display = active ? 'none' : 'flex';
+        view.style.display = active ? 'block' : 'none';
+        if (!active) attachLogic();
     }
 
-    function attachLogic() {
-        const ui = document.getElementById('editor-ui');
-        // If the editor UI is hidden, don't allow interactions
-        if (ui.style.display !== 'flex') return;
-
-        document.querySelectorAll('.img-wrapper').forEach(w => {
-            w.onmousedown = (e) => {
-                if (ui.style.display !== 'flex') return; // Strict mode check
-
-                if(e.target.className === 'remover') { w.remove(); return; }
-                document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
-                w.classList.add('active');
-
-                let resizing = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
-                function move(me) {
-                    if(resizing){ w.style.width = Math.max(30, sW + (me.clientX - sX)) + 'px'; }
-                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
-                }
-                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
-                window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-                e.preventDefault();
-            };
-        });
-    }
-
-    function toggleSource() {
+    function toggleBioSource() {
         isSrc = !isSrc;
-        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw');
-        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; document.getElementById('src-btn').innerText="Visual View"; }
-        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; document.getElementById('src-btn').innerText="Source Code"; attachLogic(); }
+        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw'), btn = document.getElementById('src-btn');
+        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; btn.innerText="Visual View"; }
+        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; btn.innerText="HTML Source"; attachLogic(); }
     }
 
     function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('avatar-view').src=e.target.result; r.readAsDataURL(i.files[0]); }}
@@ -586,10 +276,8 @@
             const r = new FileReader();
             r.onload=(e)=>{
                 const w = document.createElement('div');
-                w.className='img-wrapper'; 
-                w.style.width='200px'; 
-                w.style.left='10px'; w.style.top='10px';
-                w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">✕</div>`;
+                w.className='img-wrapper'; w.style.width='200px'; w.style.left='10px'; w.style.top='10px';
+                w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
                 document.getElementById('bio-edit').appendChild(w);
                 attachLogic();
             };
@@ -598,32 +286,20 @@
     }
 
     function attachLogic() {
-        const editor = document.getElementById('bio-edit');
+        if (document.getElementById('editor-ui').style.display !== 'flex') return;
         document.querySelectorAll('.img-wrapper').forEach(w => {
             w.onmousedown = (e) => {
-                if (document.getElementById('editor-ui').style.display !== 'flex') return;
-                if (e.target.classList.contains('remover')) { w.remove(); return; }
-                
+                if(e.target.className === 'remover') { w.remove(); return; }
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
-    
-                let resizing = e.target.classList.contains('resizer');
-                let sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
-    
-                function move(me) {
-                    if(resizing){ 
-                        let maxW = editor.offsetWidth - 20;
-                        w.style.width = Math.max(40, Math.min(sW + (me.clientX - sX), maxW)) + 'px'; 
-                    } else { 
-                        w.style.left = Math.max(0, sL + (me.clientX - sX)) + 'px'; 
-                        w.style.top = Math.max(0, sT + (me.clientY - sY)) + 'px'; 
-                    }
-                }
-                function stop() { 
-                    window.removeEventListener('mousemove', move); 
-                    window.removeEventListener('mouseup', stop); 
-                }
-                window.addEventListener('mousemove', move); 
+                
+                let resizing = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
+                const move = (me) => {
+                    if(resizing){ w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
+                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
+                };
+                const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
+                window.addEventListener('mousemove', move);
                 window.addEventListener('mouseup', stop);
                 e.preventDefault();
             };
