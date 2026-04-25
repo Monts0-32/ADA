@@ -7,11 +7,14 @@
     <script src="/header-engine.js"></script>
     <script src="/chat-widget.js"></script>
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; user-select: none; }
-        
-        #ada-header-anchor { width: 100%; }
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --red: #f85149; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; user-select: none; }
+        header { width: 100%; padding: 12px 24px; background: var(--header); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; position: sticky; top:0; z-index:1100; }
+        
         #game-layout { display: flex; gap: 40px; margin-top: 30px; align-items: flex-start; }
         #tetris-wrap { position: relative; border: 4px solid var(--border); border-radius: 12px; background: #000; box-shadow: 0 0 60px rgba(0,0,0,0.7); }
         canvas { display: block; }
@@ -20,6 +23,9 @@
         .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
         .stat-value { font-size: 28px; font-family: monospace; color: var(--blue); }
         .next-box { background: #000; border: 1px solid var(--border); border-radius: 4px; height: 100px; display: flex; justify-content: center; align-items: center; }
+        
+        .btn-action { padding: 10px; border-radius: 6px; border: none; cursor: pointer; background: var(--green); color: white; font-weight: bold; width: 100%; }
+        .btn-action:hover { background: #2ea043; }
     </style>
 </head>
 <body>
@@ -29,24 +35,24 @@
 <div id="game-layout">
     <div class="panel">
         <div>
-            <div class="stat-label">Score</div>
+            <div class="stat-label">Current Score</div>
             <div id="score" class="stat-value">0</div>
         </div>
         <div>
             <div class="stat-label">Neural Best</div>
             <div id="high-score" class="stat-value">0</div>
         </div>
-        <button onclick="window.resetGame()" style="background:var(--green); color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Force Reboot</button>
+        <button class="btn-action" onclick="window.resetGame()">System Reset</button>
     </div>
 
     <div id="tetris-wrap">
-        <canvas id="tetris" width="320" height="640"></canvas>
+        <canvas id="tetris" width="300" height="600"></canvas>
     </div>
 
     <div class="panel">
         <div class="stat-label">Next Unit</div>
         <div class="next-box">
-            <canvas id="next" width="100" height="100"></canvas>
+            <canvas id="next" width="80" height="80"></canvas>
         </div>
         <div style="font-size: 10px; color:#8b949e; line-height: 1.6; margin-top:10px;">
             <b>MOUSE</b>: Target X<br>
@@ -65,7 +71,7 @@
     const nCanvas = document.getElementById('next');
     const nCtx = nCanvas.getContext('2d');
 
-    const grid = 32;
+    const grid = 30;
     const COLS = 10, ROWS = 20;
 
     let score = 0, highScore = 0, isPaused = false, isReady = false;
@@ -77,20 +83,22 @@
 
     let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
 
-    // --- SYSTEM INITIALIZATION ---
+    // --- INITIALIZE ---
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
         const data = await runNeuralGuard('special_access');
         if(!data) return;
 
-        // Sync Score
-        const sRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
-        const sData = await sRes.json();
-        highScore = parseInt(sData.score) || 0;
-        document.getElementById('high-score').innerText = highScore;
+        // Load High Score from Worker
+        try {
+            const sRes = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+            const sData = await sRes.json();
+            highScore = parseInt(sData.score) || 0;
+            document.getElementById('high-score').innerText = highScore;
+        } catch(e) { console.error("Score Sync Failed"); }
 
         resetPlayer();
-        isReady = true; // Unlock mouse controls
+        isReady = true;
         requestAnimationFrame(gameLoop);
     }
 
@@ -107,8 +115,30 @@
         player.pos.y = 0;
         const b = getBounds(player.matrix);
         player.pos.x = Math.floor(COLS/2) - Math.floor((b.right + b.left)/2);
-        if (collide(arena, player)) gameOver();
+        
+        // GAME OVER CHECK
+        if (collide(arena, player)) {
+            window.gameOver();
+        }
     }
+
+    // --- FIXED GAME OVER ---
+    window.gameOver = async function() {
+        if (score > highScore) {
+            highScore = score;
+            document.getElementById('high-score').innerText = highScore;
+            await fetch(`${API}/game/save-score`, { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ email, gameId: 'tetris', score: highScore }) 
+            });
+        }
+        alert("CRITICAL ERROR: Matrix Overflow. System Resetting.");
+        arena.forEach(row => row.fill(0));
+        score = 0;
+        document.getElementById('score').innerText = 0;
+        resetPlayer();
+    };
 
     function getBounds(matrix) {
         if(!matrix) return {left: 0, right: 0};
@@ -153,7 +183,7 @@
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
         arena.forEach((row, y) => { row.forEach((v, x) => { if (v !== 0) drawBlock(ctx, x, y, colors[v], false, clearingLines.includes(y)); }); });
         
-        if(!player.matrix) return;
+        if(!player.matrix || !isReady) return;
 
         const ghost = { pos: {...player.pos}, matrix: player.matrix };
         while(!collide(arena, ghost)) ghost.pos.y++;
@@ -163,7 +193,7 @@
         player.matrix.forEach((row, y) => { row.forEach((v, x) => { if (v !== 0) drawBlock(ctx, x + player.pos.x, y + player.pos.y, colors[v]); }); });
 
         nCtx.fillStyle = '#000'; nCtx.fillRect(0, 0, nCanvas.width, nCanvas.height);
-        player.next.forEach((row, y) => { row.forEach((v, x) => { if (v !== 0) { nCtx.fillStyle = colors[v][0]; nCtx.fillRect(x * 18 + 25, y * 18 + 25, 17, 17); } }); });
+        player.next.forEach((row, y) => { row.forEach((v, x) => { if (v !== 0) { nCtx.fillStyle = colors[v][0]; nCtx.fillRect(x * 15 + 10, y * 15 + 10, 14, 14); } }); });
     }
 
     function arenaSweep() {
@@ -181,23 +211,36 @@
             if (score > highScore) {
                 highScore = score;
                 document.getElementById('high-score').innerText = highScore;
-                fetch(`${API}/game/save-score`, { method: 'POST', body: JSON.stringify({ email, gameId: 'tetris', score: highScore }) });
+                fetch(`${API}/game/save-score`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, gameId: 'tetris', score: highScore }) });
             }
             setTimeout(() => { clearingLines = []; }, 100);
         }
     }
 
     function gameLoop(time = 0) {
-        if (!isPaused) {
+        if (!isPaused && isReady) {
             dropCounter += (time - lastTime);
             if (dropCounter > 1000) { player.pos.y++; if (collide(arena, player)) { player.pos.y--; merge(); } dropCounter = 0; }
         }
         lastTime = time; draw(); requestAnimationFrame(gameLoop);
     }
 
+    // --- FIXED MERGE WITH BOUNDS CHECK ---
     function merge() {
-        player.matrix.forEach((row, y) => { row.forEach((v, x) => { if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v; }); });
-        resetPlayer(); arenaSweep();
+        player.matrix.forEach((row, y) => {
+            row.forEach((v, x) => {
+                if (v !== 0) {
+                    const targetY = y + player.pos.y;
+                    const targetX = x + player.pos.x;
+                    // Ensure the row exists before setting property
+                    if (arena[targetY]) {
+                        arena[targetY][targetX] = v;
+                    }
+                }
+            });
+        });
+        resetPlayer();
+        arenaSweep();
     }
 
     canvas.addEventListener('mousemove', e => {
@@ -217,7 +260,7 @@
     });
 
     window.addEventListener('keydown', e => {
-        if(e.code === 'KeyR' && !isPaused) {
+        if(e.code === 'KeyR' && !isPaused && isReady) {
             const old = player.matrix;
             player.matrix = rotateMatrix(player.matrix);
             const b = getBounds(player.matrix);
@@ -228,6 +271,7 @@
     });
 
     window.resetGame = () => { arena.forEach(row => row.fill(0)); score = 0; document.getElementById('score').innerText = 0; resetPlayer(); };
+    
     init();
 </script>
 </body>
