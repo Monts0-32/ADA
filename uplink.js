@@ -56,6 +56,7 @@ var ADA_API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
                 window.location.href = '/blocked.html'; return null;
             }
             if (data.command === 'reload') {
+                console.log("ADA: Remote refresh command received.");
                 location.reload();
                 return null;
             }
