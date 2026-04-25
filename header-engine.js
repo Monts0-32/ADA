@@ -27,7 +27,7 @@
             const user = data.user;
             const isAdmin = localStorage.getItem('ada_admin') === '1';
 
-            // ✅ FIX 1: Use actual is_online value instead of hardcoding status-online
+            // ✅ Use actual is_online value from server
             const dotClass = user.is_online ? 'status-online' : 'status-offline';
 
             anchor.innerHTML = `
@@ -49,15 +49,27 @@
         } catch (e) {}
     }
 
-    // ✅ FIX 2: Heartbeat — keeps last_active updated so you don't drop offline
+    // ✅ Heartbeat — keeps last_active updated every 20 seconds
     function startHeartbeat() {
         const email = localStorage.getItem('ada_user_email');
         if (!email) return;
         setInterval(() => {
             fetch(`${API}/sync?email=${encodeURIComponent(email)}`).catch(() => {});
-        }, 20000); // every 20 seconds
+        }, 20000);
     }
 
-    buildHeader();
-    startHeartbeat();
+    // ✅ Wait for runNeuralGuard (which updates last_active) before building header
+    async function init() {
+        if (typeof runNeuralGuard === 'function') {
+            await runNeuralGuard();
+        }
+        buildHeader();
+        startHeartbeat();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();
