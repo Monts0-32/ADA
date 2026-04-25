@@ -23,14 +23,17 @@
         #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; resize: none; outline: none; }
 
         /* Robust Image System */
-        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; }
-        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; }
-        .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); }
+        .img-wrapper .resizer, .img-wrapper .remover { display: none !important; }
         
-        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; display: none; }
-        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border: 2px solid var(--bg); }
-        
-        .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
+        /* Only show handles if the wrapper is active AND the editor is visible */
+        #visual-editor[contenteditable="true"] .img-wrapper.active .resizer { 
+            display: block !important; 
+            position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; border: 2px solid var(--bg);
+        }
+        #visual-editor[contenteditable="true"] .img-wrapper.active .remover { 
+            display: flex !important; 
+            position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg);
+        }
 
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
     </style>
@@ -85,36 +88,56 @@
 
     async function loadWiki() {
         const email = localStorage.getItem('ada_user_email');
-        // Pass email to worker so it can calculate your specific perms
         const res = await fetch(`${API}/wiki/load?id=${wikiId}&email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
-        // 1. HARD SECURITY: REDIRECT IF NO ACCESS
-        if (data.accessLevel === 'none') {
-            window.location.href = '/blocked.html';
-            return;
-        }
+        if (data.accessLevel === 'none') { window.location.href = '/blocked.html'; return; }
 
-        // 2. LOAD CONTENT
         visual.innerHTML = data.content.content || "<h1>Empty Sector</h1>";
 
-        // 3. ENFORCE VIEW-ONLY MODE
         if (data.accessLevel === 'view') {
-            // Lock the text area
             visual.contentEditable = "false";
-            // Hide the entire toolbar and save buttons
             const toolbar = document.querySelector('.toolbar');
             if(toolbar) toolbar.style.display = 'none';
-            // Visual indicator
             document.getElementById('p-label').innerText += " [READ-ONLY]";
-            console.log("ADA: Restricted access applied.");
+            // DO NOT call attachInteractions() here
         } else {
-            // Full access
             visual.contentEditable = "true";
-            attachInteractions(); // Enable drag/resize
+            attachInteractions(); // Only call for editors
         }
+    }
 
-        renderLogs(data.logs);
+    function attachInteractions() {
+        // Double check if we are in view mode
+        if (visual.contentEditable === "false") return;
+
+        visual.querySelectorAll('.img-wrapper').forEach(wrap => {
+            wrap.onmousedown = function(e) {
+                // block interaction if not editable
+                if (visual.contentEditable === "false") return;
+
+                if (e.target.className === 'remover') { wrap.remove(); return; }
+                
+                visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
+                wrap.classList.add('active');
+
+                let resizing = e.target.className === 'resizer';
+                let sX = e.clientX, sY = e.clientY, sW = wrap.offsetWidth, sL = wrap.offsetLeft, sT = wrap.offsetTop;
+
+                function move(me) {
+                    if (resizing) {
+                        wrap.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px';
+                    } else {
+                        wrap.style.left = (sL + (me.clientX - sX)) + 'px';
+                        wrap.style.top = (sT + (me.clientY - sY)) + 'px';
+                    }
+                }
+                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', stop);
+                e.preventDefault();
+            };
+        });
     }
 
     function toggleSource() {
@@ -146,35 +169,6 @@
             };
             r.readAsDataURL(input.files[0]);
         }
-    }
-
-    function attachInteractions() {
-        visual.querySelectorAll('.img-wrapper').forEach(wrap => {
-            wrap.onmousedown = function(e) {
-                if (e.target.className === 'remover') { wrap.remove(); return; }
-                
-                visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
-                wrap.classList.add('active');
-
-                let isResizing = e.target.className === 'resizer';
-                let sX = e.clientX, sY = e.clientY;
-                let sW = wrap.offsetWidth, sH = wrap.offsetHeight;
-                let sL = wrap.offsetLeft, sT = wrap.offsetTop;
-
-                function move(me) {
-                    if (isResizing) {
-                        wrap.style.width = Math.max(30, sW + (me.clientX - sX)) + 'px';
-                        wrap.style.height = 'auto'; 
-                    } else {
-                        wrap.style.left = (sL + (me.clientX - sX)) + 'px';
-                        wrap.style.top = (sT + (me.clientY - sY)) + 'px';
-                    }
-                }
-                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
-                window.addEventListener('mousemove', move);
-                window.addEventListener('mouseup', stop);
-            };
-        });
     }
 
     async function save() {
