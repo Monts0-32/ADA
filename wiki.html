@@ -23,16 +23,28 @@
         #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; resize: none; outline: none; }
 
         /* Robust Image System */
-        .img-wrapper .resizer, .img-wrapper .remover { display: none !important; }
-        
-        /* Only show handles if the wrapper is active AND the editor is visible */
-        #visual-editor[contenteditable="true"] .img-wrapper.active .resizer { 
-            display: block !important; 
-            position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; border: 2px solid var(--bg);
+        .editor-wrap { 
+            overflow: visible !important; 
+            z-index: 1; 
         }
-        #visual-editor[contenteditable="true"] .img-wrapper.active .remover { 
-            display: flex !important; 
-            position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg);
+        
+        /* Prevent giant images from exploding the UI */
+        .img-wrapper img { 
+            max-width: 100%; 
+            max-height: 80vh; 
+            object-fit: contain; 
+            pointer-events: none; 
+        }
+        
+        .img-wrapper { 
+            min-width: 50px; 
+            min-height: 50px; 
+            max-width: 100%; /* Keeps it inside the editor width */
+            z-index: 10;
+        }
+        
+        .img-wrapper.active { 
+            z-index: 100; /* Brings the moving image to the front */
         }
 
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
