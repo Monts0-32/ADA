@@ -55,6 +55,10 @@ var ADA_API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
             if (data.blocks.includes(path) || data.blocks.includes('ALL')) {
                 window.location.href = '/blocked.html'; return null;
             }
+            if (data.command === 'reload') {
+                location.reload();
+                return null;
+            }
 
             if (requiredTag && !data.user.is_admin && !data.permissions.includes(requiredTag)) {
                 window.location.href = '/blocked.html'; return null;
