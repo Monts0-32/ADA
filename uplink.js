@@ -66,13 +66,33 @@ var ADA_API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
             }
 
             clearTimeout(failSafe);
-            window.ADA_CONFIG = data; 
+            window.ADA_CONFIG = data;
             window.clearGuard();
+            
+            // ✅ Start polling for remote commands
+            window.startCommandPoller();
+            
             return data;
         } catch (e) {
             console.error("ADA: Guard Sync Interrupted", e);
             window.clearGuard();
             return null;
         }
+        // ✅ Command poller — checks for remote commands every 5 seconds
+    };
+    // ✅ Command poller — checks for remote commands every 5 seconds
+    window.startCommandPoller = function() {
+        const email = localStorage.getItem('ada_user_email');
+        if (!email) return;
+        setInterval(async () => {
+            try {
+                const res = await fetch(ADA_API_URL + "/sync?email=" + encodeURIComponent(email));
+                const data = await res.json();
+                if (data.command === 'reload') {
+                    console.log("ADA: Remote reload command received.");
+                    location.reload();
+                }
+            } catch(e) {}
+        }, 5000);
     };
 })();
