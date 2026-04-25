@@ -166,7 +166,7 @@
 
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-        const data = await runNeuralGuard('special_access');
+        const data = await runNeuralGuard('');
         if(!data) return;
         
         isAdminUser = data.user.is_admin === 1;
