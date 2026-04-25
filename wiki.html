@@ -169,17 +169,20 @@
     }
 
     function insertImg(input) {
-        if (input.files[0]) {
-            const r = new FileReader();
-            r.onload = (e) => {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
                 const wrap = document.createElement('div');
                 wrap.className = 'img-wrapper';
-                wrap.style.left = '100px'; wrap.style.top = '100px'; wrap.style.width = '200px';
+                // Start at a reasonable size and position
+                wrap.style.left = '20px'; 
+                wrap.style.top = '20px'; 
+                wrap.style.width = '300px'; // Forced default size
                 wrap.innerHTML = `<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
                 visual.appendChild(wrap);
                 attachInteractions();
             };
-            r.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(input.files[0]);
         }
     }
 
