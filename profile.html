@@ -215,8 +215,6 @@
         document.getElementById('bio-display').innerHTML = currentProfile.bio_html || "Entity record is empty.";
 
         // Online Status Calculation
-        const isOnline = currentProfile.is_online === true;
-        document.getElementById('name-view').innerHTML = `${currentProfile.display_name || currentProfile.email} <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>`;
 
         // Badges
         document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
