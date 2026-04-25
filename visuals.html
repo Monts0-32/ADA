@@ -89,11 +89,16 @@
 
     window.openEdit = function(id, t, d, img) { 
         activeId = id; 
+        // Ensure we wait for the modal to exist in DOM
+        const modal = document.getElementById('edit-modal');
+        const overlay = document.getElementById('modal-overlay');
+        
         document.getElementById('edit-title').value = t; 
         document.getElementById('edit-desc').value = d; 
         document.getElementById('edit-img-data').value = img; 
-        document.getElementById('modal-overlay').style.display = 'block';
-        document.getElementById('edit-modal').style.display = 'block';
+        
+        overlay.style.display = 'block';
+        modal.style.display = 'block';
     };
 
     window.handleImg = function(i) { 
