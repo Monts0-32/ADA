@@ -192,7 +192,14 @@
 
         const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
         const d = await res.json();
+        const isOnline = u.sec_ago !== null && u.sec_ago < 60;
 
+        document.getElementById('p-body').style.background = u.bg_style || "#0d1117";
+        document.getElementById('avatar-view').src = u.profile_picture;
+        document.getElementById('name-view').innerHTML = `
+            ${u.display_name || u.email} 
+            <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+        `;
         // Security check for disabled profile
         if (d.disabled) { 
             document.body.innerHTML = `<div style="text-align:center; padding:100px; color:white; background:#0d1117; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
