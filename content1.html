@@ -28,6 +28,9 @@
         .lb-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
         .lb-score { font-size: 11px; font-family: monospace; color: var(--blue); }
 
+        /* NEW PERSONAL BEST BOX */
+        .personal-best-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 15px; width: 220px; margin-top: 15px; box-sizing: border-box; }
+
         /* GAME STYLING */
         #tetris-wrap { position: relative; border: 4px solid var(--border); border-radius: 12px; background: #000; box-shadow: 0 0 50px rgba(0,0,0,0.6); }
         canvas { display: block; }
@@ -46,11 +49,19 @@
 <div id="ada-header-anchor"></div>
 
 <div id="game-layout">
-    <!-- LEFT: LEADERBOARD -->
-    <div class="leaderboard-panel">
-        <div class="stat-label" style="margin-bottom:10px;">Neural Rankings</div>
-        <div id="leaderboard-list">
-            <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
+    <!-- LEFT COLUMN -->
+    <div style="display: flex; flex-direction: column;">
+        <div class="leaderboard-panel">
+            <div class="stat-label" style="margin-bottom:10px;">Neural Rankings</div>
+            <div id="leaderboard-list">
+                <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
+            </div>
+        </div>
+
+        <!-- NEW PERSONAL BEST BOX -->
+        <div class="personal-best-panel">
+            <div class="stat-label">Your Archive Best</div>
+            <div id="personal-high-score" class="stat-value" style="font-size: 22px; margin-top: 10px;">0</div>
         </div>
     </div>
 
@@ -103,10 +114,11 @@
 
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-        const data = await runNeuralGuard('');
+        const data = await runNeuralGuard('special_access');
         if(!data) return;
 
         loadLeaderboard();
+        loadPersonalBest();
         resetPlayer();
         isReady = true;
         requestAnimationFrame(gameLoop);
@@ -130,6 +142,16 @@
         } catch(e) { console.error("Leaderboard Sync Error"); }
     }
 
+    async function loadPersonalBest() {
+        try {
+            const email = localStorage.getItem('ada_user_email');
+            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+            const data = await res.json();
+            highScore = parseInt(data.score) || 0;
+            document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+        } catch(e) { console.error("Personal Best Sync Error"); }
+    }
+
     function createPiece(type) {
         const matrix = shapes[type];
         const colorId = 'ZIOSJLT'.indexOf(type) + 1;
@@ -147,6 +169,7 @@
             score = 0;
             document.getElementById('score').innerText = 0;
             loadLeaderboard();
+            loadPersonalBest();
         }
     }
 
@@ -205,13 +228,16 @@
             document.getElementById('score').innerText = score;
             setTimeout(() => { clearingLines = []; }, 100);
             
-            // Check if this new score deserves a save
-            await fetch(`${API}/game/save-score`, { 
-                method: 'POST', 
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: 'tetris', score: score }) 
-            });
-            loadLeaderboard();
+            if (score > highScore) {
+                highScore = score;
+                document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+                await fetch(`${API}/game/save-score`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: 'tetris', score: score }) 
+                });
+                loadLeaderboard();
+            }
         }
     }
 
