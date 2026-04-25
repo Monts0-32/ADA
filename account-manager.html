@@ -121,46 +121,40 @@
         const list = document.getElementById('user-list');
         const now = new Date();
 
-        list.innerHTML = users.map(u => {
-            const lastActive = new Date(u.last_active);
-            const isOnline = (now - lastActive) < 300000; // 5 min threshold
-
-            return `
-                <tr>
-                    <td>
-                        <div class="user-cell">
-                            <img src="${u.profile_picture}">
-                            <div>
-                                <span style="font-weight:bold; color:#f0f6fc;">${u.display_name || 'Anonymous'}</span><br>
-                                <span style="font-size:11px; color:#8b949e;">${u.email}</span>
-                            </div>
+        list.innerHTML = users.map(u => `
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <img src="${u.profile_picture}">
+                        <div>
+                            <b>${u.display_name || 'Anonymous'}</b><br>
+                            <span style="font-size:10px; opacity:0.6;">${u.email}</span>
                         </div>
-                    </td>
-                    <td>
-                        <div class="status-wrapper">
-                            <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
-                            <span>${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                        </div>
-                    </td>
-                    <td>
-                        ${u.perm_tags.map(t => `<span class="pill pill-perm">${t} <span class="remove-x" onclick="window.postAction('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></span>`).join('')}
-                        <button class="btn-add" onclick="window.addPerm('${u.email}')">+ Assign Tag</button>
-                    </td>
-                    <td>
-                        ${u.badges.map(b => `<span class="pill" style="border-color:${b.color}; color:${b.color}">${b.badge_name} <span class="remove-x" onclick="window.postAction('/admin/badges/unassign', {email:'${u.email}', name:'${b.badge_name}'})">×</span></span>`).join('')}
-                        <button class="btn-add" onclick="window.assignBadgeToUser('${u.email}')">+ Grant Badge</button>
-                    </td>
-                    <td>
-                        ${u.blocked_paths.map(p => `<span class="pill pill-block">${p} <span class="remove-x" onclick="window.postAction('/admin/remove-block', {email:'${u.email}', path:'${p}'})">×</span></span>`).join('')}
-                        <button class="btn-add" style="color:var(--red)" onclick="window.addBlock('${u.email}')">+ Restrict</button>
-                    </td>
-                    <td>
-                        <button class="btn" style="background:#21262d" onclick="window.postAction('/admin/toggle-admin', {id:${u.id}, isAdmin:${u.is_admin === 1 ? 0 : 1}})">Toggle Admin</button>
-                        <button class="btn" style="background:transparent; color:var(--red); border-color:rgba(248,81,73,0.3)" onclick="window.deleteUser(${u.id}, '${u.email}')">Wipe</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+                    </div>
+                </td>
+                <td>
+                    <div class="status-wrapper">
+                        <div class="status-dot ${u.is_online ? 'online' : 'offline'}"></div>
+                        <span style="font-size:10px;">${u.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}">
+                        ${u.is_admin ? 'ADMIN' : 'USER'}
+                    </span>
+                </td>
+                <td>${u.perm_tags.map(t => `<span class="pill pill-perm">${t}</span>`).join('')}</td>
+                <td>${u.badges.map(b => `<span class="pill" style="color:${b.color}">${b.badge_name}</span>`).join('')}</td>
+                <td>
+                    <button class="btn" style="background:#21262d" onclick="window.postAction('/admin/toggle-admin', {id:${u.id}, isAdmin:${u.is_admin ? 0 : 1}})">Toggle Role</button>
+                    <button class="btn" style="background:#21262d" onclick="window.postAction('/admin/profile/toggle-status', {email:'${u.email}', status:${u.profile_disabled ? 0 : 1}})">
+                        ${u.profile_disabled ? 'Enable Profile' : 'Disable Profile'}
+                    </button>
+                    <button class="btn" style="background:var(--blue); color:#000;" onclick="window.postAction('/admin/client/refresh', {email:'${u.email}'})">Refresh Client</button>
+                    <button class="btn" style="background:var(--red)" onclick="window.deleteUser(${u.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
     };
 
     window.renderBadgeLab = function(master) {
