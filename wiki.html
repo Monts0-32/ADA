@@ -120,38 +120,45 @@
     }
 
     function attachInteractions() {
-        // Double check if we are in view mode
         if (visual.contentEditable === "false") return;
-
+    
         visual.querySelectorAll('.img-wrapper').forEach(wrap => {
             wrap.onmousedown = function(e) {
-                // block interaction if not editable
                 if (visual.contentEditable === "false") return;
-
                 if (e.target.className === 'remover') { wrap.remove(); return; }
                 
                 visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
                 wrap.classList.add('active');
-
+    
                 let resizing = e.target.className === 'resizer';
-                let sX = e.clientX, sY = e.clientY, sW = wrap.offsetWidth, sL = wrap.offsetLeft, sT = wrap.offsetTop;
-
+                let sX = e.clientX, sY = e.clientY;
+                let sW = wrap.offsetWidth, sL = wrap.offsetLeft, sT = wrap.offsetTop;
+    
                 function move(me) {
                     if (resizing) {
-                        wrap.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px';
+                        // Force a minimum and maximum width
+                        let newWidth = sW + (me.clientX - sX);
+                        wrap.style.width = Math.max(50, Math.min(newWidth, visual.offsetWidth - 40)) + 'px';
                     } else {
-                        wrap.style.left = (sL + (me.clientX - sX)) + 'px';
-                        wrap.style.top = (sT + (me.clientY - sY)) + 'px';
+                        // Smooth free movement
+                        let newLeft = sL + (me.clientX - sX);
+                        let newTop = sT + (me.clientY - sY);
+                        
+                        // Constrain within editor bounds
+                        wrap.style.left = Math.max(0, newLeft) + 'px';
+                        wrap.style.top = Math.max(0, newTop) + 'px';
                     }
                 }
-                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
+                function stop() { 
+                    window.removeEventListener('mousemove', move); 
+                    window.removeEventListener('mouseup', stop); 
+                }
                 window.addEventListener('mousemove', move);
                 window.addEventListener('mouseup', stop);
                 e.preventDefault();
             };
         });
     }
-
     function toggleSource() {
         isSource = !isSource;
         if (isSource) {
