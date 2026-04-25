@@ -290,7 +290,10 @@
             const r = new FileReader();
             r.onload=(e)=>{
                 const w = document.createElement('div');
-                w.className='img-wrapper'; w.style.width='200px'; w.style.left='10px'; w.style.top='10px';
+                w.className='img-wrapper'; 
+                w.style.width='250px'; // Reasonable starting size
+                w.style.left='10px'; 
+                w.style.top='10px';
                 w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
                 document.getElementById('bio-edit').appendChild(w);
                 attachLogic();
@@ -300,21 +303,36 @@
     }
 
     function attachLogic() {
+        const ui = document.getElementById('editor-ui');
+        if (ui.style.display !== 'flex') return;
+    
         document.querySelectorAll('.img-wrapper').forEach(w => {
             w.onmousedown = (e) => {
-                if(e.target.className === 'remover') { w.remove(); return; }
+                if (ui.style.display !== 'flex') return;
+                if (e.target.className === 'remover') { w.remove(); return; }
+                
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
-                
-                let res = e.target.className === 'resizer';
+    
+                let resizing = e.target.className === 'resizer';
                 let sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
-
-                const move = (me) => {
-                    if(res){ w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
-                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
-                };
-                const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-                window.addEventListener('mousemove', move);
+    
+                function move(me) {
+                    if(resizing){ 
+                        // Set max width to the bio container width
+                        let maxWidth = document.getElementById('bio-edit').offsetWidth - 20;
+                        w.style.width = Math.max(30, Math.min(sW + (me.clientX - sX), maxWidth)) + 'px'; 
+                    }
+                    else { 
+                        w.style.left = Math.max(0, sL + (me.clientX - sX)) + 'px'; 
+                        w.style.top = Math.max(0, sT + (me.clientY - sY)) + 'px'; 
+                    }
+                }
+                function stop() { 
+                    window.removeEventListener('mousemove', move); 
+                    window.removeEventListener('mouseup', stop); 
+                }
+                window.addEventListener('mousemove', move); 
                 window.addEventListener('mouseup', stop);
                 e.preventDefault();
             };
