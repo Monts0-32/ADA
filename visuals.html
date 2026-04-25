@@ -28,16 +28,14 @@
         .card-footer { margin-top: auto; width: 100%; padding-right: 40px; box-sizing: border-box; }
         .btn { padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; color: white; background: #21262d; border: 1px solid var(--border); text-align: center; text-decoration: none; display: block; box-sizing: border-box; font-size: 13px; }
         .btn-green { background: var(--btn-green); border: none; }
-        .btn-locked { opacity: 0.5; cursor: not-allowed; }
+        .btn-locked { opacity: 0.5; cursor: not-allowed; border-style: dashed; }
 
         /* THREE DOTS */
         .menu-btn { position: absolute; bottom: 12px; right: 12px; cursor: pointer; color: #8b949e; font-size: 24px; padding: 5px; z-index: 100; line-height: 1; }
-        .menu-btn:hover { color: white; }
         .dropdown { position: absolute; bottom: 50px; right: 12px; background: #1c2128; border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 200; width: 170px; box-shadow: 0 8px 24px #000; overflow: hidden; }
         .dropdown div { padding: 12px 15px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); color: #c9d1d9; }
         .dropdown div:hover { background: #30363d; color: var(--blue); }
 
-        /* MODALS */
         .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 30px; z-index: 5000; width: 450px; box-shadow: 0 0 100px #000; }
         .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; }
         input, textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; outline: none; font-size: 13px; }
@@ -60,8 +58,8 @@
 <!-- EDIT MODAL -->
 <div class="modal" id="edit-modal">
     <h3 style="margin-top:0">Edit Module Meta</h3>
-    <input type="text" id="edit-title">
-    <textarea id="edit-desc" style="height:80px;"></textarea>
+    <input type="text" id="edit-title" placeholder="Title">
+    <textarea id="edit-desc" placeholder="Description" style="height:80px;"></textarea>
     <label class="btn" style="display:block; text-align:center; background:#0d1117;">Change Image<input type="file" id="img-in" hidden onchange="window.handleImg(this)"></label>
     <input type="hidden" id="edit-img-data">
     <button class="btn btn-green" onclick="window.saveMetadata()">Save Changes</button>
@@ -70,71 +68,32 @@
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    const IMG_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    // Internal Placeholder (Grey Box) so network blockers can't stop it loading
+    const LOCAL_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     
     let activeId = null;
     let isAdminUser = false;
 
-    // --- 1. GLOBAL UI CONTROLLERS (DEFINED ON WINDOW IMMEDIATELY) ---
-    window.openModal = function(id) {
-        document.getElementById('modal-overlay').style.display = 'block';
-        document.getElementById(id).style.display = 'block';
-    };
-
+    // --- GLOBAL FUNCTIONS ATTACHED TO WINDOW ---
     window.closeModals = function() {
         document.querySelectorAll('.modal, .overlay, .dropdown').forEach(el => el.style.display = 'none');
     };
 
     window.toggleMenu = function(e, id) {
-        e.stopPropagation(); // Prevents clicking card background
+        e.stopPropagation();
         const m = document.getElementById(`menu-${id}`);
         const isOpen = m.style.display === 'block';
         document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none');
         if(!isOpen) m.style.display = 'block';
     };
 
-    // --- 2. DATA LOADERS ---
-    window.loadCards = async function() {
-        const res = await fetch(`${API}/special/metadata`);
-        const cards = await res.json();
-        const grid = document.getElementById('card-grid');
-
-        grid.innerHTML = cards.map(c => {
-            const isLocked = c.is_locked === 1;
-            const canEnter = !isLocked || isAdminUser;
-
-            return `
-                <div class="spec-card">
-                    <img src="${c.image_url || IMG_PLACEHOLDER}" class="card-img" onerror="this.src='${IMG_PLACEHOLDER}'">
-                    <h3 style="margin:0; color:#f0f6fc;">${c.title}</h3>
-                    <p style="font-size:13px; color:#8b949e; flex:1;">${c.description || 'Simulation unit.'}</p>
-                    
-                    <div class="card-footer">
-                        ${canEnter ? 
-                            `<a href="/${c.id}.html" class="btn btn-green">${isLocked ? '🔒 Admin Override' : 'Launch Module'}</a>` : 
-                            `<button class="btn btn-locked" onclick="alert('Access Restricted by Administrator.')">🔒 Access Restricted</button>`
-                        }
-                    </div>
-
-                    ${isAdminUser ? `<div class="menu-btn" onclick="window.toggleMenu(event, '${c.id}')">⋮</div>` : ''}
-                    
-                    <div class="dropdown" id="menu-${c.id}">
-                        <div onclick="window.openEdit('${c.id}','${c.title.replace(/'/g, "\\'")}','${c.description.replace(/'/g, "\\'")}','${c.image_url}')">Edit Card</div>
-                        <div onclick="window.toggleLock('${c.id}')" style="color:${isLocked ? 'var(--btn-green)' : 'var(--red)'}">
-                            ${isLocked ? 'Unlock Module' : 'Lock Module'}
-                        </div>
-                    </div>
-                </div>`;
-        }).join('');
-    };
-
-    // --- 3. ADMIN ACTIONS ---
     window.openEdit = function(id, t, d, img) { 
         activeId = id; 
         document.getElementById('edit-title').value = t; 
         document.getElementById('edit-desc').value = d; 
         document.getElementById('edit-img-data').value = img; 
-        window.openModal('edit-modal'); 
+        document.getElementById('modal-overlay').style.display = 'block';
+        document.getElementById('edit-modal').style.display = 'block';
     };
 
     window.handleImg = function(i) { 
@@ -157,15 +116,50 @@
 
     window.toggleLock = async function(id) {
         const myEmail = localStorage.getItem('ada_user_email');
-        await fetch(`${API}/special/lock`, {
+        const res = await fetch(`${API}/special/lock`, {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ id, adminEmail: myEmail })
         });
-        window.loadCards();
+        const result = await res.json();
+        if(result.success) window.loadCards();
+        else alert("Error: " + result.error);
     };
 
-    // --- 4. BOOTSTRAP ---
+    window.loadCards = async function() {
+        const res = await fetch(`${API}/special/metadata`);
+        const cards = await res.json();
+        const grid = document.getElementById('card-grid');
+
+        grid.innerHTML = cards.map(c => {
+            const isLocked = c.is_locked === 1;
+            const canEnter = !isLocked || isAdminUser;
+
+            return `
+                <div class="spec-card">
+                    <img src="${c.image_url || LOCAL_PLACEHOLDER}" class="card-img" onerror="this.src='${LOCAL_PLACEHOLDER}'">
+                    <h3 class="spec-title">${c.title}</h3>
+                    <p class="spec-desc">${c.description || 'Sector online.'}</p>
+                    
+                    <div class="card-footer">
+                        ${canEnter ? 
+                            `<a href="/${c.id}.html" class="btn btn-green">${isLocked ? '🔒 Admin Override' : 'Launch Module'}</a>` : 
+                            `<button class="btn btn-locked" onclick="alert('Access Restricted by Administrator.')">🔒 Access Restricted</button>`
+                        }
+                    </div>
+
+                    ${isAdminUser ? `<div class="menu-btn" onclick="window.toggleMenu(event, '${c.id}')">⋮</div>` : ''}
+                    
+                    <div class="dropdown" id="menu-${c.id}">
+                        <div onclick="window.openEdit('${c.id}','${c.title.replace(/'/g, "\\'")}','${c.description.replace(/'/g, "\\'")}','${c.image_url}')">Edit Card</div>
+                        <div onclick="window.toggleLock('${c.id}')" style="color:${isLocked ? 'var(--btn-green)' : 'var(--red)'}">
+                            ${isLocked ? 'Unlock Module' : 'Lock Module'}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    };
+
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
         const data = await runNeuralGuard('special_access');
@@ -176,9 +170,7 @@
         window.loadCards();
     }
 
-    // Modal safety
     window.onclick = function(e) { if (!e.target.matches('.menu-btn')) window.closeModals(); };
-    
     init();
 </script>
 </body>
