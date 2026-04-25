@@ -13,13 +13,13 @@
         th, td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 12px; }
         th { background: #21262d; color: #f0f6fc; }
         .user-cell { display: flex; align-items: center; gap: 10px; }
-        .user-cell img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .user-cell img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #0d1117; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
         .offline { background: #8b949e; }
-        .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); font-weight: bold; }
-        .remove-x { margin-left: 6px; cursor: pointer; color: var(--red); }
-        .btn { padding: 5px 10px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); font-size: 10px; font-weight: 600; color: white; margin: 2px; }
+        .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); font-weight: bold; white-space: nowrap; }
+        .remove-x { margin-left: 6px; cursor: pointer; color: var(--red); font-weight: bold; }
+        .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); font-size: 10px; font-weight: 600; color: white; margin: 2px; white-space: nowrap; }
         .btn-add { background: transparent; color: #58a6ff; border: none; padding: 0; margin-top: 5px; text-decoration: underline; cursor: pointer; font-size: 10px; display: block; }
     </style>
 </head>
@@ -30,10 +30,10 @@
 <div class="container">
     <header>
         <div>
-            <a href="/dash.html" style="color:var(--blue); text-decoration:none;">← Return to Dashboard</a>
+            <a href="/dash.html" style="color:var(--blue); text-decoration:none; font-size: 13px;">← Return to Dashboard</a>
             <h1 style="margin:10px 0 0 0; font-size:22px;">Archive Identity & Permissions Manager</h1>
         </div>
-        <button class="btn" style="font-size:16px;" onclick="refreshAll()">↻</button>
+        <button class="btn" style="font-size:18px; padding: 5px 15px;" onclick="refreshAll()">↻</button>
     </header>
     
     <table>
@@ -41,17 +41,15 @@
             <tr>
                 <th width="15%">Identity</th>
                 <th width="8%">Status</th>
-                <th width="10%">Role</th>
+                <th width="8%">Role</th>
                 <th width="15%">Clearance Tags</th>
                 <th width="15%">Badges</th>
                 <th width="15%">Path Blocks</th>
-                <th width="22%">System Controls</th>
+                <th width="24%">System Controls</th>
             </tr>
         </thead>
         <tbody id="user-list"></tbody>
     </table>
-
-    <div id="badge-lab-anchor"></div> <!-- Badge Lab logic remains same as previous full version -->
 </div>
 
 <script>
@@ -75,27 +73,35 @@
                     </div>
                 </td>
                 <td>
-                    <div class="status-dot ${u.is_online ? 'online' : 'offline'}"></div>
-                    <span style="font-size:10px;">${u.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                    <div style="display:flex; align-items:center; height: 100%;">
+                        <div class="status-dot ${u.is_online ? 'online' : 'offline'}"></div>
+                        <span style="font-size:10px;">${u.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
                 </td>
-                <td><span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}">${u.is_admin ? 'ADMIN' : 'USER'}</span></td>
                 <td>
-                    ${u.perm_tags.map(t => `<div class="pill">${t} <span class="remove-x" onclick="action('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></div>`).join('')}
+                    <span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}; color:${u.is_admin ? 'var(--gold)' : 'inherit'}">
+                        ${u.is_admin ? 'ADMIN' : 'USER'}
+                    </span>
+                </td>
+                <td>
+                    ${(u.perm_tags || []).map(t => `<div class="pill">${t} <span class="remove-x" onclick="action('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></div>`).join('')}
                     <button class="btn-add" onclick="addPerm('${u.email}')">+ Add Tag</button>
                 </td>
                 <td>
-                    ${u.badges.map(b => `<div class="pill" style="border-color:${b.color}; color:${b.color}">${b.badge_name} <span class="remove-x" onclick="action('/admin/badges/unassign', {email:'${u.email}', name:'${b.badge_name}'})">×</span></div>`).join('')}
+                    ${(u.badges || []).map(b => `<div class="pill" style="border-color:${b.color}; color:${b.color}">${b.badge_name} <span class="remove-x" onclick="action('/admin/badges/unassign', {email:'${u.email}', name:'${b.badge_name}'})">×</span></div>`).join('')}
                     <button class="btn-add" onclick="assignBadge('${u.email}')">+ Grant Badge</button>
                 </td>
                 <td>
-                    ${u.blocked_paths.map(p => `<div class="pill" style="color:var(--red)">${p} <span class="remove-x" onclick="action('/admin/remove-block', {email:'${u.email}', path:'${p}'})">×</span></div>`).join('')}
+                    ${(u.blocked_paths || []).map(p => `<div class="pill" style="color:var(--red); border-color:var(--red);">${p} <span class="remove-x" onclick="action('/admin/remove-block', {email:'${u.email}', path:'${p}'})">×</span></div>`).join('')}
                     <button class="btn-add" style="color:var(--red)" onclick="addBlock('${u.email}')">+ Block Path</button>
                 </td>
                 <td>
-                    <button class="btn" onclick="action('/admin/toggle-admin', {id:${u.id}, isAdmin:${u.is_admin ? 0 : 1}})">Toggle Role</button>
-                    <button class="btn" onclick="action('/admin/profile/toggle-status', {email:'${u.email}', status:${u.profile_disabled ? 0 : 1}})">${u.profile_disabled ? 'Enable' : 'Disable'} Profile</button>
-                    <button class="btn" style="background:var(--blue); color:#000" onclick="action('/admin/client/refresh', {email:'${u.email}'})">Refresh Client</button>
-                    <button class="btn" style="background:var(--red)" onclick="deleteUser(${u.id}, '${u.email}')">Delete</button>
+                    <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                        <button class="btn" style="background:#21262d" onclick="action('/admin/toggle-admin', {id:${u.id}, isAdmin:${u.is_admin ? 0 : 1}})">Toggle Role</button>
+                        <button class="btn" style="background:#21262d" onclick="action('/admin/profile/toggle-status', {email:'${u.email}', status:${u.profile_disabled ? 0 : 1}})">${u.profile_disabled ? 'Enable' : 'Disable'} Profile</button>
+                        <button class="btn" style="background:var(--blue); color:#000" onclick="action('/admin/client/refresh', {email:'${u.email}'})">Refresh Client</button>
+                        <button class="btn" style="background:var(--red)" onclick="deleteUser(${u.id}, '${u.email}')">Delete</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -106,10 +112,10 @@
         refreshAll();
     }
 
-    function addPerm(email) { const tag = prompt("Clearance Tag:"); if(tag) action('/admin/add-perm', {email, tag}); }
-    function addBlock(email) { const path = prompt("Block path (or ALL):"); if(path) action('/admin/block-user', {email, path}); }
-    function assignBadge(email) { const name = prompt("Badge Name:"); if(name) action('/admin/badges/assign', {email, name}); }
-    function deleteUser(id, email) { if(email !== myEmail && confirm("Wipe user?")) action('/admin/delete-user', {id}); }
+    function addPerm(email) { const tag = prompt("Clearance Tag (e.g. wiki_access):"); if(tag) action('/admin/add-perm', {email, tag}); }
+    function addBlock(email) { const path = prompt("Block path (e.g. dash.html) or ALL:"); if(path) action('/admin/block-user', {email, path}); }
+    function assignBadge(email) { const name = prompt("Enter Master Badge Name:"); if(name) action('/admin/badges/assign', {email, name}); }
+    function deleteUser(id, email) { if(email !== myEmail && confirm("Wipe user data permanently?")) action('/admin/delete-user', {id}); }
 
     refreshAll();
 </script>
