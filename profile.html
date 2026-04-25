@@ -54,12 +54,17 @@
         #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
 
         /* IMAGE ENGINE */
-        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; }
-        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; }
-        .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); z-index: 100; }
-        .resizer { position: absolute; width: 12px; height: 12px; background: var(--blue); right: -6px; bottom: -6px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); }
-        .remover { position: absolute; width: 20px; height: 20px; background: var(--red); color: white; right: -10px; top: -10px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); }
-        .img-wrapper.active .resizer, .img-wrapper.active .remover { display: flex; }
+        .img-wrapper .resizer, .img-wrapper .remover { display: none !important; }
+    
+        /* Only show when the editor UI is explicitly flex (active) */
+        #editor-ui[style*="display: flex"] .img-wrapper.active .resizer { 
+            display: block !important; 
+            position: absolute; width: 10px; height: 10px; background: var(--blue); right: -5px; bottom: -5px; cursor: nwse-resize;
+        }
+        #editor-ui[style*="display: flex"] .img-wrapper.active .remover { 
+            display: flex !important; 
+            position: absolute; width: 18px; height: 18px; background: var(--red); color: white; right: -9px; top: -9px; cursor: pointer; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px;
+        }
 
         .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
@@ -233,8 +238,42 @@
         const ui = document.getElementById('editor-ui');
         const view = document.getElementById('bio-display');
         const active = ui.style.display === 'flex';
-        ui.style.display = active ? 'none' : 'flex';
-        view.style.display = active ? 'block' : 'none';
+        
+        if (!active) {
+            // Opening Editor
+            ui.style.display = 'flex';
+            view.style.display = 'none';
+            attachLogic(); // Attach logic only when opening
+        } else {
+            // Closing Editor
+            ui.style.display = 'none';
+            view.style.display = 'block';
+        }
+    }
+
+    function attachLogic() {
+        const ui = document.getElementById('editor-ui');
+        // If the editor UI is hidden, don't allow interactions
+        if (ui.style.display !== 'flex') return;
+
+        document.querySelectorAll('.img-wrapper').forEach(w => {
+            w.onmousedown = (e) => {
+                if (ui.style.display !== 'flex') return; // Strict mode check
+
+                if(e.target.className === 'remover') { w.remove(); return; }
+                document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
+                w.classList.add('active');
+
+                let resizing = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
+                function move(me) {
+                    if(resizing){ w.style.width = Math.max(30, sW + (me.clientX - sX)) + 'px'; }
+                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
+                }
+                function stop() { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); }
+                window.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
+                e.preventDefault();
+            };
+        });
     }
 
     function toggleSource() {
