@@ -52,7 +52,7 @@
     <!-- LEFT COLUMN -->
     <div style="display: flex; flex-direction: column;">
         <div class="leaderboard-panel">
-            <div class="stat-label" style="margin-bottom:10px;">Neural Rankings</div>
+            <div class="stat-label" style="margin-bottom:10px;">Rankings</div>
             <div id="leaderboard-list">
                 <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
             </div>
@@ -114,7 +114,7 @@
 
     async function init() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-        const data = await runNeuralGuard('special_access');
+        const data = await runNeuralGuard('');
         if(!data) return;
 
         loadLeaderboard();
