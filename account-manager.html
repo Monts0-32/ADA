@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | System Management</title>
+    <title>ADA | Archive Management</title>
+    <script>window.ADA_CONFIG = { requiredTag: null };</script>
+    <script src="/uplink.js"></script>
     <style>
         :root { 
             --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; 
@@ -12,15 +14,13 @@
         /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg); }
-        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 40px; }
         .container { max-width: 1500px; margin: 0 auto; }
         
         header { margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-link { color: #58a6ff; text-decoration: none; font-size: 14px; }
-        .nav-link:hover { text-decoration: underline; }
 
         section { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 40px; }
         h2 { margin-top: 0; font-weight: 400; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
@@ -29,52 +29,57 @@
         th, td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; }
         th { background: #21262d; color: #f0f6fc; }
 
-        /* Identity Styling */
+        /* Identity */
         .user-cell { display: flex; align-items: center; gap: 10px; }
         .user-cell img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #0d1117; border: 1px solid var(--border); }
         
-        /* Badges/Pills */
+        /* Status Dot */
+        .status-wrapper { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: bold; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .offline { background: #8b949e; }
+
+        /* Pills */
         .pill { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); font-weight: 600; }
         .pill-perm { background: rgba(35, 134, 54, 0.1); color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
         .pill-block { background: rgba(248, 81, 73, 0.1); color: #f85149; border-color: rgba(248, 81, 73, 0.4); }
         .remove-x { margin-left: 6px; cursor: pointer; opacity: 0.6; font-size: 12px; }
         .remove-x:hover { opacity: 1; color: white; }
 
-        /* Inputs & Buttons */
-        .inp { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; outline: none; font-size: 13px; }
+        /* Controls */
+        .inp { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; outline: none; font-size: 12px; }
         .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: white; transition: 0.2s; }
         .btn-add { background: transparent; color: #58a6ff; border: none; padding: 0; margin-top: 5px; text-decoration: underline; display: block; cursor: pointer; }
-        
-        /* Badge Lab Card */
-        .badge-card { background: #21262d; border: 1px solid var(--border); padding: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; min-width: 150px; }
+        .refresh-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; transition: transform 0.3s; }
+        .refresh-btn:active { transform: rotate(180deg); }
     </style>
 </head>
 <body>
-<script src="/uplink.js"></script>
-<script>
-    async function start() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
-        // Admins can enter even without 'wiki_access'
-        await runNeuralGuard('account_manage'); 
-    }
-    start();
-</script>
-<script src="/chat-widget.js"></script>
-<div class="container">
-<div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
 
-    <!-- SECTION 1: USER DIRECTORY -->
+<div id="ada-header-anchor"></div>
+
+<div class="container">
+    <header>
+        <div>
+            <a href="/dash.html" class="nav-link">← Return to Dashboard</a>
+            <div style="display:flex; align-items:center; gap:15px; margin-top:10px;">
+                <h1 style="margin:0; font-size: 24px;">Archive Identity Manager</h1>
+                <button class="refresh-btn" onclick="window.refreshAll()">↻</button>
+            </div>
+        </div>
+        <div id="stats" style="font-size: 12px; color: #8b949e;">Syncing records...</div>
+    </header>
+
     <section>
-        <h2>Identity Directory</h2>
+        <h2>Neural Directory</h2>
         <table>
             <thead>
                 <tr>
                     <th width="20%">Identity</th>
-                    <th width="10%">Role</th>
+                    <th width="10%">Status</th>
                     <th width="18%">Permissions</th>
-                    <th width="18%">Badges</th>
-                    <th width="15%">Restrictions</th>
+                    <th width="18%">Badge Corner</th>
+                    <th width="15%">Access Blocks</th>
                     <th width="19%">Management</th>
                 </tr>
             </thead>
@@ -82,25 +87,17 @@
         </table>
     </section>
 
-    <!-- SECTION 2: BADGE LAB -->
     <section>
-        <h2>Archive Badge Lab</h2>
+        <h2>Badge Lab</h2>
         <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
-            <div style="display: flex; flex-direction: column; gap: 10px; background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
-                <h3 style="margin-top:0">Create Badge Template</h3>
-                <input type="text" id="new-b-name" class="inp" placeholder="Badge Name (e.g. Founder)">
-                <input type="text" id="new-b-icon" class="inp" placeholder="Emoji/Icon">
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="text" id="new-b-color" class="inp" style="flex:1" placeholder="Hex Color (#58a6ff)">
-                    <input type="color" onchange="document.getElementById('new-b-color').value=this.value">
-                </div>
-                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="createBadgeTemplate()">Register Master Badge</button>
+            <div style="background:#0d1117; padding:20px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:10px;">
+                <h3>New Template</h3>
+                <input type="text" id="b-name" class="inp" placeholder="Badge Name">
+                <input type="text" id="b-icon" class="inp" placeholder="Emoji Icon">
+                <input type="color" id="b-color" style="width:100%; height:30px; border:none; background:none; cursor:pointer;">
+                <button class="btn" style="background:var(--btn-green); border:none;" onclick="window.createBadgeTemplate()">Register Badge</button>
             </div>
-            
-            <div>
-                <h3 style="margin-top:0">Registered Master Badges</h3>
-                <div id="master-badge-list" style="display: flex; flex-wrap: wrap; gap: 15px;"></div>
-            </div>
+            <div id="master-badge-list" style="display:flex; flex-wrap:wrap; gap:15px;"></div>
         </div>
     </section>
 </div>
@@ -109,139 +106,98 @@
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const myEmail = localStorage.getItem('ada_user_email');
 
-    async function refreshAll() {
+    window.refreshAll = async function() {
         const res = await fetch(`${API}/admin/list-users`);
         const users = await res.json();
-        
         const bRes = await fetch(`${API}/admin/badges/list`);
         const bData = await bRes.json();
+        
+        window.renderUsers(users);
+        window.renderBadgeLab(bData.master);
+        document.getElementById('stats').innerText = `${users.length} Active Neural Links`;
+    };
 
-        renderUsers(users);
-        renderBadgeLab(bData.master);
-        document.getElementById('status-text').innerText = `${users.length} Active Archive Identities`;
-    }
-
-    function renderUsers(users) {
+    window.renderUsers = function(users) {
         const list = document.getElementById('user-list');
-        list.innerHTML = users.map(u => `
-            <tr>
-                <td>
-                    <div class="user-cell">
-                        <img src="${u.profile_picture}">
-                        <div>
-                            <span style="font-weight:bold; color:#f0f6fc;">${u.display_name || 'Anonymous'}</span><br>
-                            <span style="font-size:11px; color:#8b949e;">${u.email}</span>
+        const now = new Date();
+
+        list.innerHTML = users.map(u => {
+            const lastActive = new Date(u.last_active);
+            const isOnline = (now - lastActive) < 300000; // 5 min threshold
+
+            return `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <img src="${u.profile_picture}">
+                            <div>
+                                <span style="font-weight:bold; color:#f0f6fc;">${u.display_name || 'Anonymous'}</span><br>
+                                <span style="font-size:11px; color:#8b949e;">${u.email}</span>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}; color:${u.is_admin ? 'var(--gold)' : '#8b949e'}">
-                        ${u.is_admin ? 'ADMIN' : 'USER'}
-                    </span>
-                </td>
-                <td>
-                    ${u.perm_tags.map(t => `<span class="pill pill-perm">${t} <span class="remove-x" onclick="removePerm('${u.email}','${t}')">×</span></span>`).join('')}
-                    <button class="btn-add" onclick="addPerm('${u.email}')">+ Assign Tag</button>
-                </td>
-                <td>
-                    ${u.badges.map(b => `<span class="pill" style="border-color:${b.badge_color}; color:${b.badge_color}">${b.badge_name} <span class="remove-x" onclick="unassignBadge('${u.email}','${b.badge_name}')">×</span></span>`).join('')}
-                    <button class="btn-add" onclick="assignBadgePrompt('${u.email}')">+ Grant Badge</button>
-                </td>
-                <td>
-                    ${u.blocked_paths.map(p => `<span class="pill pill-block">${p} <span class="remove-x" onclick="removeBlock('${u.email}','${p}')">×</span></span>`).join('')}
-                    <button class="btn-add" style="color:var(--btn-red)" onclick="addBlock('${u.email}')">+ Restrict Path</button>
-                </td>
-                <td>
-                    <button class="btn" style="background:#21262d" onclick="toggleAdmin(${u.id}, ${u.is_admin}, '${u.email}')">Toggle Admin</button>
-                    <button class="btn" style="background:${u.profile_disabled ? 'var(--btn-green)' : 'var(--btn-red)'}" onclick="toggleProfile('${u.email}', ${u.profile_disabled})">
-                        ${u.profile_disabled ? 'Enable Profile' : 'Disable Profile'}
-                    </button>
-                    <button class="btn" style="background:transparent; color:var(--btn-red); border-color:rgba(248,81,73,0.2)" onclick="deleteAccount(${u.id}, '${u.email}')">Delete</button>
-                </td>
-            </tr>
-        `).join('');
-    }
+                    </td>
+                    <td>
+                        <div class="status-wrapper">
+                            <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+                            <span>${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                        </div>
+                    </td>
+                    <td>
+                        ${u.perm_tags.map(t => `<span class="pill pill-perm">${t} <span class="remove-x" onclick="window.postAction('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></span>`).join('')}
+                        <button class="btn-add" onclick="window.addPerm('${u.email}')">+ Assign Tag</button>
+                    </td>
+                    <td>
+                        ${u.badges.map(b => `<span class="pill" style="border-color:${b.color}; color:${b.color}">${b.badge_name} <span class="remove-x" onclick="window.postAction('/admin/badges/unassign', {email:'${u.email}', name:'${b.badge_name}'})">×</span></span>`).join('')}
+                        <button class="btn-add" onclick="window.assignBadgeToUser('${u.email}')">+ Grant Badge</button>
+                    </td>
+                    <td>
+                        ${u.blocked_paths.map(p => `<span class="pill pill-block">${p} <span class="remove-x" onclick="window.postAction('/admin/remove-block', {email:'${u.email}', path:'${p}'})">×</span></span>`).join('')}
+                        <button class="btn-add" style="color:var(--red)" onclick="window.addBlock('${u.email}')">+ Restrict</button>
+                    </td>
+                    <td>
+                        <button class="btn" style="background:#21262d" onclick="window.postAction('/admin/toggle-admin', {id:${u.id}, isAdmin:${u.is_admin === 1 ? 0 : 1}})">Toggle Admin</button>
+                        <button class="btn" style="background:transparent; color:var(--red); border-color:rgba(248,81,73,0.3)" onclick="window.deleteUser(${u.id}, '${u.email}')">Wipe</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
 
-    function renderBadgeLab(master) {
-        const list = document.getElementById('master-badge-list');
-        list.innerHTML = master.map(b => `
-            <div class="badge-card" style="border-color:${b.color}">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:24px;">${b.icon}</span>
-                    <button onclick="deleteMasterBadge('${b.name}')" style="background:none; border:none; color:var(--btn-red); cursor:pointer;">✕</button>
+    window.renderBadgeLab = function(master) {
+        document.getElementById('master-badge-list').innerHTML = master.map(b => `
+            <div style="background:#21262d; border:1px solid ${b.color}; padding:15px; border-radius:8px; min-width:120px;">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-size:20px;">${b.icon}</span>
+                    <span style="cursor:pointer; color:var(--red)" onclick="window.postAction('/admin/badges/delete', {name:'${b.name}'})">✕</span>
                 </div>
-                <div style="font-weight:bold; color:${b.color}">${b.name}</div>
-                <button class="btn" style="background:#0d1117" onclick="assignBadgeToSomeone('${b.name}')">Assign to Email</button>
+                <div style="font-weight:bold; color:${b.color}; margin-top:10px;">${b.name}</div>
             </div>
-        `).join('') || '<p style="opacity:0.5">No badges registered.</p>';
-    }
+        `).join('');
+    };
 
-    // --- ACTIONS ---
-    async function post(route, body) {
-        await fetch(`${API}${route}`, { method: 'POST', body: JSON.stringify(body), headers: {'Content-Type':'application/json'} });
-        refreshAll();
-    }
+    window.postAction = async function(route, body) {
+        await fetch(`${API}${route}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        window.refreshAll();
+    };
 
-    async function toggleAdmin(id, current, email) {
-        if(email === myEmail) return alert("Demotion restricted.");
-        post('/admin/toggle-admin', { id, isAdmin: current === 1 ? 0 : 1 });
-    }
+    window.addPerm = (email) => { const tag = prompt("Tag:"); if(tag) window.postAction('/admin/add-perm', {email, tag}); };
+    window.addBlock = (email) => { const path = prompt("Path:"); if(path) window.postAction('/admin/block-user', {email, path}); };
+    window.createBadgeTemplate = () => {
+        const name = document.getElementById('b-name').value;
+        const icon = document.getElementById('b-icon').value;
+        const color = document.getElementById('b-color').value;
+        if(name) window.postAction('/admin/badges/create', {name, icon, color});
+    };
+    window.assignBadgeToUser = (email) => { const name = prompt("Badge Template Name:"); if(name) window.postAction('/admin/badges/assign', {email, name}); };
+    window.deleteUser = (id, email) => { if(email !== myEmail && confirm(`Wipe ${email}?`)) window.postAction('/admin/delete-user', {id}); };
 
-    async function toggleProfile(email, current) {
-        post('/admin/profile/toggle-status', { email, status: current === 1 ? 0 : 1 });
+    async function bootstrap() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(bootstrap, 100); return; }
+        const d = await runNeuralGuard();
+        if(d && d.user.is_admin === 1) window.refreshAll();
+        else window.location.href = '/blocked.html';
     }
-
-    async function addPerm(email) {
-        const tag = prompt("Tag Name:");
-        if(tag) post('/admin/add-perm', { email, tag });
-    }
-
-    async function removePerm(email, tag) {
-        post('/admin/remove-perm', { email, tag });
-    }
-
-    async function createBadgeTemplate() {
-        const name = document.getElementById('new-b-name').value;
-        const icon = document.getElementById('new-b-icon').value;
-        const color = document.getElementById('new-b-color').value;
-        if(name) post('/admin/badges/create', { name, icon, color });
-    }
-
-    async function deleteMasterBadge(name) {
-        if(confirm("Delete this badge template and remove it from all users?")) post('/admin/badges/delete', { name });
-    }
-
-    async function assignBadgePrompt(email) {
-        const name = prompt("Enter Master Badge Name to grant:");
-        if(name) post('/admin/badges/assign', { email, name });
-    }
-
-    async function assignBadgeToSomeone(name) {
-        const email = prompt(`Enter Email to receive the ${name} badge:`);
-        if(email) post('/admin/badges/assign', { email, name });
-    }
-
-    async function unassignBadge(email, name) {
-        post('/admin/badges/unassign', { email, name });
-    }
-
-    async function addBlock(email) {
-        const path = prompt("Block path (e.g. dash.html) or 'ALL':");
-        if(path) post('/admin/block-user', { email, path });
-    }
-
-    async function removeBlock(email, path) {
-        post('/admin/remove-block', { email, path });
-    }
-
-    async function deleteAccount(id, email) {
-        if(email === myEmail) return alert("Self-wipe restricted.");
-        if(confirm(`Wipe ${email}?`)) post('/admin/delete-user', { id });
-    }
-
-    // Security Gate
-    if(localStorage.getItem('ada_admin') !== '1') window.location.href = '/blocked.html';
-    else refreshAll();
+    bootstrap();
 </script>
 </body>
 </html>
