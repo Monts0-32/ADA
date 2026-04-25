@@ -234,10 +234,19 @@
     async function start() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
         const d = await runNeuralGuard();
-        if(d && d.user.is_admin === 1) window.refreshAll();
-        else window.location.href = '/blocked.html';
+        if (d && d.user.is_admin === 1) {
+            window.refreshAll();
+    
+            // ✅ Heartbeat — keeps your session alive while on this page
+            const myEmail = localStorage.getItem('ada_user_email');
+            setInterval(() => {
+                fetch(`${API}/sync?email=${encodeURIComponent(myEmail)}`).catch(() => {});
+            }, 20000);
+    
+        } else {
+            window.location.href = '/blocked.html';
+        }
     }
-    start();
 </script>
 </body>
 </html>
