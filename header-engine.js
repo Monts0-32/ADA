@@ -53,8 +53,15 @@
     function startHeartbeat() {
         const email = localStorage.getItem('ada_user_email');
         if (!email) return;
-        setInterval(() => {
-            fetch(`${API}/sync?email=${encodeURIComponent(email)}`).catch(() => {});
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+                const data = await res.json();
+                // ✅ Check for remote commands
+                if (data.command === 'reload') {
+                    location.reload();
+                }
+            } catch(e) {}
         }, 20000);
     }
 
