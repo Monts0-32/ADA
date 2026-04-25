@@ -23,28 +23,69 @@
         #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; resize: none; outline: none; }
 
         /* Robust Image System */
-        .editor-wrap { 
-            overflow: visible !important; 
-            z-index: 1; 
-        }
-        
-        /* Prevent giant images from exploding the UI */
-        .img-wrapper img { 
-            max-width: 100%; 
-            max-height: 80vh; 
-            object-fit: contain; 
-            pointer-events: none; 
-        }
-        
+        /* --- ADVANCED IMAGE UI --- */
         .img-wrapper { 
-            min-width: 50px; 
-            min-height: 50px; 
-            max-width: 100%; /* Keeps it inside the editor width */
-            z-index: 10;
+            position: absolute; 
+            display: inline-block; 
+            line-height: 0; 
+            cursor: move; 
+            user-select: none; 
+            border: 2px solid transparent; 
+            transition: border 0.2s, box-shadow 0.2s;
         }
         
+        .img-wrapper img { 
+            width: 100%; 
+            height: 100%; 
+            display: block; 
+            pointer-events: none; 
+            border-radius: 4px;
+        }
+        
+        /* selection state */
         .img-wrapper.active { 
-            z-index: 100; /* Brings the moving image to the front */
+            border: 2px solid var(--blue); 
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+            z-index: 1000;
+        }
+        
+        /* Circular UI Handles */
+        .resizer { 
+            position: absolute; 
+            width: 14px; 
+            height: 14px; 
+            background: var(--blue); 
+            border: 2px solid var(--bg);
+            border-radius: 50%; 
+            right: -8px; 
+            bottom: -8px; 
+            cursor: nwse-resize; 
+            display: none; 
+        }
+        
+        .remover { 
+            position: absolute; 
+            width: 22px; 
+            height: 22px; 
+            background: var(--red); 
+            border: 2px solid var(--bg);
+            border-radius: 50%; 
+            right: -11px; 
+            top: -11px; 
+            cursor: pointer; 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-size: 14px; 
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        
+        /* Only show buttons when the editor is ACTIVE and image is SELECTED */
+        #visual-editor[contenteditable="true"] .img-wrapper.active .resizer,
+        #visual-editor[contenteditable="true"] .img-wrapper.active .remover { 
+            display: flex !important; 
         }
 
         .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
@@ -125,34 +166,40 @@
         visual.querySelectorAll('.img-wrapper').forEach(wrap => {
             wrap.onmousedown = function(e) {
                 if (visual.contentEditable === "false") return;
-                if (e.target.className === 'remover') { wrap.remove(); return; }
                 
+                // Handle deletion
+                if (e.target.classList.contains('remover')) {
+                    wrap.remove();
+                    return;
+                }
+    
+                // Select this image, deselect others
                 visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
                 wrap.classList.add('active');
     
-                let resizing = e.target.className === 'resizer';
-                let sX = e.clientX, sY = e.clientY;
-                let sW = wrap.offsetWidth, sL = wrap.offsetLeft, sT = wrap.offsetTop;
+                let resizing = e.target.classList.contains('resizer');
+                let startX = e.clientX, startY = e.clientY;
+                let startW = wrap.offsetWidth, startL = wrap.offsetLeft, startT = wrap.offsetTop;
     
                 function move(me) {
                     if (resizing) {
-                        // Force a minimum and maximum width
-                        let newWidth = sW + (me.clientX - sX);
+                        let newWidth = startW + (me.clientX - startX);
+                        // Constrain width to editor size
                         wrap.style.width = Math.max(50, Math.min(newWidth, visual.offsetWidth - 40)) + 'px';
                     } else {
-                        // Smooth free movement
-                        let newLeft = sL + (me.clientX - sX);
-                        let newTop = sT + (me.clientY - sY);
-                        
-                        // Constrain within editor bounds
+                        let newLeft = startL + (me.clientX - startX);
+                        let newTop = startT + (me.clientY - startY);
+                        // Keep image inside editor bounds
                         wrap.style.left = Math.max(0, newLeft) + 'px';
                         wrap.style.top = Math.max(0, newTop) + 'px';
                     }
                 }
-                function stop() { 
-                    window.removeEventListener('mousemove', move); 
-                    window.removeEventListener('mouseup', stop); 
+    
+                function stop() {
+                    window.removeEventListener('mousemove', move);
+                    window.removeEventListener('mouseup', stop);
                 }
+    
                 window.addEventListener('mousemove', move);
                 window.addEventListener('mouseup', stop);
                 e.preventDefault();
@@ -181,11 +228,16 @@
             reader.onload = (e) => {
                 const wrap = document.createElement('div');
                 wrap.className = 'img-wrapper';
-                // Start at a reasonable size and position
-                wrap.style.left = '20px'; 
-                wrap.style.top = '20px'; 
-                wrap.style.width = '300px'; // Forced default size
-                wrap.innerHTML = `<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
+                // Default safe starting point
+                wrap.style.left = '50px'; 
+                wrap.style.top = '50px'; 
+                wrap.style.width = '250px'; 
+                // Injects UI structure
+                wrap.innerHTML = `
+                    <img src="${e.target.result}">
+                    <div class="resizer"></div>
+                    <div class="remover">✕</div>
+                `;
                 visual.appendChild(wrap);
                 attachInteractions();
             };
