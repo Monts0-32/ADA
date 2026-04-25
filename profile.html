@@ -53,18 +53,11 @@
         #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; box-sizing: border-box; }
         #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
 
-        /* IMAGE ENGINE */
-        .img-wrapper .resizer, .img-wrapper .remover { display: none !important; }
-    
-        /* Only show when the editor UI is explicitly flex (active) */
-        #editor-ui[style*="display: flex"] .img-wrapper.active .resizer { 
-            display: block !important; 
-            position: absolute; width: 10px; height: 10px; background: var(--blue); right: -5px; bottom: -5px; cursor: nwse-resize;
-        }
-        #editor-ui[style*="display: flex"] .img-wrapper.active .remover { 
-            display: flex !important; 
-            position: absolute; width: 18px; height: 18px; background: var(--red); color: white; right: -9px; top: -9px; cursor: pointer; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px;
-        }
+        #bio-edit .img-wrapper .resizer, #bio-edit .img-wrapper .remover { display: none !important; }
+        
+        /* Show only when the editor UI is active */
+        #editor-ui[style*="display: flex"] .img-wrapper.active .resizer { display: block !important; }
+        #editor-ui[style*="display: flex"] .img-wrapper.active .remover { display: flex !important; }
 
         .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
@@ -291,10 +284,9 @@
             r.onload=(e)=>{
                 const w = document.createElement('div');
                 w.className='img-wrapper'; 
-                w.style.width='250px'; // Reasonable starting size
-                w.style.left='10px'; 
-                w.style.top='10px';
-                w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
+                w.style.width='200px'; 
+                w.style.left='10px'; w.style.top='10px';
+                w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">✕</div>`;
                 document.getElementById('bio-edit').appendChild(w);
                 attachLogic();
             };
@@ -303,27 +295,23 @@
     }
 
     function attachLogic() {
-        const ui = document.getElementById('editor-ui');
-        if (ui.style.display !== 'flex') return;
-    
+        const editor = document.getElementById('bio-edit');
         document.querySelectorAll('.img-wrapper').forEach(w => {
             w.onmousedown = (e) => {
-                if (ui.style.display !== 'flex') return;
-                if (e.target.className === 'remover') { w.remove(); return; }
+                if (document.getElementById('editor-ui').style.display !== 'flex') return;
+                if (e.target.classList.contains('remover')) { w.remove(); return; }
                 
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
     
-                let resizing = e.target.className === 'resizer';
+                let resizing = e.target.classList.contains('resizer');
                 let sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
     
                 function move(me) {
                     if(resizing){ 
-                        // Set max width to the bio container width
-                        let maxWidth = document.getElementById('bio-edit').offsetWidth - 20;
-                        w.style.width = Math.max(30, Math.min(sW + (me.clientX - sX), maxWidth)) + 'px'; 
-                    }
-                    else { 
+                        let maxW = editor.offsetWidth - 20;
+                        w.style.width = Math.max(40, Math.min(sW + (me.clientX - sX), maxW)) + 'px'; 
+                    } else { 
                         w.style.left = Math.max(0, sL + (me.clientX - sX)) + 'px'; 
                         w.style.top = Math.max(0, sT + (me.clientY - sY)) + 'px'; 
                     }
