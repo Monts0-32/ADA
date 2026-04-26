@@ -297,6 +297,12 @@ function placeMines(safeR, safeC) {
     if (G.free) {
         generateChunkMines(G.viewR, G.viewC, safe);
     } else {
+        // Pre-create ALL cells so BFS can find them — without this,
+        // safe cells don't exist in G.cells and BFS skips everything
+        for (let r = 0; r < G.rows; r++)
+            for (let c = 0; c < G.cols; c++)
+                getCell(r, c);
+
         const pool = [];
         for (let r = 0; r < G.rows; r++)
             for (let c = 0; c < G.cols; c++) {
@@ -306,8 +312,7 @@ function placeMines(safeR, safeC) {
         shuffle(pool);
         for (let i = 0; i < G.totalMines && i < pool.length; i++) {
             G.mineSet.add(pool[i]);
-            const [r, c] = pool[i].split(',').map(Number);
-            getCell(r, c).mine = true;
+            G.cells[pool[i]].mine = true;
         }
     }
     recalcAdj();
