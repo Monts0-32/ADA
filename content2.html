@@ -390,6 +390,10 @@ function tick() {
         // Ate food
         length++;
         score += 10 + Math.floor(length / 5);
+        // ✅ Update best live the moment it's beaten
+        if (length > myBest) {
+            myBest = length;
+        }
         placeFood();
     } else {
         snake.pop();
@@ -414,9 +418,10 @@ function endGame() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const isNewBest = length > myBest;
-    if (isNewBest) myBest = length;
-
-    saveScore(length);
+    if (isNewBest) {
+        myBest = length;
+        saveScore(length); // ✅ Only save when it's a new best — prevents overwriting higher scores
+    }
 
     document.getElementById('ov-title').textContent = isNewBest ? '🏆 New Best!' : 'Game Over';
     document.getElementById('ov-sub').textContent = isNewBest
