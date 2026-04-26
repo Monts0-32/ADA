@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ADA | Snake</title>
+<script src="/uplink.js"></script>
+<script src="/header-engine.js"></script>
+<style>
+:root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e; --blue: #58a6ff;
+    --green: #3fb950; --btn-green: #238636; --red: #f85149;
+    --yellow: #e3b341; --purple: #a371f7;
+}
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; min-height: 100vh; }
+
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+/* LAYOUT */
+.game-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+@media (max-width: 700px) { .game-layout { grid-template-columns: 1fr; } }
+
+/* CANVAS AREA */
+.canvas-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+
+/* HUD */
+.hud { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.hud-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; min-width: 80px; }
+.hud-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.hud-val { font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; font-family: 'SFMono-Regular', Consolas, monospace; }
+.hud-val.green { color: var(--green); }
+.hud-val.yellow { color: var(--yellow); }
+.hud-val.blue { color: var(--blue); }
+
+/* CANVAS */
+#game-canvas {
+    display: block; border-radius: 6px; border: 1px solid var(--border);
+    background: #0d1117; width: 100%; image-rendering: pixelated;
+}
+
+/* CONTROLS */
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { background: #21262d; border: 1px solid var(--border); border-radius: 6px; padding: 7px 16px; cursor: pointer; color: var(--text); font-size: 13px; font-weight: 600; transition: 0.15s; }
+.btn:hover { background: #30363d; border-color: var(--muted); }
+.btn.primary { background: var(--btn-green); border-color: var(--btn-green); color: white; }
+.btn.primary:hover { background: #2ea043; }
+.btn.danger { border-color: var(--red); color: var(--red); }
+.btn.danger:hover { background: rgba(248,81,73,0.1); }
+
+.speed-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.speed-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.speed-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; cursor: pointer; color: var(--muted); font-size: 12px; font-weight: 600; transition: 0.15s; }
+.speed-btn.active { background: var(--surface); border-color: var(--blue); color: var(--blue); }
+
+/* D-PAD for mobile */
+.dpad { display: none; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; justify-content: center; }
+@media (max-width: 700px) { .dpad { display: grid; } }
+.dpad-btn { background: #21262d; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text); font-size: 16px; display: flex; align-items: center; justify-content: center; user-select: none; }
+.dpad-btn:active { background: #30363d; }
+.dpad-center { background: transparent; border: none; }
+
+/* OVERLAY */
+.overlay {
+    position: absolute; inset: 0; background: rgba(13,17,23,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 6px; gap: 12px;
+}
+.canvas-container { position: relative; }
+.overlay-title { font-size: 24px; font-weight: 700; color: var(--text); }
+.overlay-sub { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; }
+.overlay-score { font-size: 40px; font-weight: 700; color: var(--green); font-family: 'SFMono-Regular', Consolas, monospace; }
+.overlay-label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.overlay-btns { display: flex; gap: 10px; margin-top: 4px; }
+
+/* SIDEBAR */
+.sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.panel-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.panel-title-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* LEADERBOARD */
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { font-size: 12px; font-weight: 700; color: var(--muted); width: 20px; text-align: center; font-family: 'SFMono-Regular', Consolas, monospace; }
+.lb-rank.gold { color: var(--yellow); }
+.lb-rank.silver { color: #8b949e; }
+.lb-rank.bronze { color: #b08060; }
+.lb-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.lb-name { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-score { font-size: 13px; font-weight: 700; color: var(--green); font-family: 'SFMono-Regular', Consolas, monospace; }
+.lb-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 12px 0; }
+.lb-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 0; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* MY BEST */
+.my-best { display: flex; align-items: center; justify-content: space-between; }
+.my-best-val { font-size: 28px; font-weight: 700; color: var(--green); font-family: 'SFMono-Regular', Consolas, monospace; }
+.my-best-label { font-size: 11px; color: var(--muted); }
+
+/* TIPS */
+.tip { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.tip kbd { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 11px; color: var(--text); font-family: 'SFMono-Regular', monospace; }
+</style>
+</head>
+<body>
+<div id="ada-header-anchor"></div>
+<div class="container">
+    <h1>Snake</h1>
+    <p class="page-sub">Eat the food, grow the snake — how long can you get?</p>
+
+    <div class="game-layout">
+        <!-- LEFT: GAME -->
+        <div class="canvas-wrap">
+            <div class="hud">
+                <div class="hud-stat">
+                    <div class="hud-label">Score</div>
+                    <div class="hud-val green" id="h-score">0</div>
+                </div>
+                <div class="hud-stat">
+                    <div class="hud-label">Length</div>
+                    <div class="hud-val blue" id="h-length">1</div>
+                </div>
+                <div class="hud-stat">
+                    <div class="hud-label">Best</div>
+                    <div class="hud-val yellow" id="h-best">0</div>
+                </div>
+            </div>
+
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="game-canvas" width="400" height="400"></canvas>
+                <div class="overlay" id="overlay">
+                    <div class="overlay-title" id="ov-title">Snake</div>
+                    <div class="overlay-sub" id="ov-sub">Navigate the grid, eat food to grow.<br>Don't hit the walls or yourself.</div>
+                    <div id="ov-score-wrap" style="display:none; text-align:center;">
+                        <div class="overlay-label">Length Reached</div>
+                        <div class="overlay-score" id="ov-score">0</div>
+                    </div>
+                    <div class="overlay-btns">
+                        <button class="btn primary" id="ov-btn" onclick="startGame()">Start Game</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="speed-wrap">
+                    <span class="speed-label">Speed</span>
+                    <button class="speed-btn active" onclick="setSpeed('slow')">Slow</button>
+                    <button class="speed-btn" onclick="setSpeed('normal')">Normal</button>
+                    <button class="speed-btn" onclick="setSpeed('fast')">Fast</button>
+                    <button class="speed-btn" onclick="setSpeed('insane')">Insane</button>
+                </div>
+            </div>
+
+            <div class="dpad">
+                <div></div>
+                <button class="dpad-btn" onclick="changeDir(0,-1)">↑</button>
+                <div></div>
+                <button class="dpad-btn" onclick="changeDir(-1,0)">←</button>
+                <div class="dpad-center"></div>
+                <button class="dpad-btn" onclick="changeDir(1,0)">→</button>
+                <div></div>
+                <button class="dpad-btn" onclick="changeDir(0,1)">↓</button>
+                <div></div>
+            </div>
+        </div>
+
+        <!-- RIGHT: SIDEBAR -->
+        <div class="sidebar">
+            <!-- MY BEST -->
+            <div class="panel">
+                <div class="panel-title"><div class="panel-title-dot"></div>My Best</div>
+                <div class="my-best">
+                    <div>
+                        <div class="my-best-val" id="sb-best">—</div>
+                        <div class="my-best-label">longest snake</div>
+                    </div>
+                    <button class="btn" onclick="loadLeaderboard()" style="font-size:11px;padding:5px 10px;">↻ Refresh</button>
+                </div>
+            </div>
+
+            <!-- LEADERBOARD -->
+            <div class="panel">
+                <div class="panel-title"><div class="panel-title-dot" style="background:var(--yellow)"></div>Leaderboard</div>
+                <div id="leaderboard"><div class="lb-loading">Loading scores...</div></div>
+            </div>
+
+            <!-- TIPS -->
+            <div class="panel">
+                <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>Controls</div>
+                <div class="tip">
+                    <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> — Move<br>
+                    <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — Move<br>
+                    <kbd>Space</kbd> — Start / Pause<br><br>
+                    Score is based on <strong>longest snake length</strong> reached. Your personal best is saved and counts towards the leaderboard.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/chat-widget.js"></script>
+<script>
+const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+const GAME_ID = "snake";
+const myEmail = localStorage.getItem('ada_user_email');
+const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+// ── CANVAS SETUP ──
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const GRID = 20;       // cells
+const CELL = 20;       // px per cell
+canvas.width  = GRID * CELL;
+canvas.height = GRID * CELL;
+
+// ── SPEED ──
+const SPEEDS = { slow: 180, normal: 120, fast: 70, insane: 35 };
+let currentSpeed = 'normal';
+let tickMs = SPEEDS.normal;
+
+function setSpeed(s) {
+    currentSpeed = s;
+    tickMs = SPEEDS[s];
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.speed-btn').forEach(b => { if (b.textContent.toLowerCase() === s) b.classList.add('active'); });
+    // Restart loop with new speed if playing
+    if (gameRunning) {
+        clearInterval(gameLoop);
+        gameLoop = setInterval(tick, tickMs);
+    }
+}
+
+// ── GAME STATE ──
+let snake = [], dir = {x:1,y:0}, nextDir = {x:1,y:0};
+let food = {x:0,y:0};
+let score = 0, length = 1;
+let gameRunning = false, gamePaused = false;
+let gameLoop = null;
+let myBest = 0;
+
+// ── COLORS ──
+const COLORS = {
+    bg:         '#0d1117',
+    grid:       '#161b22',
+    gridLine:   '#1c2128',
+    snakeHead:  '#3fb950',
+    snakeBody:  '#238636',
+    snakeDark:  '#1a6128',
+    food:       '#f85149',
+    foodGlow:   'rgba(248,81,73,0.3)',
+    foodInner:  '#ff7b72',
+};
+
+// ── DRAW ──
+function draw() {
+    // Background
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Grid lines
+    ctx.strokeStyle = COLORS.gridLine;
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= GRID; x++) {
+        ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y <= GRID; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
+    }
+
+    // Food glow
+    const fx = food.x * CELL + CELL/2, fy = food.y * CELL + CELL/2;
+    const glow = ctx.createRadialGradient(fx, fy, 2, fx, fy, CELL);
+    glow.addColorStop(0, COLORS.foodGlow);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(food.x*CELL - CELL, food.y*CELL - CELL, CELL*3, CELL*3);
+
+    // Food
+    ctx.fillStyle = COLORS.food;
+    roundRect(ctx, food.x*CELL+3, food.y*CELL+3, CELL-6, CELL-6, 3);
+    ctx.fillStyle = COLORS.foodInner;
+    roundRect(ctx, food.x*CELL+5, food.y*CELL+5, CELL-10, CELL-10, 2);
+
+    // Snake
+    snake.forEach((seg, i) => {
+        const isHead = i === 0;
+        const progress = i / snake.length;
+
+        if (isHead) {
+            ctx.fillStyle = COLORS.snakeHead;
+        } else {
+            // Gradient from body green to darker tail
+            const r1 = parseInt('23', 16), g1 = parseInt('86', 16), b1 = parseInt('36', 16);
+            const r2 = parseInt('1a', 16), g2 = parseInt('61', 16), b2 = parseInt('28', 16);
+            const r = Math.round(r1 + (r2-r1)*progress);
+            const g = Math.round(g1 + (g2-g1)*progress);
+            const b = Math.round(b1 + (b2-b1)*progress);
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+        }
+
+        const pad = isHead ? 1 : 2;
+        roundRect(ctx, seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2, isHead ? 4 : 3);
+
+        // Head eyes
+        if (isHead) {
+            ctx.fillStyle = '#0d1117';
+            const ex = dir.x === 1 ? CELL-6 : dir.x === -1 ? 4 : CELL/2-4;
+            const ey = dir.y === 1 ? CELL-6 : dir.y === -1 ? 4 : CELL/2-4;
+            const ex2 = dir.x === 1 ? CELL-6 : dir.x === -1 ? 4 : CELL/2+4;
+            if (dir.x !== 0) {
+                ctx.beginPath(); ctx.arc(seg.x*CELL+ex, seg.y*CELL+6, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(seg.x*CELL+ex, seg.y*CELL+CELL-6, 2, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.beginPath(); ctx.arc(seg.x*CELL+6, seg.y*CELL+ey, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(seg.x*CELL+CELL-6, seg.y*CELL+ey, 2, 0, Math.PI*2); ctx.fill();
+            }
+        }
+    });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// ── FOOD PLACEMENT ──
+function placeFood() {
+    const occupied = new Set(snake.map(s => s.x+','+s.y));
+    let fx, fy;
+    do {
+        fx = Math.floor(Math.random() * GRID);
+        fy = Math.floor(Math.random() * GRID);
+    } while (occupied.has(fx+','+fy));
+    food = {x: fx, y: fy};
+}
+
+// ── GAME LOGIC ──
+function startGame() {
+    // Reset
+    const mid = Math.floor(GRID / 2);
+    snake = [{x: mid, y: mid}, {x: mid-1, y: mid}, {x: mid-2, y: mid}];
+    dir = {x:1, y:0}; nextDir = {x:1, y:0};
+    score = 0; length = snake.length;
+    gameRunning = true; gamePaused = false;
+    placeFood();
+    hideOverlay();
+    updateHUD();
+    clearInterval(gameLoop);
+    gameLoop = setInterval(tick, tickMs);
+}
+
+function tick() {
+    if (gamePaused) return;
+    dir = {...nextDir};
+    const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+    // Wall collision
+    if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) {
+        endGame(); return;
+    }
+    // Self collision
+    if (snake.some(s => s.x === head.x && s.y === head.y)) {
+        endGame(); return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+        // Ate food
+        length++;
+        score += 10 + Math.floor(length / 5);
+        placeFood();
+    } else {
+        snake.pop();
+    }
+
+    updateHUD();
+    draw();
+}
+
+function changeDir(x, y) {
+    // Prevent reversing
+    if (x === -dir.x && y === -dir.y) return;
+    nextDir = {x, y};
+}
+
+function endGame() {
+    gameRunning = false;
+    clearInterval(gameLoop);
+    draw();
+    // Flash red on death
+    ctx.fillStyle = 'rgba(248,81,73,0.15)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const isNewBest = length > myBest;
+    if (isNewBest) myBest = length;
+
+    saveScore(length);
+
+    document.getElementById('ov-title').textContent = isNewBest ? '🏆 New Best!' : 'Game Over';
+    document.getElementById('ov-sub').textContent = isNewBest
+        ? `New personal best — ${length} cells long!`
+        : `You reached a length of ${length}.${myBest > length ? ' Best: ' + myBest : ''}`;
+    document.getElementById('ov-score').textContent = length;
+    document.getElementById('ov-score-wrap').style.display = 'block';
+    document.getElementById('ov-btn').textContent = 'Play Again';
+    document.getElementById('overlay').style.display = 'flex';
+    document.getElementById('h-best').textContent = myBest;
+    document.getElementById('sb-best').textContent = myBest;
+    loadLeaderboard();
+}
+
+function togglePause() {
+    if (!gameRunning) return;
+    gamePaused = !gamePaused;
+    if (!gamePaused) draw();
+}
+
+// ── HUD ──
+function updateHUD() {
+    document.getElementById('h-score').textContent = score;
+    document.getElementById('h-length').textContent = length;
+    document.getElementById('h-best').textContent = myBest;
+}
+
+// ── OVERLAY ──
+function hideOverlay() {
+    document.getElementById('overlay').style.display = 'none';
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+    switch(e.key) {
+        case 'ArrowUp':    case 'w': case 'W': e.preventDefault(); changeDir(0,-1); break;
+        case 'ArrowDown':  case 's': case 'S': e.preventDefault(); changeDir(0,1);  break;
+        case 'ArrowLeft':  case 'a': case 'A': e.preventDefault(); changeDir(-1,0); break;
+        case 'ArrowRight': case 'd': case 'D': e.preventDefault(); changeDir(1,0);  break;
+        case ' ': e.preventDefault();
+            if (!gameRunning) startGame();
+            else togglePause();
+            break;
+    }
+});
+
+// ── SCORE SAVE ──
+async function saveScore(len) {
+    if (!myEmail) return;
+    try {
+        await fetch(API + '/game/save-score', {
+            method: 'POST',
+            body: JSON.stringify({ email: myEmail, gameId: GAME_ID, score: len })
+        });
+    } catch(e) {}
+}
+
+// ── PERSONAL BEST LOAD ──
+async function loadMyBest() {
+    if (!myEmail) return;
+    try {
+        const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(myEmail)}&game=${GAME_ID}`);
+        const data = await res.json();
+        myBest = data.score || 0;
+        document.getElementById('h-best').textContent = myBest;
+        document.getElementById('sb-best').textContent = myBest || '—';
+    } catch(e) {}
+}
+
+// ── LEADERBOARD ──
+async function loadLeaderboard() {
+    const lb = document.getElementById('leaderboard');
+    lb.innerHTML = '<div class="lb-loading">Loading...</div>';
+    try {
+        const res = await fetch(`${API}/game/leaderboard?game=${GAME_ID}`);
+        const data = await res.json();
+        if (!data.length) {
+            lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>';
+            return;
+        }
+        const rankClasses = ['gold','silver','bronze'];
+        const rankSymbols = ['🥇','🥈','🥉'];
+        lb.innerHTML = data.map((row, i) => `
+            <div class="lb-row">
+                <div class="lb-rank ${rankClasses[i]||''}">${i < 3 ? rankSymbols[i] : (i+1)}</div>
+                <img class="lb-avatar" src="${row.profile_picture || DEFAULT_ICON}" onerror="this.src='${DEFAULT_ICON}'">
+                <div class="lb-name">${row.display_name || row.email}</div>
+                <div class="lb-score">${row.score}</div>
+            </div>
+        `).join('');
+    } catch(e) {
+        lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>';
+    }
+}
+
+// ── INIT ──
+async function init() {
+    if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+    await runNeuralGuard();
+
+    // Draw empty board on load
+    draw();
+    // Show start overlay
+    document.getElementById('ov-score-wrap').style.display = 'none';
+    document.getElementById('ov-btn').textContent = 'Start Game';
+    document.getElementById('overlay').style.display = 'flex';
+
+    await loadMyBest();
+    loadLeaderboard();
+}
+
+init();
+</script>
+</body>
+</html>
