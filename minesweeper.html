@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ADA | Minesweeper</title>
+<script src="/uplink.js"></script>
+<script src="/header-engine.js"></script>
+<style>
+:root {
+    --bg: #0d1117; --header: #161b22; --border: #30363d;
+    --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149;
+    --muted: #8b949e;
+}
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; min-height: 100vh; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; box-sizing: border-box; }
+
+h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
+.page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+/* MENU */
+#menu { display: block; }
+.levels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.level-btn {
+    background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s;
+    color: var(--text);
+}
+.level-btn:hover { border-color: #8b949e; background: #1c2128; }
+.level-btn.free-btn { border-color: var(--btn-green); grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; }
+.level-btn.free-btn:hover { background: rgba(35,134,54,0.1); }
+.level-num { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.level-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.level-info { font-size: 11px; color: var(--muted); }
+.free-icon { font-size: 28px; flex-shrink: 0; }
+.free-text .level-name { color: #3fb950; font-size: 15px; }
+
+/* HUD */
+#game { display: none; }
+.hud {
+    background: #161b22; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+}
+.hud-stats { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.hud-stat { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.hud-stat-val { font-size: 14px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.hud-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.hud-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-hud { background: #21262d; border: 1px solid var(--border); border-radius: 6px; padding: 5px 14px; cursor: pointer; color: var(--text); font-size: 12px; font-weight: 600; transition: 0.15s; }
+.btn-hud:hover { background: #30363d; border-color: #8b949e; }
+.btn-hud.green { background: var(--btn-green); border-color: var(--btn-green); }
+.btn-hud.green:hover { background: #2ea043; }
+
+.status-bar { background: #161b22; border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; color: var(--muted); margin-bottom: 10px; display: none; }
+
+/* BOARD */
+#board-wrap { overflow: auto; }
+#board { display: inline-grid; gap: 2px; background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+
+/* CELLS */
+.cell {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; border-radius: 4px; cursor: pointer;
+    user-select: none; transition: background 0.1s;
+    background: #21262d; border: 1px solid var(--border);
+    font-family: 'SFMono-Regular', Consolas, monospace;
+}
+.cell:hover { background: #2d333b; border-color: #8b949e; }
+.cell.revealed { background: #0d1117; border-color: #21262d; cursor: default; }
+.cell.revealed:hover { background: #0d1117; border-color: #21262d; }
+.cell.flagged { background: rgba(248,81,73,0.12); border-color: rgba(248,81,73,0.4); color: var(--red); }
+.cell.mine-hit { background: rgba(248,81,73,0.25); border-color: var(--red); color: var(--red); }
+.cell.mine-show { background: #0d1117; border-color: #21262d; color: var(--muted); }
+.cell.safe-flash { background: rgba(35,134,54,0.15); border-color: rgba(35,134,54,0.4); }
+
+/* NUMBER COLOURS — exact classic minesweeper palette on dark bg */
+.cell[data-n="1"] { color: #58a6ff; }
+.cell[data-n="2"] { color: #3fb950; }
+.cell[data-n="3"] { color: #f85149; }
+.cell[data-n="4"] { color: #a371f7; }
+.cell[data-n="5"] { color: #ff7b72; }
+.cell[data-n="6"] { color: #39c5cf; }
+.cell[data-n="7"] { color: #e3b341; }
+.cell[data-n="8"] { color: #8b949e; }
+
+/* MODAL */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(1,4,9,0.75); display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.modal {
+    background: #161b22; border: 1px solid var(--border); border-radius: 12px;
+    padding: 32px; text-align: center; max-width: 340px; width: 90%;
+}
+.modal-icon { font-size: 40px; margin-bottom: 12px; }
+.modal h2 { font-size: 20px; font-weight: 600; margin: 0 0 8px 0; }
+.modal p { font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.5; }
+.modal-btns { display: flex; gap: 10px; justify-content: center; }
+.modal-btn { padding: 8px 22px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); transition: 0.15s; }
+.modal-btn:hover { background: #30363d; }
+.modal-btn.primary { background: var(--btn-green); border-color: var(--btn-green); color: white; }
+.modal-btn.primary:hover { background: #2ea043; }
+
+/* FREE MODE PAN */
+.pan-controls { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<div class="container">
+    <h1>Minesweeper</h1>
+    <p class="page-sub">Left click to reveal &nbsp;·&nbsp; Right click to flag &nbsp;·&nbsp; Click a number to chord</p>
+
+    <!-- MENU -->
+    <div id="menu">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Select Level</div>
+        <div class="levels-grid" id="levels-grid"></div>
+    </div>
+
+    <!-- GAME -->
+    <div id="game">
+        <div class="hud">
+            <div class="hud-stats">
+                <div class="hud-stat">
+                    <div>
+                        <div class="hud-stat-label">Mines</div>
+                        <div class="hud-stat-val" id="h-mines">0</div>
+                    </div>
+                </div>
+                <div class="hud-stat">
+                    <div>
+                        <div class="hud-stat-label">Flags</div>
+                        <div class="hud-stat-val" id="h-flags">0</div>
+                    </div>
+                </div>
+                <div class="hud-stat">
+                    <div>
+                        <div class="hud-stat-label">Remaining</div>
+                        <div class="hud-stat-val" id="h-remaining">0</div>
+                    </div>
+                </div>
+                <div class="hud-stat">
+                    <div>
+                        <div class="hud-stat-label">Time</div>
+                        <div class="hud-stat-val" id="h-time">0s</div>
+                    </div>
+                </div>
+                <div class="hud-stat" id="h-revealed-wrap" style="display:none">
+                    <div>
+                        <div class="hud-stat-label">Revealed</div>
+                        <div class="hud-stat-val" id="h-revealed">0</div>
+                    </div>
+                </div>
+                <div class="hud-stat" id="h-area-wrap" style="display:none">
+                    <div>
+                        <div class="hud-stat-label">Area</div>
+                        <div class="hud-stat-val" id="h-area">0,0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hud-btns">
+                <div class="pan-controls" id="pan-controls" style="display:none">
+                    <button class="btn-hud" onclick="panFree(-1,0)" title="Pan Up">↑</button>
+                    <button class="btn-hud" onclick="panFree(1,0)" title="Pan Down">↓</button>
+                    <button class="btn-hud" onclick="panFree(0,-1)" title="Pan Left">←</button>
+                    <button class="btn-hud" onclick="panFree(0,1)" title="Pan Right">→</button>
+                </div>
+                <button class="btn-hud green" onclick="restart()">Restart</button>
+                <button class="btn-hud" onclick="goMenu()">Menu</button>
+            </div>
+        </div>
+        <div class="status-bar" id="status-bar"></div>
+        <div id="board-wrap"><div id="board"></div></div>
+    </div>
+</div>
+
+<script src="/chat-widget.js"></script>
+
+<script>
+const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+const myEmail = localStorage.getItem('ada_user_email');
+
+const LEVELS = [
+    {name:"Sector 1",  rows:8,  cols:8,  mines:10,  desc:"8×8 · 10 mines"},
+    {name:"Sector 2",  rows:9,  cols:9,  mines:15,  desc:"9×9 · 15 mines"},
+    {name:"Sector 3",  rows:10, cols:10, mines:20,  desc:"10×10 · 20 mines"},
+    {name:"Sector 4",  rows:12, cols:12, mines:30,  desc:"12×12 · 30 mines"},
+    {name:"Sector 5",  rows:14, cols:14, mines:40,  desc:"14×14 · 40 mines"},
+    {name:"Sector 6",  rows:16, cols:16, mines:55,  desc:"16×16 · 55 mines"},
+    {name:"Sector 7",  rows:18, cols:18, mines:75,  desc:"18×18 · 75 mines"},
+    {name:"Sector 8",  rows:20, cols:20, mines:99,  desc:"20×20 · 99 mines"},
+    {name:"Sector 9",  rows:24, cols:24, mines:150, desc:"24×24 · 150 mines"},
+];
+const FREE_LEVEL = {name:"Freemode", free:true};
+
+const CHUNK = 20;
+const FREE_DENSITY = 0.16;
+
+let G = {}; // game state
+let timerInt = null;
+
+/* ── MENU ── */
+function buildMenu() {
+    const g = document.getElementById('levels-grid');
+    g.innerHTML = '';
+    LEVELS.forEach((l, i) => {
+        const pct = Math.round(l.mines / (l.rows * l.cols) * 100);
+        const b = document.createElement('button');
+        b.className = 'level-btn';
+        b.innerHTML = `<div class="level-num">Level ${i+1}</div>
+            <div class="level-name">${l.name}</div>
+            <div class="level-info">${l.desc} &nbsp;·&nbsp; ${pct}% density</div>`;
+        b.onclick = () => startGame(i);
+        g.appendChild(b);
+    });
+    // Freemode button
+    const fb = document.createElement('button');
+    fb.className = 'level-btn free-btn';
+    fb.innerHTML = `<div class="free-icon">∞</div>
+        <div class="free-text">
+            <div class="level-name">Freemode</div>
+            <div class="level-info">Infinite procedural minefield — pan in any direction, survive as long as you can</div>
+        </div>`;
+    fb.onclick = () => startGame(-1);
+    g.appendChild(fb);
+}
+
+function goMenu() {
+    clearInterval(timerInt);
+    removeModal();
+    document.getElementById('menu').style.display = 'block';
+    document.getElementById('game').style.display = 'none';
+}
+
+/* ── GAME START ── */
+function startGame(idx) {
+    clearInterval(timerInt);
+    removeModal();
+    const free = idx === -1;
+    const lvl = free ? FREE_LEVEL : LEVELS[idx];
+
+    G = {
+        idx, free,
+        rows: free ? CHUNK : lvl.rows,
+        cols: free ? CHUNK : lvl.cols,
+        totalMines: free ? 0 : lvl.mines,
+        cells: {},        // key -> cell obj
+        mineSet: new Set(),
+        revealed: new Set(),
+        flagged: new Set(),
+        started: false,
+        dead: false,
+        won: false,
+        elapsed: 0,
+        viewR: 0, viewC: 0,
+        freeRevealed: 0,
+    };
+
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    document.getElementById('pan-controls').style.display = free ? 'flex' : 'none';
+    document.getElementById('h-revealed-wrap').style.display = free ? '' : 'none';
+    document.getElementById('h-area-wrap').style.display = free ? '' : 'none';
+    document.getElementById('status-bar').style.display = free ? 'block' : 'none';
+    if (free) document.getElementById('status-bar').textContent = 'Freemode — use arrow keys or buttons to pan. New mines generate as you explore.';
+
+    renderBoard();
+    updateHUD();
+}
+
+function restart() { startGame(G.idx); }
+
+/* ── CELL KEY ── */
+function ck(r, c) { return r + ',' + c; }
+
+function getCell(r, c) {
+    const k = ck(r, c);
+    if (!G.cells[k]) G.cells[k] = {r, c, mine: false, adj: 0, revealed: false, flagged: false};
+    return G.cells[k];
+}
+
+/* ── MINE PLACEMENT ── */
+function placeMines(safeR, safeC) {
+    const safe = new Set();
+    for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++)
+            safe.add(ck(safeR + dr, safeC + dc));
+
+    if (G.free) {
+        generateChunkMines(G.viewR, G.viewC, safe);
+    } else {
+        const pool = [];
+        for (let r = 0; r < G.rows; r++)
+            for (let c = 0; c < G.cols; c++) {
+                const k = ck(r, c);
+                if (!safe.has(k)) pool.push(k);
+            }
+        shuffle(pool);
+        for (let i = 0; i < G.totalMines && i < pool.length; i++) {
+            G.mineSet.add(pool[i]);
+            const [r, c] = pool[i].split(',').map(Number);
+            getCell(r, c).mine = true;
+        }
+    }
+    recalcAdj();
+}
+
+function generateChunkMines(vr, vc, safe) {
+    safe = safe || new Set();
+    for (let r = vr; r < vr + CHUNK; r++) {
+        for (let c = vc; c < vc + CHUNK; c++) {
+            const k = ck(r, c);
+            if (G.cells[k]) continue; // already generated
+            const cell = getCell(r, c);
+            if (!safe.has(k) && Math.random() < FREE_DENSITY) {
+                cell.mine = true;
+                G.mineSet.add(k);
+            }
+        }
+    }
+}
+
+function recalcAdj() {
+    Object.values(G.cells).forEach(cell => {
+        if (!cell.mine) {
+            cell.adj = neighbors(cell.r, cell.c)
+                .filter(([nr, nc]) => G.mineSet.has(ck(nr, nc))).length;
+        }
+    });
+}
+
+function neighbors(r, c) {
+    const out = [];
+    for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++)
+            if (dr !== 0 || dc !== 0) out.push([r + dr, c + dc]);
+    return out;
+}
+
+function inBounds(r, c) {
+    if (G.free) return true;
+    return r >= 0 && r < G.rows && c >= 0 && c < G.cols;
+}
+
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+}
+
+/* ── REVEAL ── */
+function reveal(r, c) {
+    if (!inBounds(r, c) || G.dead || G.won) return;
+    const k = ck(r, c);
+    const cell = getCell(r, c);
+    if (cell.revealed || cell.flagged) return;
+
+    if (!G.started) {
+        G.started = true;
+        // Ensure first click area is safe — remove any mines nearby
+        placeMines(r, c);
+        // Fix the clicked cell's mine status just in case
+        getCell(r, c).mine = false;
+        G.mineSet.delete(ck(r, c));
+        neighbors(r, c).forEach(([nr, nc]) => {
+            const nk = ck(nr, nc);
+            if (G.mineSet.has(nk)) {
+                G.mineSet.delete(nk);
+                getCell(nr, nc).mine = false;
+            }
+        });
+        recalcAdj();
+        timerInt = setInterval(() => {
+            G.elapsed++;
+            document.getElementById('h-time').textContent = G.elapsed + 's';
+        }, 1000);
+    }
+
+    if (cell.mine) {
+        cell.revealed = true;
+        G.dead = true;
+        clearInterval(timerInt);
+        // Show all mines
+        G.mineSet.forEach(mk => {
+            const [mr, mc] = mk.split(',').map(Number);
+            const mc2 = getCell(mr, mc);
+            if (!mc2.flagged) mc2.revealed = true;
+        });
+        renderBoard();
+        saveScore();
+        setTimeout(() => showModal('dead'), 400);
+        return;
+    }
+
+    // BFS flood fill
+    const queue = [k];
+    const visited = new Set([k]);
+    while (queue.length) {
+        const qk = queue.shift();
+        const [qr, qc] = qk.split(',').map(Number);
+        const qcell = getCell(qr, qc);
+        if (qcell.revealed || qcell.flagged) continue;
+        qcell.revealed = true;
+        G.revealed.add(qk);
+        if (G.free) G.freeRevealed++;
+        if (qcell.adj === 0) {
+            neighbors(qr, qc).forEach(([nr, nc]) => {
+                if (!inBounds(nr, nc)) return;
+                const nk = ck(nr, nc);
+                if (!visited.has(nk) && !G.mineSet.has(nk)) {
+                    // In freemode, generate the neighbour chunk if unseen
+                    if (G.free) {
+                        const ncell = getCell(nr, nc);
+                        if (!ncell.mine && !ncell.revealed) {
+                            visited.add(nk);
+                            queue.push(nk);
+                        }
+                    } else {
+                        visited.add(nk);
+                        queue.push(nk);
+                    }
+                }
+            });
+        }
+    }
+
+    if (!G.free) {
+        const safe = G.rows * G.cols - G.totalMines;
+        if (G.revealed.size >= safe) {
+            G.won = true;
+            clearInterval(timerInt);
+            renderBoard();
+            saveScore();
+            setTimeout(() => showModal('win'), 300);
+            return;
+        }
+    }
+
+    renderBoard();
+    updateHUD();
+}
+
+/* ── FLAG ── */
+function flag(r, c) {
+    if (G.dead || G.won) return;
+    const k = ck(r, c);
+    const cell = getCell(r, c);
+    if (cell.revealed) return;
+    if (G.flagged.has(k)) { G.flagged.delete(k); cell.flagged = false; }
+    else { G.flagged.add(k); cell.flagged = true; }
+    renderBoard();
+    updateHUD();
+}
+
+/* ── CHORD ── */
+function chord(r, c) {
+    const cell = G.cells[ck(r, c)];
+    if (!cell || !cell.revealed || cell.adj === 0) return;
+    const adjFlags = neighbors(r, c).filter(([nr, nc]) => G.flagged.has(ck(nr, nc))).length;
+    if (adjFlags === cell.adj) {
+        neighbors(r, c).forEach(([nr, nc]) => {
+            if (!G.flagged.has(ck(nr, nc))) reveal(nr, nc);
+        });
+    }
+}
+
+/* ── FREEMODE PAN ── */
+function panFree(dr, dc) {
+    if (!G.free) return;
+    G.viewR += dr * Math.floor(CHUNK / 2);
+    G.viewC += dc * Math.floor(CHUNK / 2);
+    if (G.started) {
+        generateChunkMines(G.viewR, G.viewC, null);
+        recalcAdj();
+    }
+    renderBoard();
+    updateHUD();
+}
+
+document.addEventListener('keydown', e => {
+    if (!G.free || G.dead) return;
+    if (e.key === 'ArrowUp')    { e.preventDefault(); panFree(-1, 0); }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); panFree(1, 0); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); panFree(0, -1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); panFree(0, 1); }
+});
+
+/* ── RENDER ── */
+function renderBoard() {
+    const board = document.getElementById('board');
+    const vr = G.free ? G.viewR : 0;
+    const vc = G.free ? G.viewC : 0;
+    const rows = G.free ? CHUNK : G.rows;
+    const cols = G.free ? CHUNK : G.cols;
+
+    board.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+    board.innerHTML = '';
+
+    for (let r = vr; r < vr + rows; r++) {
+        for (let c = vc; c < vc + cols; c++) {
+            board.appendChild(makeCell(r, c));
+        }
+    }
+
+    if (G.free) {
+        document.getElementById('h-area').textContent = `${vc},${vr}`;
+    }
+}
+
+function makeCell(r, c) {
+    const k = ck(r, c);
+    const cell = G.cells[k];
+    const el = document.createElement('div');
+    el.className = 'cell';
+
+    if (!cell || (!cell.revealed && !cell.flagged)) {
+        el.addEventListener('click', () => { if (!G.dead && !G.won) reveal(r, c); });
+        el.addEventListener('contextmenu', e => { e.preventDefault(); if (!G.dead && !G.won) flag(r, c); });
+        return el;
+    }
+
+    if (cell.flagged && !cell.revealed) {
+        el.classList.add('flagged');
+        el.textContent = '⚑';
+        el.addEventListener('contextmenu', e => { e.preventDefault(); if (!G.dead && !G.won) flag(r, c); });
+        return el;
+    }
+
+    if (cell.revealed && cell.mine) {
+        el.classList.add(G.dead ? 'mine-hit' : 'mine-show');
+        el.textContent = '✸';
+        return el;
+    }
+
+    if (cell.revealed) {
+        el.classList.add('revealed');
+        if (cell.adj > 0) {
+            el.textContent = cell.adj;
+            el.dataset.n = cell.adj;
+        }
+        el.addEventListener('click', () => chord(r, c));
+        return el;
+    }
+
+    el.addEventListener('click', () => { if (!G.dead && !G.won) reveal(r, c); });
+    el.addEventListener('contextmenu', e => { e.preventDefault(); if (!G.dead && !G.won) flag(r, c); });
+    return el;
+}
+
+/* ── HUD ── */
+function updateHUD() {
+    document.getElementById('h-mines').textContent = G.free ? '?' : G.totalMines;
+    document.getElementById('h-flags').textContent = G.flagged.size;
+    document.getElementById('h-remaining').textContent = G.free ? '?' : Math.max(0, G.totalMines - G.flagged.size);
+    if (G.free) document.getElementById('h-revealed').textContent = G.freeRevealed;
+}
+
+/* ── MODAL ── */
+function showModal(type) {
+    removeModal();
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay'; ov.id = 'game-modal';
+    const m = document.createElement('div');
+    m.className = 'modal';
+
+    if (type === 'dead') {
+        m.innerHTML = `
+            <div class="modal-icon">💥</div>
+            <h2>Mine Hit</h2>
+            <p>You survived <strong>${G.elapsed}s</strong>${G.free ? ' and revealed <strong>' + G.freeRevealed + '</strong> safe cells' : ''}.<br>Better luck next time.</p>
+            <div class="modal-btns">
+                <button class="modal-btn primary" onclick="restart()">Try Again</button>
+                <button class="modal-btn" onclick="goMenu()">Menu</button>
+            </div>`;
+    } else {
+        m.innerHTML = `
+            <div class="modal-icon">✓</div>
+            <h2>Sector Cleared</h2>
+            <p>Completed in <strong>${G.elapsed}s</strong> with <strong>${G.flagged.size}</strong> flags placed.</p>
+            <div class="modal-btns">
+                <button class="modal-btn primary" onclick="goMenu()">Next Level</button>
+                <button class="modal-btn" onclick="restart()">Play Again</button>
+            </div>`;
+    }
+    ov.appendChild(m);
+    document.body.appendChild(ov);
+}
+
+function removeModal() {
+    const m = document.getElementById('game-modal');
+    if (m) m.remove();
+}
+
+/* ── SCORE SAVE ── */
+async function saveScore() {
+    if (!myEmail || G.free) return;
+    const score = G.won ? Math.max(1, 10000 - G.elapsed * 10) : G.elapsed;
+    try {
+        await fetch(API + '/game/save-score', {
+            method: 'POST',
+            body: JSON.stringify({ email: myEmail, gameId: 'minesweeper_' + (G.idx + 1), score })
+        });
+    } catch(e) {}
+}
+
+/* ── INIT ── */
+async function init() {
+    if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+    await runNeuralGuard();
+    buildMenu();
+}
+
+init();
+</script>
+</body>
+</html>
