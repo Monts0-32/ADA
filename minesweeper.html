@@ -332,10 +332,7 @@ function recalcAdj() {
     Object.values(G.cells).forEach(cell => {
         if (!cell.mine) {
             cell.adj = neighbors(cell.r, cell.c)
-                .filter(([nr, nc]) => {
-                    if (!G.free && !inBounds(nr, nc)) return false;
-                    return G.mineSet.has(ck(nr, nc));
-                }).length;
+                .filter(([nr, nc]) => G.mineSet.has(ck(nr, nc))).length;
         }
     });
 }
@@ -411,21 +408,26 @@ function reveal(r, c) {
         const qk = queue.shift();
         const [qr, qc] = qk.split(',').map(Number);
 
-        // In freemode, only expand within the visible chunk — no infinite expansion
-        if (G.free) {
-            if (qr < G.viewR || qr >= G.viewR + CHUNK || qc < G.viewC || qc >= G.viewC + CHUNK) continue;
-        }
+        // Hard boundary for normal levels
+        if (!inBounds(qr, qc)) continue;
+        // Clamp freemode to visible chunk — prevents infinite expansion
+        if (G.free && (qr < G.viewR || qr >= G.viewR + CHUNK || qc < G.viewC || qc >= G.viewC + CHUNK)) continue;
 
-        const qcell = getCell(qr, qc);
-        if (qcell.revealed || qcell.flagged) continue;
+        // CRITICAL: never use getCell() in BFS — it auto-creates blank adj=0 cells
+        // which makes every newly created cell expand further, causing one-click clears
+        const qcell = G.cells[qk];
+        if (!qcell || qcell.revealed || qcell.flagged || qcell.mine) continue;
+
         qcell.revealed = true;
         G.revealed.add(qk);
         if (G.free) G.freeRevealed++;
+
         if (qcell.adj === 0) {
             neighbors(qr, qc).forEach(([nr, nc]) => {
                 if (!inBounds(nr, nc)) return;
+                if (G.free && (nr < G.viewR || nr >= G.viewR + CHUNK || nc < G.viewC || nc >= G.viewC + CHUNK)) return;
                 const nk = ck(nr, nc);
-                if (!visited.has(nk) && !G.mineSet.has(nk)) {
+                if (!visited.has(nk)) {
                     visited.add(nk);
                     queue.push(nk);
                 }
