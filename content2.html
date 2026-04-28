@@ -161,7 +161,7 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
 <script src="/chat-widget.js"></script>
 <script>
 const API     = "https://ada-relay.andrewdinglearchive.workers.dev";
-const GAME_ID = "snake";
+const GAME_ID = "content2";
 const myEmail = localStorage.getItem('ada_user_email');
 const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
@@ -383,7 +383,7 @@ async function saveScore(count) {
 async function loadMyBest() {
     if (!myEmail) return;
     try {
-        const res  = await fetch(`${API}/content/a617?email=${encodeURIComponent(myEmail)}&game=${GAME_ID}`);
+        const res  = await fetch(`${API}/content/a617?email=${encodeURIComponent(myEmail)}&content=${GAME_ID}`);
         const data = await res.json();
         myBest = data.score || 0;
         document.getElementById('h-best').textContent  = myBest;
@@ -396,7 +396,7 @@ async function loadLeaderboard() {
     const lb = document.getElementById('leaderboard');
     lb.innerHTML = '<div class="lb-loading">Loading...</div>';
     try {
-        const res  = await fetch(`${API}/content/91203?game=${GAME_ID}`);
+        const res  = await fetch(`${API}/content/91203?content=${GAME_ID}`);
         const data = await res.json();
         if (!data.length) { lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
         const rc = ['gold','silver','bronze'];
