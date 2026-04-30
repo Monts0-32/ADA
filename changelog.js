@@ -5,7 +5,9 @@
     const LOG_TITLE = "Archive System Update";
     
     const CHANGES = [
-        "Site is down rn.",
+        "In loving memory of:",
+        "Donnie And Chan",
+        "",
     ];
     // ---------------------
 
