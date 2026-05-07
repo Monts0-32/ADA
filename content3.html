@@ -101,6 +101,8 @@ input.gh::placeholder{color:var(--fg-subtle)}
 .ob:not(.on):hover{background:rgba(255,255,255,.03)}
 .place-actions{display:flex;gap:8px;margin-top:12px}
 
+.beta-alert { background: rgba(210, 153, 34, 0.1); border: 1px solid var(--warn); color: var(--warn); padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: left; font-size: 12px; line-height: 1.5; }
+
 /* ── WAITING ── */
 .wait-wrap{text-align:center;padding:80px 20px;max-width:380px;margin:0 auto}
 .spinner{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:spin .75s linear infinite}
@@ -155,6 +157,9 @@ input.gh::placeholder{color:var(--fg-subtle)}
 <div id="vLobby" class="view active">
 <div class="lobby">
   <div class="page-title">⚓ Battleships</div>
+  <div class="beta-alert">
+    <strong>BETA NOTICE:</strong> This game is currently in development please expect bugs im working on it now.
+  </div>
   <div class="page-sub">Multiplayer naval combat — sink the enemy fleet first</div>
 
   <div class="card">
