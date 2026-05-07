@@ -6,8 +6,6 @@
 <title>Battleships</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="/uplink.js"></script>
-<div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
 <style>
 :root {
   --bg:        #0d1117;
@@ -269,6 +267,19 @@ input.gh::placeholder{color:var(--fg-subtle)}
     <p  id="mMsg">You sunk all enemy ships.</p>
     <div class="modal-btns">
       <button class="btn btn-g" onclick="goLobby()">↩ Back to Lobby</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LEAVE CONFIRMATION MODAL ══════════ -->
+<div class="overlay" id="leaveModal">
+  <div class="modal">
+    <div class="modal-ico">⚠️</div>
+    <h3 id="leaveTitle">Leave Game?</h3>
+    <p  id="leaveMsg">If you leave now your opponent wins and the room will be deleted.</p>
+    <div class="modal-btns">
+      <button class="btn btn-r" onclick="leaveConfirmed()">⎋ Leave</button>
+      <button class="btn btn-s" onclick="leaveCancel()">Stay</button>
     </div>
   </div>
 </div>
@@ -638,13 +649,64 @@ function goLobby() {
   loadRooms();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  LEAVE / UNLOAD SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+let leaveIntent = false; // tracks if user confirmed leave via modal
+
+// Show styled leave modal instead of browser confirm()
 function confirmForfeit() {
-  if (confirm('Forfeit the game? This counts as a loss.')) leaveRoom();
+  const inLobby  = document.getElementById('vLobby').classList.contains('active');
+  const inPlace  = document.getElementById('vPlace').classList.contains('active');
+  const inWait   = document.getElementById('vWait').classList.contains('active');
+  const inGame   = document.getElementById('vGame').classList.contains('active');
+
+  const modal = document.getElementById('leaveModal');
+  const title = document.getElementById('leaveTitle');
+  const msg   = document.getElementById('leaveMsg');
+
+  if (inGame) {
+    title.textContent = 'Forfeit the battle?';
+    msg.textContent   = 'Leaving now counts as a loss and awards victory to your opponent.';
+  } else if (inWait) {
+    title.textContent = 'Leave the room?';
+    msg.textContent   = 'You will be removed from the queue and the room may be cancelled.';
+  } else if (inPlace) {
+    title.textContent = 'Cancel placement?';
+    msg.textContent   = 'Your ship positions will be lost and the room will be cancelled.';
+  }
+
+  modal.classList.add('open');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INIT
-// ─────────────────────────────────────────────────────────────────────────────
+function leaveCancel() {
+  document.getElementById('leaveModal').classList.remove('open');
+}
+
+function leaveConfirmed() {
+  document.getElementById('leaveModal').classList.remove('open');
+  leaveIntent = true;
+  leaveRoom();
+}
+
+// Fires synchronously when the page/tab is closed or navigated away
+// sendBeacon guarantees delivery even as the page unloads
+function sendLeaveBeacon() {
+  if (!roomId || !EMAIL) return;
+  const url  = API + '/battle/leave';
+  const body = JSON.stringify({ room_id: roomId, email: EMAIL });
+  navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+}
+
+// Block navigation if the user is mid-game and hasn't confirmed
+window.addEventListener('beforeunload', function(e) {
+  if (!roomId || gameOver) return; // nothing to protect
+  sendLeaveBeacon();               // fire-and-forget cleanup to server
+  // Show the browser's built-in "Leave site?" prompt
+  e.preventDefault();
+  e.returnValue = ''; // required for Chrome to show the dialog
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  BOOT — run Neural Guard then kick off the lobby
 // ─────────────────────────────────────────────────────────────────────────────
