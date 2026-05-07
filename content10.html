@@ -338,7 +338,10 @@ function recalcAdj() {
     Object.values(G.cells).forEach(cell => {
         if (!cell.mine) {
             cell.adj = neighbors(cell.r, cell.c)
-                .filter(([nr, nc]) => G.mineSet.has(ck(nr, nc))).length;
+                .filter(([nr, nc]) => {
+                    if (!G.free && !inBounds(nr, nc)) return false;
+                    return G.mineSet.has(ck(nr, nc));
+                }).length;
         }
     });
 }
@@ -372,7 +375,6 @@ function reveal(r, c) {
 
     if (!G.started) {
         G.started = true;
-        // Ensure first click area is safe — remove any mines nearby
         placeMines(r, c);
         // Fix the clicked cell's mine status just in case
         getCell(r, c).mine = false;
@@ -384,7 +386,7 @@ function reveal(r, c) {
                 getCell(nr, nc).mine = false;
             }
         });
-        recalcAdj();
+        recalcAdj(); // ✅ recalcs after removing safe zone mines
         timerInt = setInterval(() => {
             G.elapsed++;
             document.getElementById('h-time').textContent = G.elapsed + 's';
