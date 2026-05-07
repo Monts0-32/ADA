@@ -514,13 +514,14 @@ async function submitPlacement() {
   startPoll();
 }
 
-function leaveRoom() {
+async function leaveRoom() {
   clearInterval(pollTimer);
-  const id = roomId; // capture before nulling
-  roomId   = null;
-  gameOver = false;
+  const id = roomId;
+  roomId     = null;
+  gameOver   = false;
   lastLogLen = 0;
-  if (id && EMAIL) api('/battle/leave', 'POST', { room_id: id, email: EMAIL });
+  document.getElementById('moveLog').innerHTML = '';
+  if (id && EMAIL) await api('/battle/leave', 'POST', { room_id: id, email: EMAIL });
   show('vLobby');
   loadRooms();
 }
@@ -656,16 +657,12 @@ function goLobby() {
 // ─────────────────────────────────────────────────────────────────────────────
 //  LEAVE / UNLOAD SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
-let leaveIntent = false; // tracks if user confirmed leave via modal
 
-// Show styled leave modal instead of browser confirm()
 function confirmForfeit() {
-  const inLobby  = document.getElementById('vLobby').classList.contains('active');
-  const inPlace  = document.getElementById('vPlace').classList.contains('active');
-  const inWait   = document.getElementById('vWait').classList.contains('active');
-  const inGame   = document.getElementById('vGame').classList.contains('active');
+  const inPlace = document.getElementById('vPlace').classList.contains('active');
+  const inWait  = document.getElementById('vWait').classList.contains('active');
+  const inGame  = document.getElementById('vGame').classList.contains('active');
 
-  const modal = document.getElementById('leaveModal');
   const title = document.getElementById('leaveTitle');
   const msg   = document.getElementById('leaveMsg');
 
@@ -674,13 +671,15 @@ function confirmForfeit() {
     msg.textContent   = 'Leaving now counts as a loss and awards victory to your opponent.';
   } else if (inWait) {
     title.textContent = 'Leave the room?';
-    msg.textContent   = 'You will be removed from the queue and the room may be cancelled.';
+    msg.textContent   = 'You will be removed. If you are the host the room will be cancelled.';
   } else if (inPlace) {
     title.textContent = 'Cancel placement?';
-    msg.textContent   = 'Your ship positions will be lost and the room will be cancelled.';
+    msg.textContent   = 'Your ship positions will be lost. If you are the host the room will be cancelled.';
+  } else {
+    return; // nothing to leave from lobby
   }
 
-  modal.classList.add('open');
+  document.getElementById('leaveModal').classList.add('open');
 }
 
 function leaveCancel() {
@@ -689,25 +688,23 @@ function leaveCancel() {
 
 function leaveConfirmed() {
   document.getElementById('leaveModal').classList.remove('open');
-  leaveIntent = true;
   leaveRoom();
 }
 
-// sendBeacon can't send JSON bodies reliably — use GET with query params instead
-// The worker needs a matching GET /battle/leave route (see worker update below)
+// sendBeacon fires even as the page closes — must use GET+query params,
+// not a POST body, because the browser may not send body on unload.
+// This hits a dedicated GET route in the worker: /battle/leave-beacon
 function sendLeaveBeacon() {
   if (!roomId || !EMAIL) return;
-  const url = API + '/battle/leave?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL);
+  const url = API + '/battle/leave-beacon?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL);
   navigator.sendBeacon(url);
 }
 
-// Block navigation if the user is mid-game and hasn't confirmed
 window.addEventListener('beforeunload', function(e) {
-  if (!roomId || gameOver) return; // nothing to protect
-  sendLeaveBeacon();               // fire-and-forget cleanup to server
-  // Show the browser's built-in "Leave site?" prompt
+  if (!roomId || gameOver) return;
+  sendLeaveBeacon(); // queued by browser, guaranteed delivery even after close
   e.preventDefault();
-  e.returnValue = ''; // required for Chrome to show the dialog
+  e.returnValue = ''; // triggers browser's native "Leave site?" dialog
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
