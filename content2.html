@@ -372,7 +372,7 @@ document.addEventListener('keydown', e => {
 async function saveScore(count) {
     if (!myEmail) return;
     try {
-        await fetch(API+'/game/save-score', {
+        await fetch(API+'/content/a617', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ email:myEmail, gameId:GAME_ID, score:count })
