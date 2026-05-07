@@ -275,18 +275,6 @@ input.gh::placeholder{color:var(--fg-subtle)}
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-//  BOOT — wait for Neural Guard to clear, then init
-// ─────────────────────────────────────────────────────────────────────────────
-async function start() {
-  if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
-  const data = await runNeuralGuard(); // No permission tag required for Battleships
-  if (!data) return; // Guard redirected — stop here
-  init();
-}
-start();
-
-function init() {
-// ─────────────────────────────────────────────────────────────────────────────
 //  CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 const API   = "https://ada-relay.andrewdinglearchive.workers.dev";
@@ -655,12 +643,19 @@ function confirmForfeit() {
 // ─────────────────────────────────────────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────────────────────────────────────────
-loadRooms();
-setInterval(() => {
-  if (document.getElementById('vLobby').classList.contains('active')) loadRooms();
-}, 10000);
-
-} // end init()
+// ─────────────────────────────────────────────────────────────────────────────
+//  BOOT — run Neural Guard then kick off the lobby
+// ─────────────────────────────────────────────────────────────────────────────
+async function start() {
+  if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+  const data = await runNeuralGuard(); // No permission tag — any logged-in user can play
+  if (!data) return; // Guard redirected to login/blocked
+  loadRooms();
+  setInterval(() => {
+    if (document.getElementById('vLobby').classList.contains('active')) loadRooms();
+  }, 10000);
+}
+start();
 </script>
 </body>
 </html>
