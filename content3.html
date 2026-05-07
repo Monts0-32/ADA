@@ -204,6 +204,7 @@ input.gh::placeholder{color:var(--fg-subtle)}
       <div class="place-actions">
         <button class="btn btn-g" id="btnReady" onclick="submitPlacement()" disabled>Ready →</button>
         <button class="btn btn-s" onclick="resetPlacement()">✕ Reset</button>
+        <button class="btn btn-r" onclick="confirmForfeit()">⎋ Cancel</button>
       </div>
       <div style="margin-top:12px;padding:10px;background:#010409;border:1px solid var(--border-m);border-radius:var(--r);font-size:10px;color:var(--fg-muted);line-height:1.9">
         1. Select a ship<br>2. Hover to preview<br>3. Click to place<br>4. Click Ready when done
@@ -221,7 +222,7 @@ input.gh::placeholder{color:var(--fg-subtle)}
   <div class="room-code-display" id="waitCode">----</div>
   <p id="waitMsg">Fleet submitted.<br>Game starts when both players are ready.</p>
   <div style="margin-top:18px">
-    <button class="btn btn-r" onclick="leaveRoom()">⎋ Leave Room</button>
+    <button class="btn btn-r" onclick="confirmForfeit()">⎋ Leave Room</button>
   </div>
 </div>
 </div>
@@ -515,8 +516,11 @@ async function submitPlacement() {
 
 function leaveRoom() {
   clearInterval(pollTimer);
-  api('/battle/leave', 'POST', { room_id: roomId, email: EMAIL });
-  roomId = null;
+  const id = roomId; // capture before nulling
+  roomId   = null;
+  gameOver = false;
+  lastLogLen = 0;
+  if (id && EMAIL) api('/battle/leave', 'POST', { room_id: id, email: EMAIL });
   show('vLobby');
   loadRooms();
 }
@@ -689,13 +693,12 @@ function leaveConfirmed() {
   leaveRoom();
 }
 
-// Fires synchronously when the page/tab is closed or navigated away
-// sendBeacon guarantees delivery even as the page unloads
+// sendBeacon can't send JSON bodies reliably — use GET with query params instead
+// The worker needs a matching GET /battle/leave route (see worker update below)
 function sendLeaveBeacon() {
   if (!roomId || !EMAIL) return;
-  const url  = API + '/battle/leave';
-  const body = JSON.stringify({ room_id: roomId, email: EMAIL });
-  navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+  const url = API + '/battle/leave?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL);
+  navigator.sendBeacon(url);
 }
 
 // Block navigation if the user is mid-game and hasn't confirmed
