@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Battleships</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="/uplink.js"></script>
 <style>
 :root {
   --bg:        #0d1117;
@@ -274,10 +275,22 @@ input.gh::placeholder{color:var(--fg-subtle)}
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONFIG — set these before use
+//  BOOT — wait for Neural Guard to clear, then init
 // ─────────────────────────────────────────────────────────────────────────────
-const API   = "https://ada-relay.andrewdinglearchive.workers.dev";       // your Cloudflare worker URL
-const EMAIL = window.ADA_EMAIL || "";          // your login system should expose window.ADA_EMAIL
+async function start() {
+  if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+  const data = await runNeuralGuard(); // No permission tag required for Battleships
+  if (!data) return; // Guard redirected — stop here
+  init();
+}
+start();
+
+function init() {
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+const API   = "https://ada-relay.andrewdinglearchive.workers.dev";
+const EMAIL = localStorage.getItem('ada_user_email') || "";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -646,6 +659,8 @@ loadRooms();
 setInterval(() => {
   if (document.getElementById('vLobby').classList.contains('active')) loadRooms();
 }, 10000);
+
+} // end init()
 </script>
 </body>
 </html>
