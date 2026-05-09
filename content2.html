@@ -162,7 +162,7 @@ h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
 <script src="/chat-widget.js"></script>
 <script>
 const API     = "https://ada-relay.andrewdinglearchive.workers.dev";
-const GAME_ID = "content2";
+const GAME_ID = "content3";
 const myEmail = localStorage.getItem('ada_user_email');
 const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
@@ -189,10 +189,10 @@ function setSpeed(s) {
 // ── STATE ──
 let snake = [], dir = {x:1,y:0}, nextDir = {x:1,y:0};
 let food  = {x:0, y:0};
-let score = 0, foodEaten = 0;  // foodEaten = 0 at start, never counts body length
+let score = 0, foodEaten = 0;
 let gameRunning = false, gamePaused = false;
 let gameLoop = null;
-let myBest = 0;  // loaded from DB, only updated when beaten
+let myBest = 0;
 
 const C = {
     bg:'#0d1117', grid:'#1c2128',
@@ -204,27 +204,20 @@ const C = {
 function draw() {
     ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.strokeStyle = C.grid;
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= GRID; i++) {
         ctx.beginPath(); ctx.moveTo(i*CELL, 0); ctx.lineTo(i*CELL, canvas.height); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i*CELL); ctx.lineTo(canvas.width, i*CELL); ctx.stroke();
     }
-
     if (!snake.length) return;
-
-    // Food glow
     const fx = food.x*CELL+CELL/2, fy = food.y*CELL+CELL/2;
     const g  = ctx.createRadialGradient(fx, fy, 2, fx, fy, CELL);
     g.addColorStop(0, C.foodG); g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
     ctx.fillRect(food.x*CELL-CELL, food.y*CELL-CELL, CELL*3, CELL*3);
-
     ctx.fillStyle = C.food;  rr(food.x*CELL+3, food.y*CELL+3, CELL-6, CELL-6, 3);
     ctx.fillStyle = C.foodI; rr(food.x*CELL+5, food.y*CELL+5, CELL-10, CELL-10, 2);
-
-    // Snake
     snake.forEach((seg, i) => {
         const t = i / Math.max(snake.length - 1, 1);
         if (i === 0) {
@@ -237,7 +230,6 @@ function draw() {
         }
         const pad = i === 0 ? 1 : 2;
         rr(seg.x*CELL+pad, seg.y*CELL+pad, CELL-pad*2, CELL-pad*2, i===0?4:3);
-
         if (i === 0) {
             ctx.fillStyle = '#0d1117';
             if (dir.x !== 0) {
@@ -277,8 +269,7 @@ function startGame() {
     const mid = Math.floor(GRID/2);
     snake = [{x:mid,y:mid},{x:mid-1,y:mid},{x:mid-2,y:mid}];
     dir = {x:1,y:0}; nextDir = {x:1,y:0};
-    score     = 0;
-    foodEaten = 0;   // ✅ always 0 — starting body length is NOT counted
+    score = 0; foodEaten = 0;
     gameRunning = true; gamePaused = false;
     placeFood();
     document.getElementById('overlay').style.display = 'none';
@@ -291,22 +282,17 @@ function tick() {
     if (gamePaused) return;
     dir = {...nextDir};
     const head = {x: snake[0].x+dir.x, y: snake[0].y+dir.y};
-
     if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) { endGame(); return; }
     if (snake.some(s => s.x===head.x && s.y===head.y))                 { endGame(); return; }
-
     snake.unshift(head);
-
     if (head.x === food.x && head.y === food.y) {
         foodEaten++;
         score += 10 + Math.floor(foodEaten/5);
-        // ✅ Update best live the moment it's beaten
         if (foodEaten > myBest) myBest = foodEaten;
         placeFood();
     } else {
         snake.pop();
     }
-
     updateHUD();
     draw();
 }
@@ -316,19 +302,18 @@ function changeDir(x, y) {
     nextDir = {x, y};
 }
 
-function endGame() {
+async function endGame() {
     gameRunning = false;
     clearInterval(gameLoop);
     draw();
     ctx.fillStyle = 'rgba(248,81,73,0.15)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // ✅ Only save if food was actually eaten AND it's a new best
-    // This prevents saving 0 or saving a lower score over a higher one
     const isNewBest = foodEaten > 0 && foodEaten >= myBest;
     if (isNewBest) {
         myBest = foodEaten;
-        saveScore(foodEaten);
+        await saveScore(foodEaten);
+        await loadLeaderboard();
     }
 
     document.getElementById('ov-title').textContent = isNewBest ? '🏆 New Best!' : 'Game Over';
@@ -341,7 +326,6 @@ function endGame() {
     document.getElementById('overlay').style.display = 'flex';
     document.getElementById('h-best').textContent   = myBest;
     document.getElementById('sb-best').textContent  = myBest || '—';
-    loadLeaderboard();
 }
 
 function togglePause() {
@@ -368,28 +352,35 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// ── SAVE — only called when foodEaten > 0 and it's a new best ──
+// ── SAVE ──
 async function saveScore(count) {
-    if (!myEmail) return;
+    if (!myEmail) { console.warn('Snake: no email in localStorage'); return; }
     try {
-        await fetch(API+'/content/a617', {
+        const res = await fetch(API + '/content/a617', {
             method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ email:myEmail, gameId:GAME_ID, score:count })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: myEmail, gameId: GAME_ID, score: count })
         });
-    } catch(e) {}
+        const data = await res.json();
+        console.log('Snake save response:', data);
+    } catch(e) {
+        console.error('Snake: save failed', e);
+    }
 }
 
 // ── LOAD MY BEST ──
 async function loadMyBest() {
-    if (!myEmail) return;
+    if (!myEmail) { console.warn('Snake: no email, skipping best load'); return; }
     try {
         const res  = await fetch(`${API}/content/a617?email=${encodeURIComponent(myEmail)}&content=${GAME_ID}`);
         const data = await res.json();
+        console.log('Snake best score response:', data);
         myBest = data.score || 0;
-        document.getElementById('h-best').textContent  = myBest;
+        document.getElementById('h-best').textContent  = myBest || 0;
         document.getElementById('sb-best').textContent = myBest || '—';
-    } catch(e) {}
+    } catch(e) {
+        console.error('Snake: loadMyBest failed', e);
+    }
 }
 
 // ── LEADERBOARD ──
@@ -399,6 +390,7 @@ async function loadLeaderboard() {
     try {
         const res  = await fetch(`${API}/content/91203?content=${GAME_ID}`);
         const data = await res.json();
+        console.log('Snake leaderboard response:', data);
         if (!data.length) { lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
         const rc = ['gold','silver','bronze'];
         const rs = ['🥇','🥈','🥉'];
@@ -409,19 +401,23 @@ async function loadLeaderboard() {
                 <div class="lb-name">${row.display_name||row.email}</div>
                 <div class="lb-score">${row.score}</div>
             </div>`).join('');
-    } catch(e) { lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>'; }
+    } catch(e) {
+        console.error('Snake: leaderboard failed', e);
+        lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>';
+    }
 }
 
 // ── INIT ──
 async function init() {
     if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-    await runNeuralGuard();
+    const data = await runNeuralGuard();
+    if (!data) return;
     draw();
     document.getElementById('ov-score-wrap').style.display = 'none';
     document.getElementById('ov-btn').textContent = 'Start Game';
     document.getElementById('overlay').style.display = 'flex';
     await loadMyBest();
-    loadLeaderboard();
+    await loadLeaderboard();
 }
 init();
 </script>
