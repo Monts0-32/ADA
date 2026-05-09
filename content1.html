@@ -127,7 +127,7 @@
 
     async function loadLeaderboard() {
         try {
-            const res = await fetch(`${API}/game/leaderboard?game=tetris`);
+            const res = await fetch(`${API}/game/leaderboard?content=tetris`);
             const topUsers = await res.json();
             const list = document.getElementById('leaderboard-list');
             list.innerHTML = topUsers.map((u, i) => `
@@ -146,9 +146,9 @@
     async function loadPersonalBest() {
         try {
             const email = localStorage.getItem('ada_user_email');
-            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&game=tetris`);
+            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&content=tetris`);
             const data = await res.json();
-            highScore = parseInt(data.score) || 0;
+            highScore = data.score || 0;
             document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
         } catch(e) { console.error("Personal Best Sync Error"); }
     }
@@ -232,14 +232,10 @@
         if (score > highScore) {
             highScore = score;
             document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
-            await fetch(`${API}/game/save-score`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, // ✅ add this
-                body: JSON.stringify({ 
-                    email: localStorage.getItem('ada_user_email'), 
-                    gameId: 'tetris', 
-                    score: score 
-                }) 
+            await fetch(`${API}/game/save-score`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: 'tetris', score: score })
             });
             loadLeaderboard();
         }
