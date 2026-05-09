@@ -228,17 +228,20 @@
             score += [0, 100, 300, 500, 1500][rowsCleared];
             document.getElementById('score').innerText = score;
             setTimeout(() => { clearingLines = []; }, 100);
-            
-            if (score > highScore) {
-                highScore = score;
-                document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
-                await fetch(`${API}/game/save-score`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: 'tetris', score: score }) 
-                });
-                loadLeaderboard();
-            }
+        }    
+        if (score > highScore) {
+            highScore = score;
+            document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+            await fetch(`${API}/game/save-score`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, // ✅ add this
+                body: JSON.stringify({ 
+                    email: localStorage.getItem('ada_user_email'), 
+                    gameId: 'tetris', 
+                    score: score 
+                }) 
+            });
+            loadLeaderboard();
         }
     }
 
