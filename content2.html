@@ -358,22 +358,22 @@ async function saveScore(count) {
     try {
         await fetch(API + '/game/save-score', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ email: myEmail, gameId: GAME_ID, score: count })
         });
-    } catch(e) { console.error('Snake: save failed', e); }
+    } catch(e) {}
 }
 
 // ── LOAD MY BEST ──
 async function loadMyBest() {
     if (!myEmail) return;
     try {
-        const res  = await fetch(`${API}/game/get-score?email=${encodeURIComponent(myEmail)}&game=${GAME_ID}`);
+        const res  = await fetch(`${API}/game/get-score?email=${encodeURIComponent(myEmail)}&content=${GAME_ID}`);
         const data = await res.json();
         myBest = data.score || 0;
         document.getElementById('h-best').textContent  = myBest || 0;
         document.getElementById('sb-best').textContent = myBest || '—';
-    } catch(e) { console.error('Snake: loadMyBest failed', e); }
+    } catch(e) {}
 }
 
 // ── LEADERBOARD ──
@@ -381,7 +381,7 @@ async function loadLeaderboard() {
     const lb = document.getElementById('leaderboard');
     lb.innerHTML = '<div class="lb-loading">Loading...</div>';
     try {
-        const res  = await fetch(`${API}/game/leaderboard?game=${GAME_ID}`);
+        const res  = await fetch(`${API}/game/leaderboard?content=${GAME_ID}`);
         const data = await res.json();
         if (!data.length) { lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
         const rc = ['gold','silver','bronze'];
