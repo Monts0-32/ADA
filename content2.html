@@ -354,33 +354,26 @@ document.addEventListener('keydown', e => {
 
 // ── SAVE ──
 async function saveScore(count) {
-    if (!myEmail) { console.warn('Snake: no email in localStorage'); return; }
+    if (!myEmail) return;
     try {
-        const res = await fetch(API + '/content/a617', {
+        await fetch(API + '/game/save-score', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: myEmail, gameId: GAME_ID, score: count })
         });
-        const data = await res.json();
-        console.log('Snake save response:', data);
-    } catch(e) {
-        console.error('Snake: save failed', e);
-    }
+    } catch(e) { console.error('Snake: save failed', e); }
 }
 
 // ── LOAD MY BEST ──
 async function loadMyBest() {
-    if (!myEmail) { console.warn('Snake: no email, skipping best load'); return; }
+    if (!myEmail) return;
     try {
-        const res  = await fetch(`${API}/content/a617?email=${encodeURIComponent(myEmail)}&content=${GAME_ID}`);
+        const res  = await fetch(`${API}/game/get-score?email=${encodeURIComponent(myEmail)}&game=${GAME_ID}`);
         const data = await res.json();
-        console.log('Snake best score response:', data);
         myBest = data.score || 0;
         document.getElementById('h-best').textContent  = myBest || 0;
         document.getElementById('sb-best').textContent = myBest || '—';
-    } catch(e) {
-        console.error('Snake: loadMyBest failed', e);
-    }
+    } catch(e) { console.error('Snake: loadMyBest failed', e); }
 }
 
 // ── LEADERBOARD ──
@@ -388,9 +381,8 @@ async function loadLeaderboard() {
     const lb = document.getElementById('leaderboard');
     lb.innerHTML = '<div class="lb-loading">Loading...</div>';
     try {
-        const res  = await fetch(`${API}/content/91203?content=${GAME_ID}`);
+        const res  = await fetch(`${API}/game/leaderboard?game=${GAME_ID}`);
         const data = await res.json();
-        console.log('Snake leaderboard response:', data);
         if (!data.length) { lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
         const rc = ['gold','silver','bronze'];
         const rs = ['🥇','🥈','🥉'];
@@ -401,10 +393,7 @@ async function loadLeaderboard() {
                 <div class="lb-name">${row.display_name||row.email}</div>
                 <div class="lb-score">${row.score}</div>
             </div>`).join('');
-    } catch(e) {
-        console.error('Snake: leaderboard failed', e);
-        lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>';
-    }
+    } catch(e) { lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>'; }
 }
 
 // ── INIT ──
