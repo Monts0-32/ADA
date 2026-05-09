@@ -96,6 +96,7 @@
 
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const GAME_ID = "content1";
     const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
     
     const canvas = document.getElementById('tetris');
@@ -127,7 +128,7 @@
 
     async function loadLeaderboard() {
         try {
-            const res = await fetch(`${API}/game/leaderboard?content=tetris`);
+            const res = await fetch(`${API}/game/leaderboard?content=${GAME_ID}`);
             const topUsers = await res.json();
             const list = document.getElementById('leaderboard-list');
             list.innerHTML = topUsers.map((u, i) => `
@@ -146,7 +147,7 @@
     async function loadPersonalBest() {
         try {
             const email = localStorage.getItem('ada_user_email');
-            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&content=tetris`);
+            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&content=${GAME_ID}`);
             const data = await res.json();
             highScore = data.score || 0;
             document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
@@ -235,7 +236,7 @@
             await fetch(`${API}/game/save-score`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: 'tetris', score: score })
+                body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: GAME_ID, score: score })
             });
             loadLeaderboard();
         }
