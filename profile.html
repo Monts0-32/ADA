@@ -73,16 +73,16 @@
         .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
         .toolbar select, .toolbar button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
 
-        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: visible; line-height: 1.6; box-sizing: border-box; color: white; }
+        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: auto; line-height: 1.6; box-sizing: border-box; color: white; }
         #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
 
         /* --- NEURAL IMAGE ENGINE --- */
-        .img-wrapper { position: absolute; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; }
-        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; }
+        .img-wrapper { position: relative; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; max-width: 100%; vertical-align: top; }
+        .img-wrapper img { width: 100%; height: 100%; pointer-events: none; border-radius: 4px; display: block; }
         .img-wrapper.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); z-index: 100; }
         
-        .resizer { position: absolute; width: 14px; height: 14px; background: var(--blue); right: -7px; bottom: -7px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); }
-        .remover { position: absolute; width: 22px; height: 22px; background: var(--red); color: white; right: -11px; top: -11px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); }
+        .resizer { position: absolute; width: 14px; height: 14px; background: var(--blue); right: -5px; bottom: -5px; cursor: nwse-resize; border-radius: 50%; display: none; border: 2px solid var(--bg); z-index: 10; }
+        .remover { position: absolute; width: 22px; height: 22px; background: var(--red); color: white; right: -8px; top: -8px; cursor: pointer; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid var(--bg); z-index: 10; }
         
         /* Only show handles if editor is active */
         #editor-ui[style*="display: flex"] .img-wrapper.active .resizer, 
@@ -95,6 +95,35 @@
 
         .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
+
+        /* --- REACTION BUTTONS --- */
+        .reaction-bar { display: flex; gap: 10px; margin-top: 12px; }
+        .react-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.15s; user-select: none; }
+        .react-btn:hover { background: #30363d; }
+        .react-btn.liked { background: rgba(35, 134, 54, 0.2); border-color: var(--btn-green); color: #3fb950; }
+        .react-btn.disliked { background: rgba(248, 81, 73, 0.15); border-color: var(--red); color: var(--red); }
+        .react-count { font-size: 12px; opacity: 0.8; }
+
+        /* --- COMMENTS SECTION --- */
+        .comments-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .comments-title { font-size: 12px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; }
+        .comment-input-row { display: flex; gap: 10px; margin-bottom: 18px; align-items: flex-start; }
+        .comment-input-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2px; }
+        .comment-input-wrap { flex: 1; }
+        .comment-textarea { width: 100%; background: #0d1117; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 12px; font-size: 13px; resize: none; outline: none; box-sizing: border-box; font-family: inherit; min-height: 36px; transition: border-color 0.15s, min-height 0.15s; }
+        .comment-textarea:focus { border-color: var(--blue); min-height: 70px; }
+        .comment-submit-row { display: none; justify-content: flex-end; margin-top: 6px; }
+        .comment-textarea:focus ~ .comment-submit-row, .comment-submit-row.show { display: flex; }
+        .comment-list { display: flex; flex-direction: column; gap: 14px; }
+        .comment-item { display: flex; gap: 10px; }
+        .comment-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+        .comment-item img:hover { opacity: 0.8; }
+        .comment-body { flex: 1; background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+        .comment-author { font-size: 12px; font-weight: bold; color: var(--blue); cursor: pointer; text-decoration: none; }
+        .comment-author:hover { text-decoration: underline; }
+        .comment-time { font-size: 11px; color: #8b949e; margin-left: 8px; }
+        .comment-text { font-size: 13px; margin-top: 4px; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+        .no-comments { font-size: 13px; color: #8b949e; text-align: center; padding: 20px 0; }
     </style>
 </head>
 <body id="p-body">
@@ -131,6 +160,34 @@
     <!-- BIO AREA -->
     <div class="bio-container">
         <div id="bio-display"></div>
+
+        <!-- REACTIONS & COMMENTS (view mode only) -->
+        <div id="social-section" style="display:none;">
+            <div class="reaction-bar">
+                <button class="react-btn" id="like-btn" onclick="react('like')">
+                    <span>👍</span> <span id="like-count" class="react-count">0</span>
+                </button>
+                <button class="react-btn" id="dislike-btn" onclick="react('dislike')">
+                    <span>👎</span> <span id="dislike-count" class="react-count">0</span>
+                </button>
+            </div>
+
+            <div class="comments-section">
+                <div class="comments-title">Comments</div>
+                <div class="comment-input-row" id="comment-input-area" style="display:none;">
+                    <img id="commenter-avatar" src="" alt="">
+                    <div class="comment-input-wrap">
+                        <textarea class="comment-textarea" id="comment-text" placeholder="Leave a comment..." rows="1" oninput="autoResize(this)" onfocus="document.getElementById('comment-submit-row').classList.add('show')" onblur="scheduleHideSubmit()"></textarea>
+                        <div class="comment-submit-row" id="comment-submit-row">
+                            <button class="btn-gh" style="width:auto; padding:6px 16px; font-size:12px;" onclick="submitComment()">Comment</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="comment-list" id="comment-list">
+                    <div class="no-comments">No comments yet.</div>
+                </div>
+            </div>
+        </div>
 
         <!-- EDITOR UI -->
         <div id="editor-ui" style="display:none; flex-direction:column;">
@@ -237,6 +294,16 @@
             document.getElementById('bio-edit').innerHTML = currentProfile.bio_html || "";
             attachLogic();
         }
+
+        // Show social section (reactions + comments) for all logged-in users
+        document.getElementById('social-section').style.display = 'block';
+        if (myEmail) {
+            document.getElementById('comment-input-area').style.display = 'flex';
+            const myPic = localStorage.getItem('ada_profile_pic') || '';
+            document.getElementById('commenter-avatar').src = myPic;
+        }
+        fetchReactions();
+        loadComments();
     }
 
     async function doSuggest(q) {
@@ -300,15 +367,15 @@
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
                 
-                let resizing = e.target.className === 'resizer', sX = e.clientX, sY = e.clientY, sW = w.offsetWidth, sL = w.offsetLeft, sT = w.offsetTop;
-                const move = (me) => {
-                    if(resizing){ w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; w.style.height = 'auto'; }
-                    else { w.style.left = (sL + (me.clientX - sX)) + 'px'; w.style.top = (sT + (me.clientY - sY)) + 'px'; }
-                };
-                const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-                window.addEventListener('mousemove', move);
-                window.addEventListener('mouseup', stop);
-                e.preventDefault();
+                // Only resize, no drag (images are now inline/relative)
+                if (e.target.className === 'resizer') {
+                    let sX = e.clientX, sW = w.offsetWidth;
+                    const move = (me) => { w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; };
+                    const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
+                    window.addEventListener('mousemove', move);
+                    window.addEventListener('mouseup', stop);
+                    e.preventDefault();
+                }
             };
         });
     }
@@ -327,6 +394,128 @@
 
     function search() { const q = document.getElementById('sq').value; if(q) location.href=`/profile.html?email=${encodeURIComponent(q)}`; }
     function exec(c, v=null) { if(!isSrc){ document.execCommand(c, false, v); }}
+
+    // --- REACTIONS ---
+    let reactionsData = { likes: [], dislikes: [] };
+
+    async function loadReactions() {
+        try {
+            const r = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
+            // Use system_data key: profile_reactions:{target}
+            const res = await fetch(`${API}/profile/reactions?profile=${encodeURIComponent(target)}`);
+            if (res.ok) {
+                reactionsData = await res.json();
+            }
+        } catch(e) {}
+        renderReactions();
+    }
+
+    // Since there's no dedicated endpoint, we use system_data as key-value store
+    async function fetchReactions() {
+        try {
+            // We'll store reactions in system_data with key "reactions__{target_email}"
+            // We'll use a small helper: GET /profile/reactions?profile=x will be handled
+            // by system_data. For now let's try to get via a generic fetch:
+            const r = await fetch(`${API}/profile/reactions?profile=${encodeURIComponent(target)}`);
+            if (r.ok) reactionsData = await r.json();
+        } catch(e) {}
+        renderReactions();
+    }
+
+    async function react(type) {
+        if (!myEmail) return;
+        const other = type === 'like' ? 'dislike' : 'like';
+        const arr = reactionsData[type + 's'];
+        const otherArr = reactionsData[other + 's'];
+        const idx = arr.indexOf(myEmail);
+        const otherIdx = otherArr.indexOf(myEmail);
+        if (otherIdx > -1) otherArr.splice(otherIdx, 1);
+        if (idx > -1) arr.splice(idx, 1);
+        else arr.push(myEmail);
+        renderReactions();
+        await fetch(`${API}/profile/react`, { 
+            method: 'POST', 
+            body: JSON.stringify({ profile: target, type, email: myEmail, data: reactionsData }) 
+        });
+    }
+
+    function renderReactions() {
+        const likes = reactionsData.likes || [];
+        const dislikes = reactionsData.dislikes || [];
+        document.getElementById('like-count').textContent = likes.length;
+        document.getElementById('dislike-count').textContent = dislikes.length;
+        document.getElementById('like-btn').className = 'react-btn' + (likes.includes(myEmail) ? ' liked' : '');
+        document.getElementById('dislike-btn').className = 'react-btn' + (dislikes.includes(myEmail) ? ' disliked' : '');
+    }
+
+    // --- COMMENTS ---
+    let commentsData = [];
+
+    async function loadComments() {
+        try {
+            const r = await fetch(`${API}/profile/comments?profile=${encodeURIComponent(target)}`);
+            if (r.ok) commentsData = await r.json();
+        } catch(e) {}
+        renderComments();
+    }
+
+    function renderComments() {
+        const list = document.getElementById('comment-list');
+        if (!commentsData.length) {
+            list.innerHTML = '<div class="no-comments">No comments yet.</div>';
+            return;
+        }
+        list.innerHTML = commentsData.map(c => `
+            <div class="comment-item">
+                <img src="${c.profile_picture || ''}" alt="" onclick="location.href='/profile.html?email=${encodeURIComponent(c.email)}'">
+                <div class="comment-body">
+                    <span>
+                        <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
+                        <span class="comment-time">${timeAgo(c.created_at)}</span>
+                    </span>
+                    <div class="comment-text">${escHtml(c.text)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function submitComment() {
+        const text = document.getElementById('comment-text').value.trim();
+        if (!text || !myEmail) return;
+        const myPic = localStorage.getItem('ada_profile_pic') || '';
+        const myName = localStorage.getItem('ada_display_name') || myEmail;
+        await fetch(`${API}/profile/comment`, {
+            method: 'POST',
+            body: JSON.stringify({ profile: target, email: myEmail, text, display_name: myName, profile_picture: myPic })
+        });
+        document.getElementById('comment-text').value = '';
+        document.getElementById('comment-submit-row').classList.remove('show');
+        await loadComments();
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    let hideTimer;
+    function scheduleHideSubmit() {
+        hideTimer = setTimeout(() => {
+            const row = document.getElementById('comment-submit-row');
+            if (!document.getElementById('comment-text').value.trim()) row.classList.remove('show');
+        }, 200);
+    }
+
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function timeAgo(ts) {
+        if (!ts) return '';
+        const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+        return Math.floor(diff/86400) + 'd ago';
+    }
     
     load();
 </script>
