@@ -244,188 +244,11 @@
     const target = params.get('email') || myEmail;
     let isSrc = false;
     let currentProfile = null;
+    let myProfileData  = null;
+    let reactionsData  = { likes: [], dislikes: [] };
+    let commentsData   = [];
 
-    async function load() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(load, 100); return; }
-        await runNeuralGuard();
-
-        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${myEmail}`);
-        const d = await res.json();
-        const u = d.user;
-        const isOnline = u.sec_ago !== null && u.sec_ago < 60;
-
-        document.getElementById('p-body').style.background = u.bg_style || "#0d1117";
-        document.getElementById('avatar-view').src = u.profile_picture;
-        document.getElementById('name-view').innerHTML = `
-            ${u.display_name || u.email} 
-            <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
-        `;
-        // Security check for disabled profile
-        if (d.disabled) { 
-            document.body.innerHTML = `<div style="text-align:center; padding:100px; color:white; background:#0d1117; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                <h1>Profile Disabled</h1><p style="color:#8b949e;">This profile is not available. Return to dashboard.</p>
-                <button class="btn-gh btn-primary" style="width:auto; padding:12px 30px;" onclick="location.href='/dash.html'">Return</button></div>`; 
-            return; 
-        }
-        
-        currentProfile = d.user;
-        document.getElementById('p-body').style.background = currentProfile.bg_style || "#0d1117";
-        document.getElementById('avatar-view').src = currentProfile.profile_picture;
-        document.getElementById('email-view').innerText = currentProfile.email;
-        document.getElementById('bio-display').innerHTML = currentProfile.bio_html || "Entity record is empty.";
-
-        // Online Status Calculation
-
-        // Badges
-        document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color}; color:${b.color}">${b.icon} ${b.name}</div>`).join('');
-        if(currentProfile.is_admin) document.getElementById('badges-view').innerHTML += `<div class="badge" style="border-color:#d29922; color:#d29922">🛡️ ADMIN</div>`;
-
-        // Admin checks
-        if(localStorage.getItem('ada_admin') === '1') {
-            document.getElementById('admin-actions').style.display = 'block';
-            document.getElementById('toggle-disabled-btn').innerText = currentProfile.profile_disabled ? "Enable Profile Access" : "Disable Profile Access";
-        }
-
-        // Ownership checks
-        if(target === myEmail) {
-            document.getElementById('edit-btn').style.display = 'block';
-            document.getElementById('in-name').value = currentProfile.display_name || "";
-            document.getElementById('in-bg').value = currentProfile.bg_style || "";
-            document.getElementById('picker-preview').style.backgroundColor = currentProfile.bg_style || "#0d1117";
-            document.getElementById('bio-edit').innerHTML = currentProfile.bio_html || "";
-            attachLogic();
-        }
-
-        // Show social section (reactions + comments) for all logged-in users
-        document.getElementById('social-section').style.display = 'block';
-        if (myEmail) {
-            // FIX: load logged-in user's real profile for avatar + name in comments
-            await loadMyProfile();
-            document.getElementById('comment-input-area').style.display = 'flex';
-            const myPic = myProfileData?.profile_picture || '';
-            const avatarEl = document.getElementById('commenter-avatar');
-            avatarEl.src = myPic;
-            avatarEl.onerror = () => { avatarEl.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4='; };
-        }
-        fetchReactions();
-        loadComments();
-    }
-
-    async function doSuggest(q) {
-        const box = document.getElementById('suggest');
-        if(q.length < 2) { box.style.display='none'; return; }
-        const r = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
-        const items = await r.json();
-        box.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${u.email}'"><img src="${u.profile_picture}"><span>${u.display_name || u.email}</span></div>`).join('');
-        box.style.display = items.length ? 'block' : 'none';
-    }
-
-    function updateBgFromPicker(val) {
-        document.getElementById('in-bg').value = val;
-        document.getElementById('picker-preview').style.backgroundColor = val;
-        document.getElementById('p-body').style.background = val;
-    }
-
-    async function toggleProfileStatus() {
-        const s = currentProfile.profile_disabled ? 0 : 1;
-        await fetch(`${API}/admin/profile/toggle-status`, { method: 'POST', body: JSON.stringify({ email: target, status: s }) });
-        location.reload();
-    }
-
-    function toggleEdit() {
-        const ui = document.getElementById('editor-ui');
-        const view = document.getElementById('bio-display');
-        const active = ui.style.display === 'flex';
-        ui.style.display = active ? 'none' : 'flex';
-        view.style.display = active ? 'block' : 'none';
-        if (!active) attachLogic();
-    }
-
-    function toggleBioSource() {
-        isSrc = !isSrc;
-        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw'), btn = document.getElementById('src-btn');
-        if(isSrc){ raw.value=ed.innerHTML; ed.style.display='none'; raw.style.display='block'; btn.innerText="Visual View"; }
-        else { ed.innerHTML=raw.value; ed.style.display='block'; raw.style.display='none'; btn.innerText="HTML Source"; attachLogic(); }
-    }
-
-    function upAvatar(i) { if(i.files[0]){ const r = new FileReader(); r.onload=(e)=>document.getElementById('avatar-view').src=e.target.result; r.readAsDataURL(i.files[0]); }}
-    
-    function upBioImg(i) {
-        if(i.files[0]){
-            const r = new FileReader();
-            r.onload=(e)=>{
-                const w = document.createElement('div');
-                w.className='img-wrapper'; w.style.width='200px'; w.style.left='10px'; w.style.top='10px';
-                w.innerHTML=`<img src="${e.target.result}"><div class="resizer"></div><div class="remover">×</div>`;
-                document.getElementById('bio-edit').appendChild(w);
-                attachLogic();
-            };
-            r.readAsDataURL(i.files[0]);
-        }
-    }
-
-    function attachLogic() {
-        if (document.getElementById('editor-ui').style.display !== 'flex') return;
-        const bioBox = document.getElementById('bio-edit');
-        document.querySelectorAll('.img-wrapper').forEach(w => {
-            w.onmousedown = (e) => {
-                if (e.target.className === 'remover') { w.remove(); return; }
-                document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
-                w.classList.add('active');
-
-                if (e.target.className === 'resizer') {
-                    // Resize by dragging corner handle
-                    let sX = e.clientX, sW = w.offsetWidth;
-                    const move = (me) => { w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; };
-                    const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-                    window.addEventListener('mousemove', move);
-                    window.addEventListener('mouseup', stop);
-                    e.preventDefault();
-                } else {
-                    // FIX: Drag image within the bio-edit box using absolute positioning inside it
-                    // Switch to absolute so we can freely position within the container
-                    if (w.style.position !== 'absolute') {
-                        const boxRect = bioBox.getBoundingClientRect();
-                        const wRect   = w.getBoundingClientRect();
-                        w.style.position = 'absolute';
-                        w.style.left = (wRect.left - boxRect.left + bioBox.scrollLeft) + 'px';
-                        w.style.top  = (wRect.top  - boxRect.top  + bioBox.scrollTop)  + 'px';
-                        bioBox.appendChild(w); // re-parent to bio box so absolute coords are correct
-                    }
-                    let sX = e.clientX, sY = e.clientY;
-                    let sL = parseInt(w.style.left) || 0, sT = parseInt(w.style.top) || 0;
-                    const move = (me) => {
-                        const boxRect = bioBox.getBoundingClientRect();
-                        const newL = Math.max(0, Math.min(sL + (me.clientX - sX), bioBox.scrollWidth  - w.offsetWidth));
-                        const newT = Math.max(0, Math.min(sT + (me.clientY - sY), bioBox.scrollHeight - w.offsetHeight));
-                        w.style.left = newL + 'px';
-                        w.style.top  = newT + 'px';
-                    };
-                    const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-                    window.addEventListener('mousemove', move);
-                    window.addEventListener('mouseup', stop);
-                    e.preventDefault();
-                }
-            };
-        });
-    }
-
-    async function save() {
-        document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
-        const payload = {
-            email: myEmail, name: document.getElementById('in-name').value,
-            pic: document.getElementById('avatar-view').src, bg: document.getElementById('in-bg').value,
-            bio: isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-edit').innerHTML,
-            color: "#c9d1d9"
-        };
-        await fetch(`${API}/profile/save`, { method: 'POST', body: JSON.stringify(payload) });
-        location.reload();
-    }
-
-    function search() { const q = document.getElementById('sq').value; if(q) location.href=`/profile.html?email=${encodeURIComponent(q)}`; }
-    function exec(c, v=null) { if(!isSrc){ document.execCommand(c, false, v); }}
-
-    // Helper: POST with JSON content-type (fixes reactions & comments not saving)
+    // ── Utility ──────────────────────────────────────────────────────────────
     function postJSON(url, data) {
         return fetch(url, {
             method: 'POST',
@@ -433,45 +256,113 @@
             body: JSON.stringify(data)
         });
     }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function timeAgo(ts) {
+        if (!ts) return '';
+        const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+        if (d < 60) return 'just now';
+        if (d < 3600) return Math.floor(d/60) + 'm ago';
+        if (d < 86400) return Math.floor(d/3600) + 'h ago';
+        return Math.floor(d/86400) + 'd ago';
+    }
+    const FALLBACK_AVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
 
-    // --- REACTIONS ---
-    let reactionsData = { likes: [], dislikes: [] };
+    // ── Page Load ─────────────────────────────────────────────────────────────
+    async function load() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(load, 100); return; }
+        await runNeuralGuard();
+
+        const res = await fetch(`${API}/profile/get?email=${encodeURIComponent(target)}&by=${encodeURIComponent(myEmail || '')}`);
+        const d = await res.json();
+
+        if (d.disabled) {
+            document.body.innerHTML = `<div style="text-align:center;padding:100px;color:white;background:#0d1117;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;"><h1>Profile Disabled</h1><p style="color:#8b949e;">This profile is not available.</p><button onclick="location.href='/dash.html'" style="margin-top:20px;padding:12px 30px;background:#238636;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">Return</button></div>`;
+            return;
+        }
+
+        const u = d.user;
+        currentProfile = u;
+        const isOnline = u.sec_ago !== null && u.sec_ago < 60;
+
+        document.getElementById('p-body').style.background = u.bg_style || '#0d1117';
+        document.getElementById('avatar-view').src = u.profile_picture;
+        document.getElementById('name-view').innerHTML = `${escHtml(u.display_name || u.email)}<span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>`;
+        document.getElementById('email-view').innerText = u.email;
+        document.getElementById('bio-display').innerHTML = u.bio_html || '<span style="color:#8b949e">Entity record is empty.</span>';
+        document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color};color:${b.color}">${b.icon} ${escHtml(b.name)}</div>`).join('');
+        if (u.is_admin) document.getElementById('badges-view').innerHTML += `<div class="badge" style="border-color:#d29922;color:#d29922">🛡️ ADMIN</div>`;
+
+        if (localStorage.getItem('ada_admin') === '1') {
+            document.getElementById('admin-actions').style.display = 'block';
+            document.getElementById('toggle-disabled-btn').innerText = u.profile_disabled ? 'Enable Profile Access' : 'Disable Profile Access';
+        }
+
+        if (target === myEmail) {
+            document.getElementById('edit-btn').style.display = 'block';
+            document.getElementById('in-name').value = u.display_name || '';
+            document.getElementById('in-bg').value   = u.bg_style || '';
+            document.getElementById('picker-preview').style.backgroundColor = u.bg_style || '#0d1117';
+            document.getElementById('bio-edit').innerHTML = u.bio_html || '';
+            attachLogic();
+        }
+
+        // Social section — always show, comment box only when logged in
+        document.getElementById('social-section').style.display = 'block';
+        if (myEmail) {
+            // Load own profile for avatar/name in comments
+            try {
+                const mr = await fetch(`${API}/profile/get?email=${encodeURIComponent(myEmail)}&by=${encodeURIComponent(myEmail)}`);
+                if (mr.ok) { const md = await mr.json(); myProfileData = md.user || null; }
+            } catch(e) {}
+
+            document.getElementById('comment-input-area').style.display = 'flex';
+            const avatarEl = document.getElementById('commenter-avatar');
+            avatarEl.src = myProfileData?.profile_picture || FALLBACK_AVG;
+            avatarEl.onerror = () => { avatarEl.src = FALLBACK_AVG; };
+        }
+
+        fetchReactions();
+        loadComments();
+    }
+
+    // ── Reactions ─────────────────────────────────────────────────────────────
+    // Uses existing /admin/system/save (POST) and /sync (GET via widgets) endpoints.
+    // Key stored in system_data: "react__{target}"
 
     async function fetchReactions() {
+        // Read from system_data via /sync — widgets map contains all system_data rows
         try {
-            const r = await fetch(`${API}/profile/reactions?profile=${encodeURIComponent(target)}`);
-            if (r.ok) reactionsData = await r.json();
+            const r = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
+            if (r.ok) {
+                const sd = await r.json();
+                const raw = sd.widgets?.['react__' + target];
+                if (raw) reactionsData = JSON.parse(raw);
+            }
         } catch(e) {}
         renderReactions();
     }
 
     async function react(type) {
         if (!myEmail) return;
-        const other = type === 'like' ? 'dislike' : 'like';
-        // Deep copy so we don't mutate stale references
         const likes    = [...(reactionsData.likes    || [])];
         const dislikes = [...(reactionsData.dislikes || [])];
-        const map      = { like: likes, dislike: dislikes };
-        const otherMap = { like: dislikes, dislike: likes };
 
         // Remove from opposite list
-        const otherIdx = otherMap[type].indexOf(myEmail);
-        if (otherIdx > -1) otherMap[type].splice(otherIdx, 1);
+        if (type === 'like')    { const i = dislikes.indexOf(myEmail); if (i > -1) dislikes.splice(i, 1); }
+        if (type === 'dislike') { const i = likes.indexOf(myEmail);    if (i > -1) likes.splice(i, 1); }
 
         // Toggle in own list
-        const idx = map[type].indexOf(myEmail);
-        if (idx > -1) map[type].splice(idx, 1);
-        else map[type].push(myEmail);
+        const own = type === 'like' ? likes : dislikes;
+        const idx = own.indexOf(myEmail);
+        if (idx > -1) own.splice(idx, 1); else own.push(myEmail);
 
         reactionsData = { likes, dislikes };
         renderReactions();
 
-        // FIX: include Content-Type so worker can parse JSON body
-        await postJSON(`${API}/profile/react`, {
-            profile: target,
-            type,
-            email: myEmail,
-            data: reactionsData
+        // Save via existing /admin/system/save endpoint
+        await postJSON(`${API}/admin/system/save`, {
+            id: 'react__' + target,
+            content: JSON.stringify(reactionsData)
         });
     }
 
@@ -484,50 +375,38 @@
         document.getElementById('dislike-btn').className = 'react-btn' + (dislikes.includes(myEmail) ? ' disliked' : '');
     }
 
-    // --- COMMENTS ---
-    let commentsData = [];
-    let myProfileData = null; // cache of logged-in user's own profile
-
-    // FIX: fetch the logged-in user's own profile to get their real avatar + display name
-    async function loadMyProfile() {
-        if (!myEmail) return;
-        try {
-            const r = await fetch(`${API}/profile/get?email=${encodeURIComponent(myEmail)}&by=${encodeURIComponent(myEmail)}`);
-            if (r.ok) {
-                const d = await r.json();
-                myProfileData = d.user || null;
-            }
-        } catch(e) {}
-    }
+    // ── Comments ──────────────────────────────────────────────────────────────
+    // Key stored in system_data: "comments__{target}"
 
     async function loadComments() {
         try {
-            const r = await fetch(`${API}/profile/comments?profile=${encodeURIComponent(target)}`);
-            if (r.ok) commentsData = await r.json();
-        } catch(e) {}
+            const r = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
+            if (r.ok) {
+                const sd = await r.json();
+                const raw = sd.widgets?.['comments__' + target];
+                commentsData = raw ? JSON.parse(raw) : [];
+            }
+        } catch(e) { commentsData = []; }
         renderComments();
     }
 
     function renderComments() {
         const list = document.getElementById('comment-list');
-        if (!commentsData.length) {
+        if (!Array.isArray(commentsData) || !commentsData.length) {
             list.innerHTML = '<div class="no-comments">No comments yet.</div>';
             return;
         }
         list.innerHTML = commentsData.map(c => `
             <div class="comment-item">
-                <img src="${escAttr(c.profile_picture || '')}" alt=""
-                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4='"
+                <img src="${escHtml(c.profile_picture || FALLBACK_AVG)}" alt=""
+                     onerror="this.src='${FALLBACK_AVG}'"
                      onclick="location.href='/profile.html?email=${encodeURIComponent(c.email)}'">
                 <div class="comment-body">
-                    <span>
-                        <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
-                        <span class="comment-time">${timeAgo(c.created_at)}</span>
-                    </span>
+                    <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
+                    <span class="comment-time">${timeAgo(c.created_at)}</span>
                     <div class="comment-text">${escHtml(c.text)}</div>
                 </div>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 
     async function submitComment() {
@@ -535,50 +414,179 @@
         const text = textarea.value.trim();
         if (!text || !myEmail) return;
 
-        // FIX: use real profile data fetched from server, not unreliable localStorage keys
-        const myPic  = myProfileData?.profile_picture || '';
-        const myName = myProfileData?.display_name    || myEmail;
-
-        // FIX: include Content-Type so worker can parse JSON body
-        const res = await postJSON(`${API}/profile/comment`, {
-            profile: target,
-            email: myEmail,
+        const newComment = {
+            email:           myEmail,
+            display_name:    myProfileData?.display_name    || myEmail,
+            profile_picture: myProfileData?.profile_picture || FALLBACK_AVG,
             text,
-            display_name: myName,
-            profile_picture: myPic
+            created_at: new Date().toISOString()
+        };
+
+        const updated = [...(Array.isArray(commentsData) ? commentsData : []), newComment].slice(-500);
+
+        const res = await postJSON(`${API}/admin/system/save`, {
+            id: 'comments__' + target,
+            content: JSON.stringify(updated)
         });
 
         if (res.ok) {
+            commentsData = updated;
             textarea.value = '';
             textarea.style.height = 'auto';
             document.getElementById('comment-submit-row').classList.remove('show');
-            await loadComments();
+            renderComments();
         }
     }
 
-    function autoResize(el) {
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-    }
+    function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
-    let hideTimer;
     function scheduleHideSubmit() {
-        hideTimer = setTimeout(() => {
-            const row = document.getElementById('comment-submit-row');
-            if (!document.getElementById('comment-text').value.trim()) row.classList.remove('show');
+        setTimeout(() => {
+            if (!document.getElementById('comment-text').value.trim())
+                document.getElementById('comment-submit-row').classList.remove('show');
         }, 200);
     }
 
-    function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-    function escAttr(s)  { return String(s).replace(/"/g,'&quot;'); }
+    // ── Profile actions ───────────────────────────────────────────────────────
+    async function doSuggest(q) {
+        const box = document.getElementById('suggest');
+        if (q.length < 2) { box.style.display = 'none'; return; }
+        const r = await fetch(`${API}/search/suggest?q=${encodeURIComponent(q)}`);
+        const items = await r.json();
+        box.innerHTML = items.map(u => `<div class="suggest-item" onclick="location.href='?email=${encodeURIComponent(u.email)}'"><img src="${u.profile_picture || FALLBACK_AVG}"><span>${escHtml(u.display_name || u.email)}</span></div>`).join('');
+        box.style.display = items.length ? 'block' : 'none';
+    }
 
-    function timeAgo(ts) {
-        if (!ts) return '';
-        const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
-        if (diff < 60) return 'just now';
-        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-        return Math.floor(diff/86400) + 'd ago';
+    function search() { const q = document.getElementById('sq').value; if (q) location.href = `/profile.html?email=${encodeURIComponent(q)}`; }
+    function exec(c, v=null) { if (!isSrc) document.execCommand(c, false, v); }
+
+    function updateBgFromPicker(val) {
+        document.getElementById('in-bg').value = val;
+        document.getElementById('picker-preview').style.backgroundColor = val;
+        document.getElementById('p-body').style.background = val;
+    }
+
+    async function toggleProfileStatus() {
+        const s = currentProfile.profile_disabled ? 0 : 1;
+        await postJSON(`${API}/admin/profile/toggle-status`, { email: target, status: s });
+        location.reload();
+    }
+
+    function toggleEdit() {
+        const ui   = document.getElementById('editor-ui');
+        const view = document.getElementById('bio-display');
+        const soc  = document.getElementById('social-section');
+        const active = ui.style.display === 'flex';
+        ui.style.display   = active ? 'none'  : 'flex';
+        view.style.display = active ? 'block' : 'none';
+        soc.style.display  = active ? 'block' : 'none';
+        if (!active) attachLogic();
+    }
+
+    function toggleBioSource() {
+        isSrc = !isSrc;
+        const ed = document.getElementById('bio-edit'), raw = document.getElementById('bio-raw'), btn = document.getElementById('src-btn');
+        if (isSrc) { raw.value = ed.innerHTML; ed.style.display = 'none'; raw.style.display = 'block'; btn.innerText = 'Visual View'; }
+        else { ed.innerHTML = raw.value; ed.style.display = 'block'; raw.style.display = 'none'; btn.innerText = 'HTML Source'; attachLogic(); }
+    }
+
+    function upAvatar(i) {
+        if (i.files[0]) { const r = new FileReader(); r.onload = e => document.getElementById('avatar-view').src = e.target.result; r.readAsDataURL(i.files[0]); }
+    }
+
+    // ── Image Engine ──────────────────────────────────────────────────────────
+    function upBioImg(input) {
+        if (!input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const bioBox = document.getElementById('bio-edit');
+            const w = document.createElement('div');
+            w.className = 'img-wrapper';
+            // Always absolute from the start, positioned top-left of bio box
+            w.style.cssText = 'position:absolute; left:10px; top:10px; width:200px;';
+            w.innerHTML = `<img src="${e.target.result}" style="width:100%;display:block;border-radius:4px;pointer-events:none;"><div class="resizer"></div><div class="remover">×</div>`;
+            bioBox.appendChild(w);
+            attachLogic();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function attachLogic() {
+        const editorUI = document.getElementById('editor-ui');
+        if (editorUI.style.display !== 'flex') return;
+        const bioBox = document.getElementById('bio-edit');
+
+        // bio-edit must be position:relative so absolute children are scoped to it
+        bioBox.style.position = 'relative';
+
+        bioBox.querySelectorAll('.img-wrapper').forEach(w => {
+            // Avoid double-binding
+            w.onmousedown = null;
+            w.onmousedown = (e) => {
+                const target = e.target;
+
+                // Remove button
+                if (target.classList.contains('remover')) { w.remove(); return; }
+
+                // Select this wrapper
+                bioBox.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
+                w.classList.add('active');
+                e.preventDefault();
+
+                const boxRect = bioBox.getBoundingClientRect();
+
+                if (target.classList.contains('resizer')) {
+                    // ── Resize ──
+                    const startX = e.clientX;
+                    const startW = w.offsetWidth;
+                    const onMove = (me) => {
+                        const newW = Math.max(50, startW + (me.clientX - startX));
+                        // Cap so image doesn't overflow box width
+                        const maxW = bioBox.clientWidth - parseInt(w.style.left || 0) - 4;
+                        w.style.width = Math.min(newW, maxW) + 'px';
+                    };
+                    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                } else {
+                    // ── Drag (constrained inside bio-edit) ──
+                    const startX   = e.clientX;
+                    const startY   = e.clientY;
+                    const startL   = parseInt(w.style.left) || 0;
+                    const startT   = parseInt(w.style.top)  || 0;
+                    const onMove = (me) => {
+                        const maxL = bioBox.scrollWidth  - w.offsetWidth  - 4;
+                        const maxT = bioBox.scrollHeight - w.offsetHeight - 4;
+                        w.style.left = Math.max(0, Math.min(startL + (me.clientX - startX), maxL)) + 'px';
+                        w.style.top  = Math.max(0, Math.min(startT + (me.clientY - startY), maxT)) + 'px';
+                    };
+                    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('mouseup', onUp);
+                }
+            };
+        });
+
+        // Click anywhere else in bio-edit deselects
+        bioBox.onmousedown = (e) => {
+            if (!e.target.closest('.img-wrapper')) {
+                bioBox.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
+            }
+        };
+    }
+
+    async function save() {
+        document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
+        const payload = {
+            email: myEmail,
+            name:  document.getElementById('in-name').value,
+            pic:   document.getElementById('avatar-view').src,
+            bg:    document.getElementById('in-bg').value,
+            bio:   isSrc ? document.getElementById('bio-raw').value : document.getElementById('bio-edit').innerHTML,
+            color: '#c9d1d9'
+        };
+        await postJSON(`${API}/profile/save`, payload);
+        location.reload();
     }
 
     load();
