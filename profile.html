@@ -124,6 +124,10 @@
         .comment-item img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
         .comment-item img:hover { opacity: 0.8; }
         .comment-body { flex: 1; background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+        .comment-header { display: flex; align-items: center; justify-content: space-between; }
+        .comment-meta { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+        .comment-delete { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 4px; transition: 0.15s; flex-shrink: 0; }
+        .comment-delete:hover { background: rgba(248,81,73,0.15); color: var(--red); }
         .comment-author { font-size: 12px; font-weight: bold; color: var(--blue); cursor: pointer; text-decoration: none; }
         .comment-author:hover { text-decoration: underline; }
         .comment-time { font-size: 11px; color: #8b949e; margin-left: 8px; }
@@ -396,21 +400,50 @@
 
     function renderComments() {
         const list = document.getElementById('comment-list');
+        const isAdmin = localStorage.getItem('ada_admin') === '1';
         if (!Array.isArray(commentsData) || !commentsData.length) {
             list.innerHTML = '<div class="no-comments">No comments yet.</div>';
             return;
         }
-        list.innerHTML = commentsData.map(c => `
-            <div class="comment-item">
+        list.innerHTML = commentsData.map((c, i) => {
+            const canDelete = myEmail && (myEmail === c.email || isAdmin);
+            // Use index as fallback id for old comments that predate the id field
+            const cid = c.id || i;
+            return `
+            <div class="comment-item" data-cid="${escHtml(String(cid))}">
                 <img src="${escHtml(c.profile_picture || FALLBACK_AVG)}" alt=""
                      onerror="this.src='${FALLBACK_AVG}'"
                      onclick="location.href='/profile.html?email=${encodeURIComponent(c.email)}'">
                 <div class="comment-body">
-                    <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
-                    <span class="comment-time">${timeAgo(c.created_at)}</span>
+                    <div class="comment-header">
+                        <div class="comment-meta">
+                            <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
+                            <span class="comment-time">${timeAgo(c.created_at)}</span>
+                        </div>
+                        ${canDelete ? `<button class="comment-delete" onclick="deleteComment('${escHtml(String(cid))}')">🗑 Delete</button>` : ''}
+                    </div>
                     <div class="comment-text">${escHtml(c.text)}</div>
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
+    }
+
+    async function deleteComment(cid) {
+        // Filter out by id, fall back to index-based id for old comments
+        const updated = commentsData.filter((c, i) => {
+            const thisCid = c.id || String(i);
+            return thisCid !== cid;
+        });
+
+        const res = await postJSON(`${API}/admin/system/save`, {
+            id: 'comments__' + target,
+            content: JSON.stringify(updated)
+        });
+
+        if (res.ok) {
+            commentsData = updated;
+            renderComments();
+        }
     }
 
     async function submitComment() {
@@ -419,6 +452,7 @@
         if (!text || !myEmail) return;
 
         const newComment = {
+            id:              Date.now() + '_' + Math.random().toString(36).slice(2, 7),
             email:           myEmail,
             display_name:    myProfileData?.display_name    || myEmail,
             profile_picture: myProfileData?.profile_picture || FALLBACK_AVG,
