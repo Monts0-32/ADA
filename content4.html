@@ -716,7 +716,8 @@ async function loadRooms() {
 async function createRoom() {
   const name = document.getElementById('roomName').value.trim() || EMAIL+"'s room";
   const data = await api('/chess/create','POST',{name,email:EMAIL});
-  if (!data.success) { toast('Failed to create room','e'); return; }
+  console.log('chess/create response:', data);
+  if (!data.success || !data.room_id) { toast(data.error||'Failed to create room','e'); return; }
   roomId  = data.room_id;
   myColor = 'white';
   document.getElementById('waitCode').textContent = roomId.slice(-4).toUpperCase();
