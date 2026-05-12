@@ -73,9 +73,12 @@
         .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
         .toolbar select, .toolbar button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
 
-        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: auto; line-height: 1.6; box-sizing: border-box; color: white; }
-        #bio-edit { position: relative; }
+        #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: hidden; line-height: 1.6; box-sizing: border-box; color: white; }
+        #bio-edit { position: relative; overflow: auto; }
         #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
+
+        /* bio-display mirrors the editor box exactly so absolute images stay contained */
+        #bio-display { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; position: relative; overflow: hidden; line-height: 1.6; box-sizing: border-box; color: white; margin-bottom: 0; }
 
         /* --- NEURAL IMAGE ENGINE --- */
         .img-wrapper { position: relative; display: inline-block; line-height: 0; padding: 2px; cursor: move; user-select: none; border: 2px solid transparent; z-index: 10; max-width: 100%; vertical-align: top; }
@@ -98,7 +101,8 @@
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
 
         /* --- REACTION BUTTONS --- */
-        .reaction-bar { display: flex; gap: 10px; margin-top: 12px; }
+        .reaction-bar { display: flex; gap: 10px; margin-top: 0; }
+        #social-section { margin-top: 20px; }
         .react-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.15s; user-select: none; }
         .react-btn:hover { background: #30363d; }
         .react-btn.liked { background: rgba(35, 134, 54, 0.2); border-color: var(--btn-green); color: #3fb950; }
