@@ -74,6 +74,7 @@
         .toolbar select, .toolbar button { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 12px; }
 
         #bio-edit, #bio-raw { width: 100%; min-height: 450px; background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 30px; outline: none; position: relative; overflow: auto; line-height: 1.6; box-sizing: border-box; color: white; }
+        #bio-edit { position: relative; }
         #bio-raw { color: #79c0ff; font-family: monospace; display: none; }
 
         /* --- NEURAL IMAGE ENGINE --- */
@@ -298,9 +299,13 @@
         // Show social section (reactions + comments) for all logged-in users
         document.getElementById('social-section').style.display = 'block';
         if (myEmail) {
+            // FIX: load logged-in user's real profile for avatar + name in comments
+            await loadMyProfile();
             document.getElementById('comment-input-area').style.display = 'flex';
-            const myPic = localStorage.getItem('ada_profile_pic') || '';
-            document.getElementById('commenter-avatar').src = myPic;
+            const myPic = myProfileData?.profile_picture || '';
+            const avatarEl = document.getElementById('commenter-avatar');
+            avatarEl.src = myPic;
+            avatarEl.onerror = () => { avatarEl.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4='; };
         }
         fetchReactions();
         loadComments();
@@ -361,16 +366,41 @@
 
     function attachLogic() {
         if (document.getElementById('editor-ui').style.display !== 'flex') return;
+        const bioBox = document.getElementById('bio-edit');
         document.querySelectorAll('.img-wrapper').forEach(w => {
             w.onmousedown = (e) => {
-                if(e.target.className === 'remover') { w.remove(); return; }
+                if (e.target.className === 'remover') { w.remove(); return; }
                 document.querySelectorAll('.img-wrapper').forEach(x => x.classList.remove('active'));
                 w.classList.add('active');
-                
-                // Only resize, no drag (images are now inline/relative)
+
                 if (e.target.className === 'resizer') {
+                    // Resize by dragging corner handle
                     let sX = e.clientX, sW = w.offsetWidth;
                     const move = (me) => { w.style.width = Math.max(50, sW + (me.clientX - sX)) + 'px'; };
+                    const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
+                    window.addEventListener('mousemove', move);
+                    window.addEventListener('mouseup', stop);
+                    e.preventDefault();
+                } else {
+                    // FIX: Drag image within the bio-edit box using absolute positioning inside it
+                    // Switch to absolute so we can freely position within the container
+                    if (w.style.position !== 'absolute') {
+                        const boxRect = bioBox.getBoundingClientRect();
+                        const wRect   = w.getBoundingClientRect();
+                        w.style.position = 'absolute';
+                        w.style.left = (wRect.left - boxRect.left + bioBox.scrollLeft) + 'px';
+                        w.style.top  = (wRect.top  - boxRect.top  + bioBox.scrollTop)  + 'px';
+                        bioBox.appendChild(w); // re-parent to bio box so absolute coords are correct
+                    }
+                    let sX = e.clientX, sY = e.clientY;
+                    let sL = parseInt(w.style.left) || 0, sT = parseInt(w.style.top) || 0;
+                    const move = (me) => {
+                        const boxRect = bioBox.getBoundingClientRect();
+                        const newL = Math.max(0, Math.min(sL + (me.clientX - sX), bioBox.scrollWidth  - w.offsetWidth));
+                        const newT = Math.max(0, Math.min(sT + (me.clientY - sY), bioBox.scrollHeight - w.offsetHeight));
+                        w.style.left = newL + 'px';
+                        w.style.top  = newT + 'px';
+                    };
                     const stop = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
                     window.addEventListener('mousemove', move);
                     window.addEventListener('mouseup', stop);
@@ -395,27 +425,20 @@
     function search() { const q = document.getElementById('sq').value; if(q) location.href=`/profile.html?email=${encodeURIComponent(q)}`; }
     function exec(c, v=null) { if(!isSrc){ document.execCommand(c, false, v); }}
 
+    // Helper: POST with JSON content-type (fixes reactions & comments not saving)
+    function postJSON(url, data) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    }
+
     // --- REACTIONS ---
     let reactionsData = { likes: [], dislikes: [] };
 
-    async function loadReactions() {
-        try {
-            const r = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
-            // Use system_data key: profile_reactions:{target}
-            const res = await fetch(`${API}/profile/reactions?profile=${encodeURIComponent(target)}`);
-            if (res.ok) {
-                reactionsData = await res.json();
-            }
-        } catch(e) {}
-        renderReactions();
-    }
-
-    // Since there's no dedicated endpoint, we use system_data as key-value store
     async function fetchReactions() {
         try {
-            // We'll store reactions in system_data with key "reactions__{target_email}"
-            // We'll use a small helper: GET /profile/reactions?profile=x will be handled
-            // by system_data. For now let's try to get via a generic fetch:
             const r = await fetch(`${API}/profile/reactions?profile=${encodeURIComponent(target)}`);
             if (r.ok) reactionsData = await r.json();
         } catch(e) {}
@@ -425,31 +448,57 @@
     async function react(type) {
         if (!myEmail) return;
         const other = type === 'like' ? 'dislike' : 'like';
-        const arr = reactionsData[type + 's'];
-        const otherArr = reactionsData[other + 's'];
-        const idx = arr.indexOf(myEmail);
-        const otherIdx = otherArr.indexOf(myEmail);
-        if (otherIdx > -1) otherArr.splice(otherIdx, 1);
-        if (idx > -1) arr.splice(idx, 1);
-        else arr.push(myEmail);
+        // Deep copy so we don't mutate stale references
+        const likes    = [...(reactionsData.likes    || [])];
+        const dislikes = [...(reactionsData.dislikes || [])];
+        const map      = { like: likes, dislike: dislikes };
+        const otherMap = { like: dislikes, dislike: likes };
+
+        // Remove from opposite list
+        const otherIdx = otherMap[type].indexOf(myEmail);
+        if (otherIdx > -1) otherMap[type].splice(otherIdx, 1);
+
+        // Toggle in own list
+        const idx = map[type].indexOf(myEmail);
+        if (idx > -1) map[type].splice(idx, 1);
+        else map[type].push(myEmail);
+
+        reactionsData = { likes, dislikes };
         renderReactions();
-        await fetch(`${API}/profile/react`, { 
-            method: 'POST', 
-            body: JSON.stringify({ profile: target, type, email: myEmail, data: reactionsData }) 
+
+        // FIX: include Content-Type so worker can parse JSON body
+        await postJSON(`${API}/profile/react`, {
+            profile: target,
+            type,
+            email: myEmail,
+            data: reactionsData
         });
     }
 
     function renderReactions() {
-        const likes = reactionsData.likes || [];
+        const likes    = reactionsData.likes    || [];
         const dislikes = reactionsData.dislikes || [];
-        document.getElementById('like-count').textContent = likes.length;
+        document.getElementById('like-count').textContent    = likes.length;
         document.getElementById('dislike-count').textContent = dislikes.length;
-        document.getElementById('like-btn').className = 'react-btn' + (likes.includes(myEmail) ? ' liked' : '');
+        document.getElementById('like-btn').className    = 'react-btn' + (likes.includes(myEmail)    ? ' liked'    : '');
         document.getElementById('dislike-btn').className = 'react-btn' + (dislikes.includes(myEmail) ? ' disliked' : '');
     }
 
     // --- COMMENTS ---
     let commentsData = [];
+    let myProfileData = null; // cache of logged-in user's own profile
+
+    // FIX: fetch the logged-in user's own profile to get their real avatar + display name
+    async function loadMyProfile() {
+        if (!myEmail) return;
+        try {
+            const r = await fetch(`${API}/profile/get?email=${encodeURIComponent(myEmail)}&by=${encodeURIComponent(myEmail)}`);
+            if (r.ok) {
+                const d = await r.json();
+                myProfileData = d.user || null;
+            }
+        } catch(e) {}
+    }
 
     async function loadComments() {
         try {
@@ -467,7 +516,9 @@
         }
         list.innerHTML = commentsData.map(c => `
             <div class="comment-item">
-                <img src="${c.profile_picture || ''}" alt="" onclick="location.href='/profile.html?email=${encodeURIComponent(c.email)}'">
+                <img src="${escAttr(c.profile_picture || '')}" alt=""
+                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4='"
+                     onclick="location.href='/profile.html?email=${encodeURIComponent(c.email)}'">
                 <div class="comment-body">
                     <span>
                         <a class="comment-author" href="/profile.html?email=${encodeURIComponent(c.email)}">${escHtml(c.display_name || c.email)}</a>
@@ -480,17 +531,29 @@
     }
 
     async function submitComment() {
-        const text = document.getElementById('comment-text').value.trim();
+        const textarea = document.getElementById('comment-text');
+        const text = textarea.value.trim();
         if (!text || !myEmail) return;
-        const myPic = localStorage.getItem('ada_profile_pic') || '';
-        const myName = localStorage.getItem('ada_display_name') || myEmail;
-        await fetch(`${API}/profile/comment`, {
-            method: 'POST',
-            body: JSON.stringify({ profile: target, email: myEmail, text, display_name: myName, profile_picture: myPic })
+
+        // FIX: use real profile data fetched from server, not unreliable localStorage keys
+        const myPic  = myProfileData?.profile_picture || '';
+        const myName = myProfileData?.display_name    || myEmail;
+
+        // FIX: include Content-Type so worker can parse JSON body
+        const res = await postJSON(`${API}/profile/comment`, {
+            profile: target,
+            email: myEmail,
+            text,
+            display_name: myName,
+            profile_picture: myPic
         });
-        document.getElementById('comment-text').value = '';
-        document.getElementById('comment-submit-row').classList.remove('show');
-        await loadComments();
+
+        if (res.ok) {
+            textarea.value = '';
+            textarea.style.height = 'auto';
+            document.getElementById('comment-submit-row').classList.remove('show');
+            await loadComments();
+        }
     }
 
     function autoResize(el) {
@@ -506,7 +569,8 @@
         }, 200);
     }
 
-    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function escAttr(s)  { return String(s).replace(/"/g,'&quot;'); }
 
     function timeAgo(ts) {
         if (!ts) return '';
@@ -516,7 +580,7 @@
         if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
         return Math.floor(diff/86400) + 'd ago';
     }
-    
+
     load();
 </script>
 </body>
