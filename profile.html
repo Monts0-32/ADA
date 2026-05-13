@@ -133,6 +133,33 @@
         .comment-time { font-size: 11px; color: #8b949e; margin-left: 8px; }
         .comment-text { font-size: 13px; margin-top: 4px; color: var(--text); white-space: pre-wrap; word-break: break-word; }
         .no-comments { font-size: 13px; color: #8b949e; text-align: center; padding: 20px 0; }
+
+        /* --- ADMIN SETTINGS MODAL --- */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+        .modal-box { background:#161b22; border:1px solid var(--border); border-radius:12px; width:460px; max-width:95vw; max-height:85vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:18px; }
+        .modal-title { font-size:15px; font-weight:bold; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
+        .modal-close { background:none; border:none; color:#8b949e; font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; }
+        .modal-close:hover { color:var(--text); background:#30363d; }
+        .modal-section { display:flex; flex-direction:column; gap:10px; }
+        .modal-section-title { font-size:11px; font-weight:bold; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); padding-bottom:6px; }
+        .modal-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .modal-row label { font-size:13px; color:var(--text); }
+        .modal-row .inp-sm { width:80px; background:#0d1117; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:5px 8px; font-size:13px; text-align:center; outline:none; }
+        .modal-row .inp-sm:focus { border-color:var(--blue); }
+
+        /* Toggle switch */
+        .toggle-wrap { display:flex; align-items:center; gap:8px; }
+        .toggle { position:relative; width:36px; height:20px; flex-shrink:0; }
+        .toggle input { opacity:0; width:0; height:0; }
+        .toggle-slider { position:absolute; inset:0; background:#30363d; border-radius:20px; cursor:pointer; transition:.2s; }
+        .toggle-slider:before { content:''; position:absolute; width:14px; height:14px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s; }
+        .toggle input:checked + .toggle-slider { background:var(--btn-green); }
+        .toggle input:checked + .toggle-slider:before { transform:translateX(16px); }
+        .toggle input:disabled + .toggle-slider { opacity:.4; cursor:not-allowed; }
+
+        /* Runaway like button */
+        #like-btn { transition: none; }
+        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; transition: left .18s cubic-bezier(.22,1,.36,1), top .18s cubic-bezier(.22,1,.36,1); }
     </style>
 </head>
 <body id="p-body">
@@ -154,6 +181,71 @@
         
         <div id="admin-actions" style="display:none;">
             <button id="toggle-disabled-btn" class="btn-gh btn-danger" onclick="toggleProfileStatus()">Disable Profile Access</button>
+            <button class="btn-gh" style="border-color:#8b949e;color:#8b949e;margin-top:6px;" onclick="openSettings()">⚙ Profile Settings</button>
+        </div>
+
+        <!-- ADMIN SETTINGS MODAL -->
+        <div id="settings-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeSettings()">
+            <div class="modal-box">
+                <div class="modal-title">
+                    <span>⚙ Profile Settings</span>
+                    <button class="modal-close" onclick="closeSettings()">×</button>
+                </div>
+
+                <!-- Reactions -->
+                <div class="modal-section">
+                    <div class="modal-section-title">Reactions</div>
+                    <div class="modal-row">
+                        <label>Enable Like Button</label>
+                        <label class="toggle"><input type="checkbox" id="cfg-likes-enabled" onchange="onLikesToggle()"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="modal-row">
+                        <label>Enable Dislike Button</label>
+                        <label class="toggle"><input type="checkbox" id="cfg-dislikes-enabled"><span class="toggle-slider"></span></label>
+                    </div>
+                    <div class="modal-row">
+                        <label>Override Like Count</label>
+                        <input type="number" id="cfg-like-count" class="inp-sm" min="0" placeholder="auto">
+                    </div>
+                    <div class="modal-row">
+                        <label>Override Dislike Count</label>
+                        <input type="number" id="cfg-dislike-count" class="inp-sm" min="0" placeholder="auto">
+                    </div>
+                </div>
+
+                <!-- Comments -->
+                <div class="modal-section">
+                    <div class="modal-section-title">Comments</div>
+                    <div class="modal-row">
+                        <label>Enable Comment Section</label>
+                        <label class="toggle"><input type="checkbox" id="cfg-comments-enabled"><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Fun -->
+                <div class="modal-section">
+                    <div class="modal-section-title">Fun</div>
+                    <div class="modal-row">
+                        <label>🏃 Runaway Like Button <span style="font-size:11px;color:#8b949e;">(like must be enabled)</span></label>
+                        <label class="toggle"><input type="checkbox" id="cfg-runaway" onchange="onRunawayToggle()"><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+
+                <!-- Profile override -->
+                <div class="modal-section">
+                    <div class="modal-section-title">Edit Profile Info</div>
+                    <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                        <label style="font-size:11px;color:#8b949e;">Display Name</label>
+                        <input type="text" id="cfg-display-name" class="inp" style="width:100%;" placeholder="Display name">
+                    </div>
+                    <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                        <label style="font-size:11px;color:#8b949e;">Background Style</label>
+                        <input type="text" id="cfg-bg-style" class="inp" style="width:100%;" placeholder="#0d1117 or gradient...">
+                    </div>
+                </div>
+
+                <button class="btn-gh btn-primary" style="padding:10px;" onclick="saveSettings()">Save Settings</button>
+            </div>
         </div>
 
         <div class="search-area">
@@ -172,7 +264,7 @@
 
         <!-- REACTIONS & COMMENTS (view mode only) -->
         <div id="social-section" style="display:none;">
-            <div class="reaction-bar">
+            <div class="reaction-bar" id="reaction-bar">
                 <button class="react-btn" id="like-btn" onclick="react('like')">
                     <span>👍</span> <span id="like-count" class="react-count">0</span>
                 </button>
@@ -181,19 +273,24 @@
                 </button>
             </div>
 
-            <div class="comments-section">
+            <div class="comments-section" id="comments-section">
                 <div class="comments-title">Comments</div>
-                <div class="comment-input-row" id="comment-input-area" style="display:none;">
-                    <img id="commenter-avatar" src="" alt="">
-                    <div class="comment-input-wrap">
-                        <textarea class="comment-textarea" id="comment-text" placeholder="Leave a comment..." rows="1" oninput="autoResize(this)" onfocus="document.getElementById('comment-submit-row').classList.add('show')" onblur="scheduleHideSubmit()"></textarea>
-                        <div class="comment-submit-row" id="comment-submit-row">
-                            <button class="btn-gh" style="width:auto; padding:6px 16px; font-size:12px;" onclick="submitComment()">Comment</button>
+                <div id="comments-off-msg" style="display:none; font-size:13px; color:#8b949e; text-align:center; padding:20px 0; background:#161b22; border:1px solid var(--border); border-radius:8px;">
+                    💬 Comments have been turned off for this profile.
+                </div>
+                <div id="comments-live">
+                    <div class="comment-input-row" id="comment-input-area" style="display:none;">
+                        <img id="commenter-avatar" src="" alt="">
+                        <div class="comment-input-wrap">
+                            <textarea class="comment-textarea" id="comment-text" placeholder="Leave a comment..." rows="1" oninput="autoResize(this)" onfocus="document.getElementById('comment-submit-row').classList.add('show')" onblur="scheduleHideSubmit()"></textarea>
+                            <div class="comment-submit-row" id="comment-submit-row">
+                                <button class="btn-gh" style="width:auto; padding:6px 16px; font-size:12px;" onclick="submitComment()">Comment</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="comment-list" id="comment-list">
-                    <div class="no-comments">No comments yet.</div>
+                    <div class="comment-list" id="comment-list">
+                        <div class="no-comments">No comments yet.</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -255,6 +352,9 @@
     let myProfileData  = null;
     let reactionsData  = { likes: [], dislikes: [] };
     let commentsData   = [];
+    let profileConfig  = { likesEnabled:true, dislikesEnabled:true, commentsEnabled:true, likeOverride:null, dislikeOverride:null, runaway:false };
+    let runawayActive  = false;
+    let runawayHome    = null; // { left, top } of like-btn original position
 
     // ── Utility ──────────────────────────────────────────────────────────────
     function postJSON(url, data) {
@@ -274,6 +374,203 @@
         return Math.floor(d/86400) + 'd ago';
     }
     const FALLBACK_AVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
+
+    // ── Admin Settings ────────────────────────────────────────────────────────
+    async function loadProfileConfig() {
+        try {
+            const r = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
+            if (r.ok) {
+                const sd = await r.json();
+                const raw = sd.widgets?.['pconfig__' + target];
+                if (raw) profileConfig = { ...profileConfig, ...JSON.parse(raw) };
+            }
+        } catch(e) {}
+    }
+
+    function applyProfileConfig() {
+        const cfg = profileConfig;
+        const likeBtn    = document.getElementById('like-btn');
+        const dislikeBtn = document.getElementById('dislike-btn');
+
+        // Like button
+        if (!cfg.likesEnabled) {
+            likeBtn.style.display = 'none';
+        } else {
+            likeBtn.style.display = '';
+        }
+
+        // Dislike button
+        if (!cfg.dislikesEnabled) {
+            dislikeBtn.style.display = 'none';
+        } else {
+            dislikeBtn.style.display = '';
+        }
+
+        // Count overrides
+        if (cfg.likeOverride !== null && cfg.likeOverride !== '') {
+            document.getElementById('like-count').textContent = cfg.likeOverride;
+        }
+        if (cfg.dislikeOverride !== null && cfg.dislikeOverride !== '') {
+            document.getElementById('dislike-count').textContent = cfg.dislikeOverride;
+        }
+
+        // Comments
+        const commentsOff = document.getElementById('comments-off-msg');
+        const commentsLive = document.getElementById('comments-live');
+        if (!cfg.commentsEnabled) {
+            commentsOff.style.display  = 'block';
+            commentsLive.style.display = 'none';
+        } else {
+            commentsOff.style.display  = 'none';
+            commentsLive.style.display = 'block';
+        }
+
+        // Runaway (only if likes enabled)
+        if (cfg.likesEnabled && cfg.runaway) {
+            enableRunaway();
+        } else {
+            disableRunaway();
+        }
+    }
+
+    function openSettings() {
+        const cfg = profileConfig;
+        document.getElementById('cfg-likes-enabled').checked    = !!cfg.likesEnabled;
+        document.getElementById('cfg-dislikes-enabled').checked = !!cfg.dislikesEnabled;
+        document.getElementById('cfg-comments-enabled').checked = !!cfg.commentsEnabled;
+        document.getElementById('cfg-like-count').value         = cfg.likeOverride ?? '';
+        document.getElementById('cfg-dislike-count').value      = cfg.dislikeOverride ?? '';
+        document.getElementById('cfg-display-name').value       = currentProfile?.display_name || '';
+        document.getElementById('cfg-bg-style').value           = currentProfile?.bg_style || '';
+
+        // Runaway toggle — disabled if likes are off
+        const runawayEl = document.getElementById('cfg-runaway');
+        runawayEl.checked  = !!cfg.runaway;
+        runawayEl.disabled = !cfg.likesEnabled;
+
+        document.getElementById('settings-modal').style.display = 'flex';
+    }
+
+    function closeSettings() {
+        document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    // Keep runaway toggle disabled when likes are turned off in the modal
+    function onLikesToggle() {
+        const likesOn  = document.getElementById('cfg-likes-enabled').checked;
+        const runawayEl = document.getElementById('cfg-runaway');
+        runawayEl.disabled = !likesOn;
+        if (!likesOn) runawayEl.checked = false;
+    }
+
+    function onRunawayToggle() {
+        // No extra logic needed; saving handles it
+    }
+
+    async function saveSettings() {
+        const likesEnabled    = document.getElementById('cfg-likes-enabled').checked;
+        const dislikesEnabled = document.getElementById('cfg-dislikes-enabled').checked;
+        const commentsEnabled = document.getElementById('cfg-comments-enabled').checked;
+        const likeOverrideRaw = document.getElementById('cfg-like-count').value.trim();
+        const dislikeOverrideRaw = document.getElementById('cfg-dislike-count').value.trim();
+        const runaway         = likesEnabled && document.getElementById('cfg-runaway').checked;
+        const newName         = document.getElementById('cfg-display-name').value.trim();
+        const newBg           = document.getElementById('cfg-bg-style').value.trim();
+
+        profileConfig = {
+            likesEnabled,
+            dislikesEnabled,
+            commentsEnabled,
+            likeOverride:    likeOverrideRaw    !== '' ? parseInt(likeOverrideRaw)    : null,
+            dislikeOverride: dislikeOverrideRaw !== '' ? parseInt(dislikeOverrideRaw) : null,
+            runaway
+        };
+
+        // Save config
+        await postJSON(`${API}/admin/system/save`, {
+            id: 'pconfig__' + target,
+            content: JSON.stringify(profileConfig)
+        });
+
+        // Save profile info if changed
+        if (newName !== (currentProfile?.display_name || '') || newBg !== (currentProfile?.bg_style || '')) {
+            await postJSON(`${API}/profile/save`, {
+                email: target,
+                name:  newName  || currentProfile?.display_name,
+                pic:   currentProfile?.profile_picture || '',
+                bg:    newBg    || currentProfile?.bg_style,
+                bio:   currentProfile?.bio_html || '',
+                color: currentProfile?.text_color || '#c9d1d9'
+            });
+        }
+
+        closeSettings();
+        applyProfileConfig();
+
+        // Refresh display name / bg if changed
+        if (newName) document.getElementById('name-view').innerHTML = `${escHtml(newName)}<span class="status-dot ${currentProfile?.sec_ago < 60 ? 'online' : 'offline'}"></span>`;
+        if (newBg)   document.getElementById('p-body').style.background = newBg;
+    }
+
+    // ── Runaway Like Button ───────────────────────────────────────────────────
+    function enableRunaway() {
+        if (runawayActive) return;
+        runawayActive = true;
+        const btn = document.getElementById('like-btn');
+        btn.classList.add('runaway');
+
+        // Snapshot home position once
+        const rect = btn.getBoundingClientRect();
+        runawayHome = { left: rect.left, top: rect.top };
+        btn.style.left = runawayHome.left + 'px';
+        btn.style.top  = runawayHome.top  + 'px';
+
+        let returnTimer = null;
+
+        document.addEventListener('mousemove', onMouseNearLike);
+
+        function onMouseNearLike(e) {
+            const r = btn.getBoundingClientRect();
+            const cx = r.left + r.width  / 2;
+            const cy = r.top  + r.height / 2;
+            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+
+            if (dist < 120) {
+                clearTimeout(returnTimer);
+                // Flee in opposite direction, clamped to viewport
+                const angle = Math.atan2(cy - e.clientY, cx - e.clientX);
+                const flee  = 140 + Math.random() * 80;
+                const newL  = Math.max(0, Math.min(window.innerWidth  - r.width  - 4, cx + Math.cos(angle) * flee - r.width  / 2));
+                const newT  = Math.max(0, Math.min(window.innerHeight - r.height - 4, cy + Math.sin(angle) * flee - r.height / 2));
+                btn.style.left = newL + 'px';
+                btn.style.top  = newT + 'px';
+
+                // Return home after 2s of no cursor
+                returnTimer = setTimeout(() => {
+                    if (runawayActive) {
+                        btn.style.left = runawayHome.left + 'px';
+                        btn.style.top  = runawayHome.top  + 'px';
+                    }
+                }, 2000);
+            }
+        }
+
+        // Store cleanup ref
+        btn._runawayCleanup = () => {
+            document.removeEventListener('mousemove', onMouseNearLike);
+            clearTimeout(returnTimer);
+        };
+    }
+
+    function disableRunaway() {
+        if (!runawayActive) return;
+        runawayActive = false;
+        const btn = document.getElementById('like-btn');
+        if (btn._runawayCleanup) { btn._runawayCleanup(); delete btn._runawayCleanup; }
+        btn.classList.remove('runaway');
+        btn.style.left = '';
+        btn.style.top  = '';
+    }
 
     // ── Page Load ─────────────────────────────────────────────────────────────
     async function load() {
@@ -331,6 +628,8 @@
 
         fetchReactions();
         loadComments();
+        await loadProfileConfig();
+        applyProfileConfig();
     }
 
     // ── Reactions ─────────────────────────────────────────────────────────────
