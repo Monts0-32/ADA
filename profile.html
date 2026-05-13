@@ -158,8 +158,8 @@
         .toggle input:disabled + .toggle-slider { opacity:.4; cursor:not-allowed; }
 
         /* Runaway like button */
-        #like-btn { transition: none; }
-        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; transition: left .18s cubic-bezier(.22,1,.36,1), top .18s cubic-bezier(.22,1,.36,1); }
+        #like-btn { transition: background 0.15s, border-color 0.15s; }
+        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; transition: background 0.15s, border-color 0.15s; }
     </style>
 </head>
 <body id="p-body">
@@ -387,6 +387,17 @@
         } catch(e) {}
     }
 
+    // Saves any key/value into system_data using the chat endpoint as a workaround.
+    // Uses /admin/system/save — if that 404s in your worker, add the route below.
+    async function saveSystemData(id, content) {
+        // Try the direct endpoint first
+        let res = await postJSON(`${API}/admin/system/save`, { id, content });
+        if (res.ok) return true;
+        // Fallback: use /profile/data/save (add this to your worker — see worker-social-routes.js)
+        res = await postJSON(`${API}/profile/data/save`, { id, content });
+        return res.ok;
+    }
+
     function applyProfileConfig() {
         const cfg = profileConfig;
         const likeBtn    = document.getElementById('like-btn');
@@ -482,10 +493,7 @@
         };
 
         // Save config
-        await postJSON(`${API}/admin/system/save`, {
-            id: 'pconfig__' + target,
-            content: JSON.stringify(profileConfig)
-        });
+        await saveSystemData('pconfig__' + target, JSON.stringify(profileConfig));
 
         // Save profile info if changed
         if (newName !== (currentProfile?.display_name || '') || newBg !== (currentProfile?.bg_style || '')) {
@@ -514,52 +522,62 @@
         const btn = document.getElementById('like-btn');
         btn.classList.add('runaway');
 
-        // Snapshot home position from its current place in the page
+        // Lock in home from current viewport position
         const rect = btn.getBoundingClientRect();
         runawayHome = { left: rect.left, top: rect.top };
-        // Start at home
         btn.style.left = runawayHome.left + 'px';
         btn.style.top  = runawayHome.top  + 'px';
 
-        // Current tracked position (updated after each flee so next flee is from real position)
         let curL = runawayHome.left;
         let curT = runawayHome.top;
-        let isFleeing    = false; // throttle: only react once per approach
-        let returnTimer  = null;
-        const PROXIMITY  = 110; // px — how close before fleeing
-        const FLEE_DIST  = 100; // px — how far to jump each flee
+        let mouseX = -999, mouseY = -999;
+        let returnTimer = null;
+        let rafId = null;
+        const PROXIMITY = 130;  // px — trigger distance
+        const SPEED     = 8;    // px per frame when fleeing
 
-        function onMouseMove(e) {
-            // Centre of button based on tracked position (not getBCR which lags during transition)
-            const bW  = btn.offsetWidth;
-            const bH  = btn.offsetHeight;
-            const cx  = curL + bW  / 2;
-            const cy  = curT + bH  / 2;
-            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+        function tick() {
+            if (!runawayActive) return;
+            rafId = requestAnimationFrame(tick);
 
-            if (dist < PROXIMITY && !isFleeing) {
-                isFleeing = true;
+            const bW = btn.offsetWidth  || 80;
+            const bH = btn.offsetHeight || 34;
+            const cx = curL + bW / 2;
+            const cy = curT + bH / 2;
+            const dist = Math.hypot(mouseX - cx, mouseY - cy);
+
+            if (dist < PROXIMITY) {
                 clearTimeout(returnTimer);
 
-                // Direction directly away from cursor
-                const angle = Math.atan2(cy - e.clientY, cx - e.clientX);
+                // Vector directly away from mouse
+                let dx = cx - mouseX;
+                let dy = cy - mouseY;
+                const len = Math.hypot(dx, dy) || 1;
+                dx = (dx / len) * SPEED;
+                dy = (dy / len) * SPEED;
 
-                // Pick a target, clamped to viewport with margin
-                const margin = 10;
-                const maxL   = window.innerWidth  - bW  - margin;
-                const maxT   = window.innerHeight - bH  - margin;
-                const newL   = Math.max(margin, Math.min(maxL, curL + Math.cos(angle) * FLEE_DIST));
-                const newT   = Math.max(margin, Math.min(maxT, curT + Math.sin(angle) * FLEE_DIST));
+                // If heading into a wall, deflect perpendicular
+                const margin = 8;
+                const maxL = window.innerWidth  - bW  - margin;
+                const maxT = window.innerHeight - bH  - margin;
+                let newL = curL + dx;
+                let newT = curT + dy;
+
+                if (newL <= margin || newL >= maxL) {
+                    dx = -dx;
+                    newL = Math.max(margin, Math.min(maxL, newL));
+                }
+                if (newT <= margin || newT >= maxT) {
+                    dy = -dy;
+                    newT = Math.max(margin, Math.min(maxT, newT));
+                }
 
                 curL = newL;
                 curT = newT;
-                btn.style.left = newL + 'px';
-                btn.style.top  = newT + 'px';
+                btn.style.left = curL + 'px';
+                btn.style.top  = curT + 'px';
 
-                // Unlock flee after transition completes (180ms matches CSS transition)
-                setTimeout(() => { isFleeing = false; }, 200);
-
-                // Schedule return home after 2s of no proximity
+                // Return home 2s after cursor leaves proximity
                 returnTimer = setTimeout(() => {
                     if (!runawayActive) return;
                     curL = runawayHome.left;
@@ -570,10 +588,13 @@
             }
         }
 
+        function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
         document.addEventListener('mousemove', onMouseMove);
+        rafId = requestAnimationFrame(tick);
 
         btn._runawayCleanup = () => {
             document.removeEventListener('mousemove', onMouseMove);
+            cancelAnimationFrame(rafId);
             clearTimeout(returnTimer);
         };
     }
@@ -683,10 +704,7 @@
         renderReactions();
 
         // Save via existing /admin/system/save endpoint
-        await postJSON(`${API}/admin/system/save`, {
-            id: 'react__' + target,
-            content: JSON.stringify(reactionsData)
-        });
+        await saveSystemData('react__' + target, JSON.stringify(reactionsData));
     }
 
     function renderReactions() {
@@ -750,18 +768,13 @@
     }
 
     async function deleteComment(cid) {
-        // Filter out by id, fall back to index-based id for old comments
         const updated = commentsData.filter((c, i) => {
             const thisCid = c.id || String(i);
             return thisCid !== cid;
         });
 
-        const res = await postJSON(`${API}/admin/system/save`, {
-            id: 'comments__' + target,
-            content: JSON.stringify(updated)
-        });
-
-        if (res.ok) {
+        const ok = await saveSystemData('comments__' + target, JSON.stringify(updated));
+        if (ok) {
             commentsData = updated;
             renderComments();
         }
@@ -783,12 +796,9 @@
 
         const updated = [...(Array.isArray(commentsData) ? commentsData : []), newComment].slice(-500);
 
-        const res = await postJSON(`${API}/admin/system/save`, {
-            id: 'comments__' + target,
-            content: JSON.stringify(updated)
-        });
+        const ok = await saveSystemData('comments__' + target, JSON.stringify(updated));
 
-        if (res.ok) {
+        if (ok) {
             commentsData = updated;
             textarea.value = '';
             textarea.style.height = 'auto';
