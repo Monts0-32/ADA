@@ -1,13 +1,14 @@
 (function() {
     // --- CONFIGURATION ---
-    const CHANGELOG_VERSION = "1.2.2"; // Change this to trigger a new popup
-    const UPDATE_DATE = "April 30, 2026";
-    const LOG_TITLE = "Archive System Update";
+    const CHANGELOG_VERSION = "1.2.3"; // Change this to trigger a new popup
+    const UPDATE_DATE = "May 14, 2026";
+    const LOG_TITLE = "System Update";
     
     const CHANGES = [
-        "In loving memory of:",
-        "Donnie And Chan",
-        "",
+        "Added multiplayer chess to content page.",
+        "Added Commenting to profiles.",
+        "Added Liking/Disliking to profiles.",
+        "Added More Admin Features.",
     ];
     // ---------------------
 
