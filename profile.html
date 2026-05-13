@@ -157,9 +157,12 @@
         .toggle input:checked + .toggle-slider:before { transform:translateX(16px); }
         .toggle input:disabled + .toggle-slider { opacity:.4; cursor:not-allowed; }
 
-        /* Runaway like button */
-        #like-btn { transition: background 0.15s, border-color 0.15s; }
-        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; transition: background 0.15s, border-color 0.15s; }
+        /* Reaction buttons — hidden until config confirms they're enabled */
+        #like-btn, #dislike-btn { display: none; }
+        #like-btn.react-visible, #dislike-btn.react-visible { display: flex; }
+
+        /* Runaway like button — no position transition, JS handles movement */
+        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; }
     </style>
 </head>
 <body id="p-body">
@@ -403,25 +406,12 @@
         const likeBtn    = document.getElementById('like-btn');
         const dislikeBtn = document.getElementById('dislike-btn');
 
-        // Like button
-        if (!cfg.likesEnabled) {
-            likeBtn.style.display = 'none';
-        } else {
-            likeBtn.style.display = '';
-        }
-
-        // Dislike button
-        if (!cfg.dislikesEnabled) {
-            dislikeBtn.style.display = 'none';
-        } else {
-            dislikeBtn.style.display = '';
-        }
-
-        // Count overrides are now handled inside renderReactions() directly,
-        // so they're always correct and never flash the raw count.
+        // Show/hide using class so CSS default (hidden) prevents flash on load
+        likeBtn.classList.toggle('react-visible',    !!cfg.likesEnabled);
+        dislikeBtn.classList.toggle('react-visible', !!cfg.dislikesEnabled);
 
         // Comments
-        const commentsOff = document.getElementById('comments-off-msg');
+        const commentsOff  = document.getElementById('comments-off-msg');
         const commentsLive = document.getElementById('comments-live');
         if (!cfg.commentsEnabled) {
             commentsOff.style.display  = 'block';
@@ -483,12 +473,15 @@
         const newName         = document.getElementById('cfg-display-name').value.trim();
         const newBg           = document.getElementById('cfg-bg-style').value.trim();
 
+        const likeOvParsed    = likeOverrideRaw    !== '' ? parseInt(likeOverrideRaw,    10) : null;
+        const dislikeOvParsed = dislikeOverrideRaw !== '' ? parseInt(dislikeOverrideRaw, 10) : null;
+
         profileConfig = {
             likesEnabled,
             dislikesEnabled,
             commentsEnabled,
-            likeOverride:    likeOverrideRaw    !== '' ? parseInt(likeOverrideRaw)    : null,
-            dislikeOverride: dislikeOverrideRaw !== '' ? parseInt(dislikeOverrideRaw) : null,
+            likeOverride:    (likeOvParsed    !== null && !isNaN(likeOvParsed))    ? likeOvParsed    : null,
+            dislikeOverride: (dislikeOvParsed !== null && !isNaN(dislikeOvParsed)) ? dislikeOvParsed : null,
             runaway
         };
 
@@ -519,22 +512,35 @@
     function enableRunaway() {
         if (runawayActive) return;
         runawayActive = true;
-        const btn = document.getElementById('like-btn');
-        btn.classList.add('runaway');
 
-        // Lock in home from current viewport position
+        const btn = document.getElementById('like-btn');
+
+        // ── Snapshot home BEFORE adding .runaway (button is still in normal flow) ──
         const rect = btn.getBoundingClientRect();
         runawayHome = { left: rect.left, top: rect.top };
+
+        // Now switch to fixed and place exactly where it was
+        btn.classList.add('runaway');
         btn.style.left = runawayHome.left + 'px';
         btn.style.top  = runawayHome.top  + 'px';
 
+        // Current position (what we actually move each frame)
         let curL = runawayHome.left;
         let curT = runawayHome.top;
-        let mouseX = -999, mouseY = -999;
-        let returnTimer = null;
+
+        // Velocity (used for smooth glide back)
+        let velL = 0;
+        let velT = 0;
+
+        let mouseX = runawayHome.left + 9999; // start far away so no immediate flee
+        let mouseY = runawayHome.top  + 9999;
+        let isNearMouse = false;
         let rafId = null;
-        const PROXIMITY = 130;  // px — trigger distance
-        const SPEED     = 8;    // px per frame when fleeing
+
+        const PROXIMITY  = 120;   // px — flee trigger radius
+        const FLEE_SPEED = 10;    // px/frame away from mouse
+        const GLIDE_EASE = 0.08;  // lerp factor for return glide (0=no movement, 1=instant)
+        const ARRIVE_THRESHOLD = 1; // px — snap to home when this close
 
         function tick() {
             if (!runawayActive) return;
@@ -544,48 +550,59 @@
             const bH = btn.offsetHeight || 34;
             const cx = curL + bW / 2;
             const cy = curT + bH / 2;
-            const dist = Math.hypot(mouseX - cx, mouseY - cy);
+            const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
 
-            if (dist < PROXIMITY) {
-                clearTimeout(returnTimer);
+            const margin = 8;
+            const maxL   = window.innerWidth  - bW  - margin;
+            const maxT   = window.innerHeight - bH  - margin;
 
-                // Vector directly away from mouse
+            if (distToMouse < PROXIMITY) {
+                // ── FLEE: move directly away from mouse ──
+                isNearMouse = true;
+                velL = 0; velT = 0; // cancel any glide
+
                 let dx = cx - mouseX;
                 let dy = cy - mouseY;
                 const len = Math.hypot(dx, dy) || 1;
-                dx = (dx / len) * SPEED;
-                dy = (dy / len) * SPEED;
+                dx = (dx / len) * FLEE_SPEED;
+                dy = (dy / len) * FLEE_SPEED;
 
-                // If heading into a wall, deflect perpendicular
-                const margin = 8;
-                const maxL = window.innerWidth  - bW  - margin;
-                const maxT = window.innerHeight - bH  - margin;
                 let newL = curL + dx;
                 let newT = curT + dy;
 
-                if (newL <= margin || newL >= maxL) {
-                    dx = -dx;
-                    newL = Math.max(margin, Math.min(maxL, newL));
-                }
-                if (newT <= margin || newT >= maxT) {
-                    dy = -dy;
-                    newT = Math.max(margin, Math.min(maxT, newT));
-                }
+                // Bounce off walls instead of sticking
+                if (newL < margin) { newL = margin; dx = Math.abs(dx); }
+                if (newL > maxL)   { newL = maxL;   dx = -Math.abs(dx); }
+                if (newT < margin) { newT = margin;  dy = Math.abs(dy); }
+                if (newT > maxT)   { newT = maxT;    dy = -Math.abs(dy); }
 
                 curL = newL;
                 curT = newT;
-                btn.style.left = curL + 'px';
-                btn.style.top  = curT + 'px';
 
-                // Return home 2s after cursor leaves proximity
-                returnTimer = setTimeout(() => {
-                    if (!runawayActive) return;
+            } else {
+                // ── GLIDE HOME: smooth lerp back to home position ──
+                if (isNearMouse) {
+                    isNearMouse = false;
+                    // Give it a tiny initial velocity toward home for smoothness
+                    velL = (runawayHome.left - curL) * GLIDE_EASE;
+                    velT = (runawayHome.top  - curT) * GLIDE_EASE;
+                }
+
+                const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
+
+                if (distToHome > ARRIVE_THRESHOLD) {
+                    // Ease toward home
+                    curL += (runawayHome.left - curL) * GLIDE_EASE;
+                    curT += (runawayHome.top  - curT) * GLIDE_EASE;
+                } else {
+                    // Snap exactly to home once close enough
                     curL = runawayHome.left;
                     curT = runawayHome.top;
-                    btn.style.left = runawayHome.left + 'px';
-                    btn.style.top  = runawayHome.top  + 'px';
-                }, 2000);
+                }
             }
+
+            btn.style.left = curL + 'px';
+            btn.style.top  = curT + 'px';
         }
 
         function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
@@ -595,7 +612,6 @@
         btn._runawayCleanup = () => {
             document.removeEventListener('mousemove', onMouseMove);
             cancelAnimationFrame(rafId);
-            clearTimeout(returnTimer);
         };
     }
 
