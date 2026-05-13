@@ -406,13 +406,8 @@
             dislikeBtn.style.display = '';
         }
 
-        // Count overrides
-        if (cfg.likeOverride !== null && cfg.likeOverride !== '') {
-            document.getElementById('like-count').textContent = cfg.likeOverride;
-        }
-        if (cfg.dislikeOverride !== null && cfg.dislikeOverride !== '') {
-            document.getElementById('dislike-count').textContent = cfg.dislikeOverride;
-        }
+        // Count overrides are now handled inside renderReactions() directly,
+        // so they're always correct and never flash the raw count.
 
         // Comments
         const commentsOff = document.getElementById('comments-off-msg');
@@ -519,45 +514,66 @@
         const btn = document.getElementById('like-btn');
         btn.classList.add('runaway');
 
-        // Snapshot home position once
+        // Snapshot home position from its current place in the page
         const rect = btn.getBoundingClientRect();
         runawayHome = { left: rect.left, top: rect.top };
+        // Start at home
         btn.style.left = runawayHome.left + 'px';
         btn.style.top  = runawayHome.top  + 'px';
 
-        let returnTimer = null;
+        // Current tracked position (updated after each flee so next flee is from real position)
+        let curL = runawayHome.left;
+        let curT = runawayHome.top;
+        let isFleeing    = false; // throttle: only react once per approach
+        let returnTimer  = null;
+        const PROXIMITY  = 110; // px — how close before fleeing
+        const FLEE_DIST  = 100; // px — how far to jump each flee
 
-        document.addEventListener('mousemove', onMouseNearLike);
-
-        function onMouseNearLike(e) {
-            const r = btn.getBoundingClientRect();
-            const cx = r.left + r.width  / 2;
-            const cy = r.top  + r.height / 2;
+        function onMouseMove(e) {
+            // Centre of button based on tracked position (not getBCR which lags during transition)
+            const bW  = btn.offsetWidth;
+            const bH  = btn.offsetHeight;
+            const cx  = curL + bW  / 2;
+            const cy  = curT + bH  / 2;
             const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
 
-            if (dist < 120) {
+            if (dist < PROXIMITY && !isFleeing) {
+                isFleeing = true;
                 clearTimeout(returnTimer);
-                // Flee in opposite direction, clamped to viewport
+
+                // Direction directly away from cursor
                 const angle = Math.atan2(cy - e.clientY, cx - e.clientX);
-                const flee  = 140 + Math.random() * 80;
-                const newL  = Math.max(0, Math.min(window.innerWidth  - r.width  - 4, cx + Math.cos(angle) * flee - r.width  / 2));
-                const newT  = Math.max(0, Math.min(window.innerHeight - r.height - 4, cy + Math.sin(angle) * flee - r.height / 2));
+
+                // Pick a target, clamped to viewport with margin
+                const margin = 10;
+                const maxL   = window.innerWidth  - bW  - margin;
+                const maxT   = window.innerHeight - bH  - margin;
+                const newL   = Math.max(margin, Math.min(maxL, curL + Math.cos(angle) * FLEE_DIST));
+                const newT   = Math.max(margin, Math.min(maxT, curT + Math.sin(angle) * FLEE_DIST));
+
+                curL = newL;
+                curT = newT;
                 btn.style.left = newL + 'px';
                 btn.style.top  = newT + 'px';
 
-                // Return home after 2s of no cursor
+                // Unlock flee after transition completes (180ms matches CSS transition)
+                setTimeout(() => { isFleeing = false; }, 200);
+
+                // Schedule return home after 2s of no proximity
                 returnTimer = setTimeout(() => {
-                    if (runawayActive) {
-                        btn.style.left = runawayHome.left + 'px';
-                        btn.style.top  = runawayHome.top  + 'px';
-                    }
+                    if (!runawayActive) return;
+                    curL = runawayHome.left;
+                    curT = runawayHome.top;
+                    btn.style.left = runawayHome.left + 'px';
+                    btn.style.top  = runawayHome.top  + 'px';
                 }, 2000);
             }
         }
 
-        // Store cleanup ref
+        document.addEventListener('mousemove', onMouseMove);
+
         btn._runawayCleanup = () => {
-            document.removeEventListener('mousemove', onMouseNearLike);
+            document.removeEventListener('mousemove', onMouseMove);
             clearTimeout(returnTimer);
         };
     }
@@ -676,8 +692,14 @@
     function renderReactions() {
         const likes    = reactionsData.likes    || [];
         const dislikes = reactionsData.dislikes || [];
-        document.getElementById('like-count').textContent    = likes.length;
-        document.getElementById('dislike-count').textContent = dislikes.length;
+        const cfg = profileConfig;
+
+        // If an override is set, display override + real count so new reactions add to it
+        const likeDisplay    = (cfg.likeOverride    !== null && cfg.likeOverride    !== '') ? (cfg.likeOverride    + likes.length)    : likes.length;
+        const dislikeDisplay = (cfg.dislikeOverride !== null && cfg.dislikeOverride !== '') ? (cfg.dislikeOverride + dislikes.length) : dislikes.length;
+
+        document.getElementById('like-count').textContent    = likeDisplay;
+        document.getElementById('dislike-count').textContent = dislikeDisplay;
         document.getElementById('like-btn').className    = 'react-btn' + (likes.includes(myEmail)    ? ' liked'    : '');
         document.getElementById('dislike-btn').className = 'react-btn' + (dislikes.includes(myEmail) ? ' disliked' : '');
     }
