@@ -17,11 +17,11 @@
       <p>To Continue Please Press the button below:</p>
       <button id="btn" onclick="leave()">Continue</button>
       <script>
-        console.log(History.go(-1))
+        const lastPage = document.referrer;
+        console.log(lastPage)
         function leave() {
-          const lastPage = History.go(-1);
           if (lastPage === "content5.html") {
-            window.location.href = "content5.html"
+            window.history.back()
           }
         }  
       </script>
