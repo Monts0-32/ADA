@@ -101,7 +101,8 @@
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
 
         /* --- REACTION BUTTONS --- */
-        .reaction-bar { display: flex; gap: 10px; margin-top: 0; position: relative; min-height: 48px; align-items: center; }
+        .reaction-bar { display: flex; gap: 10px; margin-top: 0; position: relative; min-height: 48px; align-items: flex-start; }
+        .reaction-bar .like-placeholder { width: 72px; height: 33px; flex-shrink: 0; pointer-events: none; }
         #social-section { margin-top: 20px; }
         .react-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.15s; user-select: none; }
         .react-btn:hover { background: #30363d; }
@@ -271,6 +272,7 @@
                 <button class="react-btn" id="like-btn" onclick="react('like')">
                     <span>👍</span> <span id="like-count" class="react-count">0</span>
                 </button>
+                <div class="like-placeholder" id="like-placeholder" style="display:none;"></div>
                 <button class="react-btn" id="dislike-btn" onclick="react('dislike')">
                     <span>👎</span> <span id="dislike-count" class="react-count">0</span>
                 </button>
@@ -525,50 +527,64 @@
         setTimeout(() => {
             if (!runawayActive) return;
 
-            // Snapshot home as offset within reaction-bar (not viewport coords)
+            const bW = btn.offsetWidth  || 72;
+            const bH = btn.offsetHeight || 33;
+
+            // Show placeholder so dislike button doesn't shift into like's space
+            const placeholder = document.getElementById('like-placeholder');
+            placeholder.style.display = 'block';
+            placeholder.style.width   = bW + 'px';
+            placeholder.style.height  = bH + 'px';
+
+            // Snapshot home as offset within reaction-bar
             const homeL = btn.offsetLeft;
             const homeT = btn.offsetTop;
             runawayHome = { left: homeL, top: homeT };
 
             // Switch to absolute within container
             btn.classList.add('runaway');
-            btn.style.left = homeL + 'px';
-            btn.style.top  = homeT + 'px';
+            btn.style.width = bW + 'px'; // lock width so it doesn't resize when floating
+            btn.style.left  = homeL + 'px';
+            btn.style.top   = homeT + 'px';
 
             let curL = homeL;
             let curT = homeT;
 
-            const PROXIMITY  = 120;
-            const FLEE_SPEED = 11;
-            const GLIDE_EASE = 0.07;
+            const PROXIMITY  = 180;  // large trigger zone — starts fleeing early
+            const FLEE_SPEED = 28;   // very fast — genuinely hard to catch
+            const GLIDE_EASE = 0.06;
             const SNAP_DIST  = 0.5;
+
+            // Expand container so button can flee into a larger area above/below
+            const ROAM_PADDING = 120; // px above/below the bar the button can roam into
 
             function tick() {
                 if (!runawayActive) return;
                 rafId = requestAnimationFrame(tick);
 
-                const bW = btn.offsetWidth  || 72;
-                const bH = btn.offsetHeight || 32;
+                const bW2 = btn.offsetWidth  || 72;
+                const bH2 = btn.offsetHeight || 33;
 
                 // Convert container-relative position to viewport coords for mouse distance
                 const containerRect = container.getBoundingClientRect();
-                const btnViewportCX = containerRect.left + curL + bW / 2;
-                const btnViewportCY = containerRect.top  + curT + bH / 2;
+                const btnViewportCX = containerRect.left + curL + bW2 / 2;
+                const btnViewportCY = containerRect.top  + curT + bH2 / 2;
 
                 const distToMouse = Math.hypot(mouseX - btnViewportCX, mouseY - btnViewportCY);
 
-                // Constrain within reaction-bar bounds
+                // Constrain within reaction-bar + roam padding above/below
                 const margin = 4;
-                const maxL   = container.offsetWidth  - bW  - margin;
-                const maxT   = container.offsetHeight - bH  - margin;
+                const maxL   = container.offsetWidth  - bW2  - margin;
+                const minT   = -ROAM_PADDING;
+                const maxT   = container.offsetHeight + ROAM_PADDING - bH2 - margin;
 
                 if (distToMouse < PROXIMITY) {
-                    // FLEE — move away from mouse in container-local space
+                    // FLEE — move away from mouse
                     let dx = btnViewportCX - mouseX;
                     let dy = btnViewportCY - mouseY;
                     const len = Math.hypot(dx, dy) || 1;
                     curL = Math.max(margin, Math.min(maxL, curL + (dx / len) * FLEE_SPEED));
-                    curT = Math.max(margin, Math.min(maxT, curT + (dy / len) * FLEE_SPEED));
+                    curT = Math.max(minT,   Math.min(maxT, curT + (dy / len) * FLEE_SPEED));
                 } else {
                     // GLIDE HOME
                     const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
@@ -604,10 +620,13 @@
         if (!runawayActive) return;
         runawayActive = false;
         const btn = document.getElementById('like-btn');
+        const placeholder = document.getElementById('like-placeholder');
         if (btn._runawayCleanup) { btn._runawayCleanup(); delete btn._runawayCleanup; }
         btn.classList.remove('runaway');
-        btn.style.left = '';
-        btn.style.top  = '';
+        btn.style.left  = '';
+        btn.style.top   = '';
+        btn.style.width = '';
+        if (placeholder) placeholder.style.display = 'none';
     }
 
     // ── Page Load ─────────────────────────────────────────────────────────────
