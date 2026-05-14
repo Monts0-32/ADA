@@ -527,14 +527,18 @@
 
             // Read position while button is in normal flow (no .runaway yet)
             const rect = btn.getBoundingClientRect();
+            console.log('[runaway] BCR:', rect.left, rect.top, rect.width, rect.height, 'scroll:', window.scrollX, window.scrollY);
 
             // If still zero, the button isn't visible — don't start
             if (rect.width === 0 || rect.height === 0) {
+                console.log('[runaway] button has no size, aborting');
                 runawayActive = false;
                 return;
             }
 
+            // BCR gives viewport coords — correct for position:fixed
             runawayHome = { left: rect.left, top: rect.top };
+            console.log('[runaway] home set to:', runawayHome);
 
             // Switch to fixed at that exact position
             btn.classList.add('runaway');
