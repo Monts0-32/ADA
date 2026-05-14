@@ -823,11 +823,12 @@ async function pollState() {
   // Waiting room — check if opponent joined
   if (document.getElementById('vWait').classList.contains('active')) {
     if (data.status==='active') {
-      board=initBoard(); castling={wK:false,wQR:false,wKR:false,bK:false,bQR:false,bKR:false};
-      enPassant=null; turn='white'; capturedW=[]; capturedB=[]; moveHistory=[];
-      lastMoveId=0;
-      show('vGame');
-      buildBoard(); updateStatus();
+        board=initBoard(); castling={wK:false,wQR:false,wKR:false,bK:false,bQR:false,bKR:false};
+        enPassant=null; turn='white'; capturedW=[]; capturedB=[]; moveHistory=[];
+        lastMoveId=0;
+        myColor = data.host_email === EMAIL ? 'white' : 'black';
+        show('vGame');
+        buildBoard(); updateStatus();
     }
     return;
   }
