@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUBIC DASH</title>
+<style>
+  :root {
+    --bg:        #0d1117;
+    --header:    #161b22;
+    --border:    #30363d;
+    --text:      #c9d1d9;
+    --text-dim:  #8b949e;
+    --btn-green: #238636;
+    --blue:      #58a6ff;
+    --red:       #f85149;
+    --gold:      #d29922;
+    --green:     #3fb950;
+    --panel:     #161b22;
+    --input-bg:  #0d1117;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  ::-webkit-scrollbar { width:8px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover { background:#444c56; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screen { display:none; width:100vw; height:100vh; flex-direction:column; align-items:center; justify-content:center; position:absolute; top:0; left:0; }
+  .screen.active { display:flex; }
+
+  /* ── MENU ─────────────────────────────────────────────────── */
+  #menu-screen { background:var(--bg); flex-direction:column; gap:0; }
+
+  /* top bar like GH header */
+  .gh-topbar {
+    position:fixed; top:0; left:0; right:0; height:48px;
+    background: var(--header);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items:center; padding:0 24px;
+    gap:16px; z-index:100;
+  }
+  .gh-topbar-logo {
+    font-size:13px; font-weight:600; color:var(--text);
+    display:flex; align-items:center; gap:8px;
+  }
+  .gh-topbar-logo svg { fill:var(--text); opacity:.8; }
+  .gh-topbar-sep { color:var(--border); font-size:18px; line-height:1; margin:0 2px; }
+  .gh-topbar-repo { font-size:13px; color:var(--blue); font-weight:600; cursor:pointer; }
+  .gh-topbar-repo:hover { text-decoration:underline; }
+  .gh-topbar-right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .gh-badge {
+    padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600;
+    background:rgba(56,139,253,.15); border:1px solid rgba(56,139,253,.4);
+    color:var(--blue);
+  }
+
+  .menu-content {
+    margin-top:48px;
+    width:100%;
+    max-width:900px;
+    padding:32px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+    overflow-y:auto;
+    max-height:calc(100vh - 48px);
+  }
+
+  /* repo header */
+  .repo-header {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+  }
+  .repo-title { font-size:20px; font-weight:400; color:var(--text); }
+  .repo-title span { color:var(--blue); font-weight:600; cursor:pointer; }
+  .repo-title span:hover { text-decoration:underline; }
+  .repo-desc { font-size:13px; color:var(--text-dim); margin-top:6px; line-height:1.5; }
+  .repo-tags { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .repo-tag {
+    padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600;
+    background:rgba(56,139,253,.1); border:1px solid rgba(56,139,253,.3);
+    color:var(--blue); cursor:pointer;
+  }
+  .repo-tag:hover { background:rgba(56,139,253,.2); }
+
+  .repo-actions { display:flex; gap:8px; flex-shrink:0; }
+  .btn-gh-sm {
+    padding:5px 14px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text); font-size:12px; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; gap:6px; transition:.15s;
+    white-space:nowrap;
+  }
+  .btn-gh-sm:hover { background:#30363d; border-color:#8b949e; }
+  .btn-gh-sm.green { background:var(--btn-green); border-color:#2ea043; color:#fff; }
+  .btn-gh-sm.green:hover { background:#2ea043; }
+
+  /* tab bar */
+  .gh-tabs {
+    display:flex; border-bottom:1px solid var(--border); gap:0;
+  }
+  .gh-tab {
+    padding:10px 16px; font-size:13px; color:var(--text-dim);
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+    cursor:pointer; display:flex; align-items:center; gap:6px;
+    transition:.1s; user-select:none;
+  }
+  .gh-tab:hover { color:var(--text); border-bottom-color:var(--border); }
+  .gh-tab.active { color:var(--text); border-bottom-color:#f78166; font-weight:600; }
+  .gh-tab .tab-count {
+    background:#30363d; color:var(--text-dim); border-radius:20px;
+    padding:1px 7px; font-size:11px; font-weight:400;
+  }
+
+  /* file list / levels */
+  .gh-file-list {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .gh-file-header {
+    padding:10px 16px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    font-size:12px; color:var(--text-dim);
+    display:flex; align-items:center; gap:8px;
+  }
+  .gh-file-header .commit-msg { color:var(--text); font-size:12px; }
+  .gh-file-row {
+    display:flex; align-items:center; padding:8px 16px;
+    border-bottom:1px solid var(--border); gap:12px;
+    cursor:pointer; transition:.1s;
+  }
+  .gh-file-row:last-child { border-bottom:none; }
+  .gh-file-row:hover { background:#161b22ee; }
+  .gh-file-icon { color:var(--text-dim); font-size:14px; flex-shrink:0; width:16px; text-align:center; }
+  .gh-file-name { font-size:13px; color:var(--blue); flex:1; }
+  .gh-file-name:hover { text-decoration:underline; }
+  .gh-file-desc { font-size:12px; color:var(--text-dim); flex:2; }
+  .gh-file-time { font-size:11px; color:var(--text-dim); flex-shrink:0; }
+  .gh-file-badge {
+    font-size:10px; padding:1px 7px; border-radius:20px; flex-shrink:0;
+    font-weight:600; border:1px solid;
+  }
+  .badge-easy   { color:#3fb950; border-color:#238636; background:rgba(63,185,80,.1); }
+  .badge-medium { color:#d29922; border-color:#9e6a03; background:rgba(210,153,34,.1); }
+  .badge-hard   { color:#f85149; border-color:#b91c1c; background:rgba(248,81,73,.1); }
+
+  /* readme panel */
+  .gh-readme {
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden;
+  }
+  .gh-readme-header {
+    padding:10px 16px; border-bottom:1px solid var(--border);
+    font-size:12px; font-weight:600; color:var(--text);
+    display:flex; align-items:center; gap:8px;
+  }
+  .gh-readme-body { padding:20px 24px; font-size:13px; line-height:1.6; color:var(--text-dim); }
+  .gh-readme-body h3 { color:var(--text); margin-bottom:6px; font-size:14px; }
+  .gh-readme-body ul { padding-left:18px; }
+  .gh-readme-body li { margin-bottom:3px; }
+  .gh-readme-body code {
+    background:#161b22; border:1px solid var(--border); border-radius:3px;
+    padding:1px 5px; font-size:12px; font-family:monospace; color:var(--blue);
+  }
+  .kbd {
+    display:inline-block; padding:2px 7px; background:#21262d;
+    border:1px solid var(--border); border-bottom:2px solid var(--border);
+    border-radius:4px; font-size:11px; font-family:monospace;
+    color:var(--text); margin:0 2px;
+  }
+
+  /* ── GAME ─────────────────────────────────────────────────── */
+  #game-screen { background:#000; }
+  #game-canvas { display:block; }
+
+  .game-hud {
+    position:fixed; top:0; left:0; right:0; height:48px;
+    background:var(--header); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 20px; gap:16px; z-index:10;
+  }
+  .hud-level-name { font-size:13px; font-weight:600; color:var(--text); }
+  .hud-pct {
+    font-size:12px; color:var(--text-dim); font-family:monospace;
+    padding:2px 8px; background:var(--bg); border:1px solid var(--border);
+    border-radius:4px;
+  }
+  .hud-attempts { font-size:11px; color:var(--text-dim); font-family:monospace; }
+  .hud-back {
+    margin-left:auto; padding:5px 14px; border-radius:6px;
+    border:1px solid var(--border); background:var(--panel);
+    color:var(--text); font-size:12px; cursor:pointer; transition:.15s;
+  }
+  .hud-back:hover { background:#30363d; border-color:#8b949e; }
+
+  .progress-bar { position:fixed; bottom:0; left:0; right:0; height:3px; background:var(--panel); z-index:10; }
+  .progress-fill { height:100%; width:0%; background:var(--green); transition:width .1s linear; }
+
+  /* overlays */
+  .overlay {
+    position:fixed; inset:0; display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(13,17,23,.92); backdrop-filter:blur(6px); z-index:20;
+  }
+  .overlay.show { display:flex; }
+
+  .overlay-card {
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:8px; padding:32px 40px; min-width:360px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    box-shadow:0 16px 48px rgba(0,0,0,0.6);
+  }
+  .overlay-icon { font-size:32px; margin-bottom:4px; }
+  .overlay-title { font-size:18px; font-weight:700; color:var(--text); }
+  .overlay-sub { font-size:12px; color:var(--text-dim); font-family:monospace; letter-spacing:.05em; margin-bottom:8px; }
+
+  .overlay-divider { width:100%; height:1px; background:var(--border); margin:8px 0; }
+
+  .overlay-btns { display:flex; gap:10px; margin-top:4px; }
+  .obtn {
+    padding:7px 18px; border-radius:6px; font-size:12px; font-weight:600;
+    cursor:pointer; transition:.15s; border:1px solid; font-family:inherit;
+  }
+  .obtn-retry  { background:var(--btn-green); border-color:#2ea043; color:#fff; }
+  .obtn-retry:hover { background:#2ea043; }
+  .obtn-menu   { background:var(--panel); border-color:var(--border); color:var(--text-dim); }
+  .obtn-menu:hover  { background:#30363d; border-color:#8b949e; color:var(--text); }
+  .obtn-next   { background:rgba(56,139,253,.15); border-color:rgba(56,139,253,.4); color:var(--blue); }
+  .obtn-next:hover  { background:rgba(56,139,253,.25); }
+
+  .stat-row { display:flex; gap:24px; margin-top:4px; }
+  .stat-item { text-align:center; }
+  .stat-val { font-size:20px; font-weight:700; color:var(--text); font-family:monospace; }
+  .stat-lbl { font-size:10px; color:var(--text-dim); letter-spacing:.1em; margin-top:2px; }
+
+  /* ── BUILDER ──────────────────────────────────────────────── */
+  #builder-screen { flex-direction:row; align-items:stretch; }
+
+  .builder-sidebar {
+    width:220px; min-width:220px;
+    background:var(--panel); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    overflow-y:auto;
+  }
+  .sidebar-header {
+    padding:12px 16px; border-bottom:1px solid var(--border);
+    font-size:12px; font-weight:600; color:var(--text);
+    display:flex; align-items:center; gap:8px;
+  }
+  .sidebar-section {
+    padding:10px 16px 6px;
+    font-size:11px; font-weight:600; color:var(--text-dim);
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+
+  .tool-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:0 12px 10px; }
+  .tool-btn {
+    padding:10px 6px; background:var(--bg);
+    border:1px solid var(--border); border-radius:6px;
+    cursor:pointer; text-align:center; font-size:10px; font-weight:600;
+    color:var(--text-dim); transition:.15s;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    user-select:none; letter-spacing:.05em;
+  }
+  .tool-btn .t-icon { font-size:18px; line-height:1; }
+  .tool-btn:hover { background:#21262d; border-color:#8b949e; color:var(--text); }
+  .tool-btn.active { border-color:var(--blue); color:var(--blue); background:rgba(56,139,253,.1); }
+  .tool-btn.erase.active { border-color:var(--red); color:var(--red); background:rgba(248,81,73,.1); }
+
+  .erase-row { padding:0 12px 10px; }
+  .erase-full {
+    width:100%; padding:8px; background:var(--bg); border:1px solid var(--border);
+    border-radius:6px; cursor:pointer; text-align:center; font-size:10px;
+    font-weight:600; color:var(--text-dim); transition:.15s;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    user-select:none; letter-spacing:.05em;
+  }
+  .erase-full:hover { background:#21262d; border-color:#8b949e; color:var(--text); }
+  .erase-full.active { border-color:var(--red); color:var(--red); background:rgba(248,81,73,.1); }
+
+  .sidebar-divider { height:1px; background:var(--border); margin:4px 0; }
+
+  .builder-actions { padding:12px; display:flex; flex-direction:column; gap:6px; margin-top:auto; border-top:1px solid var(--border); }
+  .baction {
+    width:100%; padding:7px 14px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text-dim); font-size:12px; font-weight:600;
+    cursor:pointer; transition:.15s; text-align:left;
+    display:flex; align-items:center; gap:8px;
+  }
+  .baction:hover { background:#30363d; border-color:#8b949e; color:var(--text); }
+  .baction.green  { border-color:#2ea043; color:var(--green); background:rgba(35,134,54,.1); }
+  .baction.green:hover { background:rgba(35,134,54,.2); }
+  .baction.blue   { border-color:rgba(56,139,253,.4); color:var(--blue); background:rgba(56,139,253,.08); }
+  .baction.blue:hover { background:rgba(56,139,253,.15); }
+  .baction.danger { border-color:rgba(248,81,73,.4); color:var(--red); background:rgba(248,81,73,.06); }
+  .baction.danger:hover { background:rgba(248,81,73,.12); }
+
+  .builder-canvas-wrap {
+    flex:1; position:relative; overflow:hidden;
+    background:var(--bg); cursor:crosshair;
+  }
+  #builder-canvas { display:block; }
+  .builder-hint {
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    font-size:11px; color:var(--text-dim); opacity:.5; pointer-events:none;
+    white-space:nowrap; font-family:monospace;
+  }
+  .builder-scroll-pct {
+    position:absolute; right:12px; top:12px;
+    font-size:11px; color:var(--text-dim); font-family:monospace;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:4px; padding:2px 8px;
+  }
+
+  /* game canvas offset for HUD */
+  #game-canvas { margin-top:0; }
+</style>
+</head>
+<body>
+
+<!-- ══ MENU ════════════════════════════════════════════════════ -->
+<div id="menu-screen" class="screen active">
+  <div class="gh-topbar">
+    <div class="gh-topbar-logo">
+      <svg height="20" viewBox="0 0 16 16" width="20"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      ADA Archive
+    </div>
+    <div class="gh-topbar-sep">/</div>
+    <div class="gh-topbar-repo">cubic-dash</div>
+    <div class="gh-topbar-right">
+      <div class="gh-badge">Public</div>
+      <button class="btn-gh-sm" onclick="openBuilder()">
+        <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M9.5 2.75a.75.75 0 00-1.5 0v5.19L6.03 6.03a.75.75 0 00-1.06 1.06l2.5 2.5a.75.75 0 001.06 0l2.5-2.5a.75.75 0 00-1.06-1.06L9.5 7.94V2.75z"/><path d="M2.5 9.75a.75.75 0 000 1.5h11a.75.75 0 000-1.5h-11z"/></svg>
+        Level Builder
+      </button>
+    </div>
+  </div>
+
+  <div class="menu-content">
+    <div class="repo-header">
+      <div>
+        <div class="repo-title">
+          <span>ADA Archive</span> / <span>cubic-dash</span>
+        </div>
+        <div class="repo-desc">A Geometry Dash–style rhythm platformer built into the ADA Archive. Jump over obstacles, survive gaps, and clear every level.</div>
+        <div class="repo-tags">
+          <span class="repo-tag">game</span>
+          <span class="repo-tag">platformer</span>
+          <span class="repo-tag">geometry-dash</span>
+          <span class="repo-tag">javascript</span>
+          <span class="repo-tag">canvas</span>
+        </div>
+      </div>
+      <div class="repo-actions">
+        <button class="btn-gh-sm">
+          <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+          Star
+        </button>
+      </div>
+    </div>
+
+    <div class="gh-tabs">
+      <div class="gh-tab active">
+        <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A2.5 2.5 0 013.5 0h8.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V1.5h-8a1 1 0 00-1 1v6.708A2.492 2.492 0 013.5 9h3.25a.75.75 0 010 1.5H3.5a1 1 0 100 2h5.75a.75.75 0 010 1.5H3.5A2.5 2.5 0 011 11.5v-9zm13.23 7.79a.75.75 0 00-1.06-1.06l-2.553 2.554-.51-.51a.75.75 0 00-1.063 1.062l1.04 1.039a.75.75 0 001.062 0l3.083-3.084z"/></svg>
+        Code
+      </div>
+      <div class="gh-tab">
+        <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
+        Levels
+        <span class="tab-count">3</span>
+      </div>
+    </div>
+
+    <div class="gh-file-list">
+      <div class="gh-file-header">
+        <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--text-dim)"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
+        <span class="commit-msg">feat: add 3 built-in levels with increasing difficulty</span>
+        <span style="margin-left:auto;color:var(--text-dim);font-size:11px;">just now</span>
+      </div>
+      <div class="gh-file-row" onclick="startLevel(0)">
+        <span class="gh-file-icon">🎮</span>
+        <span class="gh-file-name">level_01_stereo_madness.js</span>
+        <span class="gh-file-desc">Intro stage — gaps, single spikes, gentle platforms</span>
+        <span class="gh-file-badge badge-easy">Easy</span>
+        <span class="gh-file-time">just now</span>
+      </div>
+      <div class="gh-file-row" onclick="startLevel(1)">
+        <span class="gh-file-icon">🎮</span>
+        <span class="gh-file-name">level_02_back_on_track.js</span>
+        <span class="gh-file-desc">Double spikes, tall blocks, tighter timing windows</span>
+        <span class="gh-file-badge badge-medium">Medium</span>
+        <span class="gh-file-time">just now</span>
+      </div>
+      <div class="gh-file-row" onclick="startLevel(2)">
+        <span class="gh-file-icon">🎮</span>
+        <span class="gh-file-name">level_03_polargeist.js</span>
+        <span class="gh-file-desc">Brutal obstacle density, high platforms, almost no margin</span>
+        <span class="gh-file-badge badge-hard">Hard</span>
+        <span class="gh-file-time">just now</span>
+      </div>
+      <div class="gh-file-row" onclick="openBuilder()">
+        <span class="gh-file-icon" style="color:var(--green)">⬡</span>
+        <span class="gh-file-name" style="color:var(--green)">level_builder.js</span>
+        <span class="gh-file-desc">Create and test your own custom levels</span>
+        <span class="gh-file-badge" style="color:var(--green);border-color:#238636;background:rgba(63,185,80,.08);">Tool</span>
+        <span class="gh-file-time">just now</span>
+      </div>
+    </div>
+
+    <div class="gh-readme">
+      <div class="gh-readme-header">
+        <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--text-dim)"><path d="M0 3.75A.75.75 0 01.75 3h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 3.75zm0 4A.75.75 0 01.75 7h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 7.75zm0 4a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 11.75z"/></svg>
+        README.md
+      </div>
+      <div class="gh-readme-body">
+        <h3>Controls</h3>
+        <ul>
+          <li><span class="kbd">Space</span> <span class="kbd">↑</span> or <span class="kbd">Click</span> — Jump (hold for longer jump)</li>
+          <li>Avoid spikes and gaps — one hit and you restart</li>
+          <li>Land on platforms and blocks to navigate</li>
+        </ul>
+        <br>
+        <h3>Level Builder</h3>
+        <ul>
+          <li><code>Left click</code> — Place selected object</li>
+          <li><code>Right click</code> — Erase object / toggle ground gap</li>
+          <li><code>Scroll</code> — Pan the level left/right</li>
+          <li>Press <strong>Test Play</strong> to instantly run your level</li>
+          <li>Levels are saved to <code>localStorage</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+  <canvas id="game-canvas"></canvas>
+  <div class="game-hud">
+    <div class="hud-level-name" id="hud-name">LEVEL</div>
+    <div class="hud-pct" id="hud-pct">0%</div>
+    <div class="hud-attempts" id="hud-attempts"></div>
+    <button class="hud-back" onclick="backToMenu()">← Menu</button>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<!-- DEATH -->
+<div class="overlay" id="death-overlay">
+  <div class="overlay-card">
+    <div class="overlay-icon">💀</div>
+    <div class="overlay-title">You Died</div>
+    <div class="overlay-sub" id="death-pct-msg">REACHED 0%</div>
+    <div class="overlay-divider"></div>
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="stat-val" id="death-pct-val">0%</div>
+        <div class="stat-lbl">BEST</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val" id="attempt-val">1</div>
+        <div class="stat-lbl">ATTEMPTS</div>
+      </div>
+    </div>
+    <div class="overlay-divider"></div>
+    <div class="overlay-btns">
+      <button class="obtn obtn-retry" onclick="retryLevel()">↺ Retry</button>
+      <button class="obtn obtn-menu"  onclick="backToMenu()">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN -->
+<div class="overlay" id="win-overlay">
+  <div class="overlay-card">
+    <div class="overlay-icon">🎉</div>
+    <div class="overlay-title">Level Complete</div>
+    <div class="overlay-sub">100% — CLEARED</div>
+    <div class="overlay-divider"></div>
+    <div class="overlay-btns">
+      <button class="obtn obtn-retry" onclick="retryLevel()">↺ Again</button>
+      <button class="obtn obtn-next"  onclick="nextLevel()">Next →</button>
+      <button class="obtn obtn-menu"  onclick="backToMenu()">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BUILDER ══════════════════════════════════════════════════ -->
+<div id="builder-screen" class="screen">
+  <div class="builder-sidebar">
+    <div class="sidebar-header">
+      <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--text-dim)"><path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 00-.064.108l-.558 1.953 1.953-.558a.253.253 0 00.108-.064l6.286-6.286zm1.238-3.763a.25.25 0 00-.354 0L10.811 3.65l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086z"/></svg>
+      Level Builder
+    </div>
+
+    <div class="sidebar-section">Objects</div>
+    <div class="tool-grid">
+      <div class="tool-btn active" id="tool-block" onclick="setTool('block')">
+        <div class="t-icon">⬛</div>Block
+      </div>
+      <div class="tool-btn" id="tool-spike" onclick="setTool('spike')">
+        <div class="t-icon">🔺</div>Spike
+      </div>
+      <div class="tool-btn" id="tool-platform" onclick="setTool('platform')">
+        <div class="t-icon">▬</div>Platform
+      </div>
+      <div class="tool-btn" id="tool-bigblock" onclick="setTool('bigblock')">
+        <div class="t-icon">⬛</div>2× Block
+      </div>
+    </div>
+
+    <div class="sidebar-section">Tools</div>
+    <div class="erase-row">
+      <div class="erase-full tool-btn erase" id="tool-erase" onclick="setTool('erase')">
+        <span class="t-icon" style="font-size:14px;">🗑</span> Erase
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="builder-actions">
+      <button class="baction green"  onclick="testBuilderLevel()">▶&nbsp; Test Play</button>
+      <button class="baction blue"   onclick="saveBuilderLevel()">↓&nbsp; Save Level</button>
+      <button class="baction"        onclick="loadBuilderLevel()">↑&nbsp; Load Level</button>
+      <button class="baction danger" onclick="clearBuilder()">✕&nbsp; Clear All</button>
+      <button class="baction"        onclick="backToMenu()">←&nbsp; Back to Menu</button>
+    </div>
+  </div>
+
+  <div class="builder-canvas-wrap" id="builder-wrap">
+    <canvas id="builder-canvas"></canvas>
+    <div class="builder-hint">Left click: place &nbsp;·&nbsp; Right click: erase &nbsp;·&nbsp; Scroll: pan</div>
+    <div class="builder-scroll-pct" id="scroll-ind">0%</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONSTANTS & LEVEL DATA
+// ═══════════════════════════════════════════════════════════════
+const TILE=40, GRAV=0.65, JUMP=-13.5, SPEED=7;
+
+function range(a,b){const r=[];for(let i=a;i<b;i++)r.push(i);return r;}
+
+const LEVEL_COLORS = ['#58a6ff','#f78166','#3fb950'];
+
+const BUILT_IN_LEVELS=[
+  {name:'STEREO MADNESS',color:'#58a6ff',length:200,objects:[
+    ...range(10,13).map(c=>['gap',c]),...range(22,25).map(c=>['gap',c]),
+    ...range(40,44).map(c=>['gap',c]),...range(60,63).map(c=>['gap',c]),
+    ...range(80,85).map(c=>['gap',c]),...range(100,104).map(c=>['gap',c]),
+    ...range(120,126).map(c=>['gap',c]),...range(140,146).map(c=>['gap',c]),
+    ...range(155,162).map(c=>['gap',c]),...range(170,178).map(c=>['gap',c]),
+    [3,4,'b'],[4,4,'b'],[15,4,'b'],[16,4,'b'],[16,3,'b'],
+    [28,4,'b'],[29,4,'b'],[29,3,'b'],[29,2,'b'],
+    [50,4,'b'],[51,4,'b'],[70,4,'b'],
+    [9,4,'s'],[13,4,'s'],[21,4,'s'],[25,4,'s'],[39,4,'s'],[44,4,'s'],
+    [59,4,'s'],[63,4,'s'],[79,4,'s'],[85,4,'s'],[99,4,'s'],[104,4,'s'],
+    [119,4,'s'],[126,4,'s'],[139,4,'s'],[146,4,'s'],[154,4,'s'],[162,4,'s'],
+    [169,4,'s'],[178,4,'s'],
+    [11,3,'p'],[12,3,'p'],[23,3,'p'],[24,3,'p'],[41,2,'p'],[42,2,'p'],[43,2,'p'],
+  ]},
+  {name:'BACK ON TRACK',color:'#f78166',length:220,objects:[
+    ...range(12,16).map(c=>['gap',c]),...range(28,33).map(c=>['gap',c]),
+    ...range(50,56).map(c=>['gap',c]),...range(70,77).map(c=>['gap',c]),
+    ...range(90,98).map(c=>['gap',c]),...range(108,115).map(c=>['gap',c]),
+    ...range(130,138).map(c=>['gap',c]),...range(150,159).map(c=>['gap',c]),
+    ...range(170,180).map(c=>['gap',c]),...range(190,200).map(c=>['gap',c]),
+    [11,4,'s'],[16,4,'s'],[17,4,'s'],[27,4,'s'],[33,4,'s'],[34,4,'s'],
+    [49,4,'s'],[56,4,'s'],[57,4,'s'],[69,4,'s'],[77,4,'s'],[78,4,'s'],
+    [5,4,'b'],[5,3,'b'],[20,4,'b'],[20,3,'b'],[20,2,'b'],
+    [38,4,'b'],[38,3,'b'],[60,4,'b'],[60,3,'b'],[60,2,'b'],
+    [80,4,'b'],[80,3,'b'],[100,4,'b'],[120,4,'b'],[120,3,'b'],
+    [140,4,'b'],[140,3,'b'],[140,2,'b'],[160,4,'b'],[160,3,'b'],
+    [180,4,'b'],[180,3,'b'],[180,2,'b'],
+    [42,4,'B'],[85,4,'B'],[160,4,'B'],
+    [13,3,'p'],[14,3,'p'],[15,3,'p'],
+    [29,2,'p'],[30,2,'p'],[31,2,'p'],[32,2,'p'],
+    [51,2,'p'],[52,2,'p'],[53,2,'p'],[54,2,'p'],[55,2,'p'],
+  ]},
+  {name:'POLARGEIST',color:'#3fb950',length:240,objects:[
+    ...range(8,12).map(c=>['gap',c]),...range(18,23).map(c=>['gap',c]),
+    ...range(30,36).map(c=>['gap',c]),...range(44,50).map(c=>['gap',c]),
+    ...range(58,65).map(c=>['gap',c]),...range(73,81).map(c=>['gap',c]),
+    ...range(88,97).map(c=>['gap',c]),...range(103,113).map(c=>['gap',c]),
+    ...range(118,129).map(c=>['gap',c]),...range(133,145).map(c=>['gap',c]),
+    ...range(149,162).map(c=>['gap',c]),...range(166,180).map(c=>['gap',c]),
+    ...range(184,200).map(c=>['gap',c]),...range(204,220).map(c=>['gap',c]),
+    [7,4,'s'],[12,4,'s'],[13,4,'s'],[17,4,'s'],[23,4,'s'],[24,4,'s'],
+    [29,4,'s'],[36,4,'s'],[37,4,'s'],[43,4,'s'],[50,4,'s'],[51,4,'s'],
+    [57,4,'s'],[65,4,'s'],[66,4,'s'],[72,4,'s'],[81,4,'s'],[82,4,'s'],
+    [87,4,'s'],[97,4,'s'],[98,4,'s'],[102,4,'s'],[113,4,'s'],[114,4,'s'],
+    [117,4,'s'],[129,4,'s'],[130,4,'s'],[132,4,'s'],[145,4,'s'],[146,4,'s'],
+    [148,4,'s'],[162,4,'s'],[163,4,'s'],[165,4,'s'],[180,4,'s'],[181,4,'s'],
+    [183,4,'s'],[200,4,'s'],[201,4,'s'],[203,4,'s'],[220,4,'s'],
+    [3,4,'b'],[3,3,'b'],[15,4,'b'],[25,4,'b'],[25,3,'b'],
+    [38,4,'b'],[38,3,'b'],[38,2,'b'],
+    [9,3,'p'],[10,3,'p'],[11,3,'p'],
+    [19,3,'p'],[20,3,'p'],[21,3,'p'],[22,3,'p'],
+    [31,2,'p'],[32,2,'p'],[33,2,'p'],[34,2,'p'],[35,2,'p'],
+    [45,3,'p'],[46,3,'p'],[47,3,'p'],[48,3,'p'],[49,3,'p'],
+    [59,2,'p'],[60,2,'p'],[61,2,'p'],[62,2,'p'],[63,2,'p'],[64,2,'p'],
+    [74,3,'p'],[75,3,'p'],[76,3,'p'],[77,3,'p'],[78,3,'p'],[79,3,'p'],[80,3,'p'],
+    [89,2,'p'],[90,2,'p'],[91,2,'p'],[92,2,'p'],[93,2,'p'],[94,2,'p'],[95,2,'p'],[96,2,'p'],
+    [104,3,'p'],[105,3,'p'],[106,3,'p'],[107,3,'p'],[108,3,'p'],[109,3,'p'],[110,3,'p'],[111,3,'p'],[112,3,'p'],
+    [119,1,'p'],[120,1,'p'],[121,1,'p'],[122,1,'p'],[123,1,'p'],[124,1,'p'],[125,1,'p'],[126,1,'p'],[127,1,'p'],[128,1,'p'],
+  ]}
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME ENGINE
+// ═══════════════════════════════════════════════════════════════
+const gameCanvas=document.getElementById('game-canvas');
+const gctx=gameCanvas.getContext('2d');
+let gameRunning=false,gameAnimId=null,levelData=null;
+let px,py,pvy,prot,onGround,isDead,isWon,camX,particles,bestPct;
+let jumpHeld=false,currentLevelIdx=0,attempts=0,isCustomLevel=false,customLevelData=null;
+
+function buildLevelFromData(raw){
+  const gaps=new Set(),objects=[];
+  for(const o of raw.objects){
+    if(o[0]==='gap') gaps.add(o[1]);
+    else objects.push({col:o[0],row:o[1],type:o[2]});
+  }
+  return{name:raw.name,color:raw.color,length:raw.length,gaps,objects};
+}
+
+function initGame(lvl){
+  levelData=lvl;
+  gameCanvas.width=window.innerWidth;
+  gameCanvas.height=window.innerHeight;
+  const GH=gameCanvas.height,GY=GH-TILE*2;
+  px=TILE*2; py=GY-TILE; pvy=0; prot=0;
+  onGround=true; isDead=false; isWon=false; camX=0;
+  particles=[]; bestPct=0;
+  document.getElementById('death-overlay').classList.remove('show');
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('hud-name').textContent=lvl.name;
+  document.getElementById('hud-pct').textContent='0%';
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('progress-fill').style.background=lvl.color;
+}
+
+function startLevel(idx){
+  currentLevelIdx=idx; isCustomLevel=false; attempts=0;
+  showScreen('game-screen');
+  initGame(buildLevelFromData(BUILT_IN_LEVELS[idx]));
+  startGameLoop();
+}
+
+function startGameLoop(){
+  gameRunning=true;
+  if(gameAnimId) cancelAnimationFrame(gameAnimId);
+  gameLoop();
+}
+
+function gameLoop(){
+  if(!gameRunning) return;
+  update(); drawGame();
+  gameAnimId=requestAnimationFrame(gameLoop);
+}
+
+function update(){
+  if(isDead||isWon) return;
+  const GH=gameCanvas.height,GY=GH-TILE*2,TW=levelData.length*TILE;
+  px+=SPEED; camX=px-gameCanvas.width*0.25;
+  pvy+=GRAV; py+=pvy; prot+=4;
+  const col=Math.floor(px/TILE);
+  const groundHere=!levelData.gaps.has(col)&&!levelData.gaps.has(col+1);
+  if(py+TILE>=GY&&groundHere){
+    py=GY-TILE; pvy=0; onGround=true; prot=Math.round(prot/90)*90;
+  } else { onGround=false; }
+  if(py+TILE>GH){die();return;}
+  if(jumpHeld&&onGround){pvy=JUMP;onGround=false;}
+  for(const obj of levelData.objects){
+    const ox=obj.col*TILE;
+    const oy=(5-obj.row)*TILE+(GH-TILE*6);
+    const ow=obj.type==='B'?TILE*2:TILE;
+    const oh=obj.type==='B'?TILE*2:obj.type==='p'?TILE/4:TILE;
+    if(px+TILE*.85>ox&&px+TILE*.15<ox+ow&&py+TILE*.85>oy&&py+TILE*.15<oy+oh){
+      if(obj.type==='s'){die();return;}
+      if(obj.type==='b'||obj.type==='B'){
+        if(pvy>=0&&py+TILE<oy+oh/2+8){py=oy-TILE;pvy=0;onGround=true;prot=Math.round(prot/90)*90;}
+        else if(pvy<0&&py>oy+oh/2){py=oy+oh;pvy=0;}
+        else{die();return;}
+      }
+      if(obj.type==='p'&&pvy>=0&&py+TILE<oy+oh+8){py=oy-TILE;pvy=0;onGround=true;prot=Math.round(prot/90)*90;}
+    }
+  }
+  if(px>TW-TILE*3){win();return;}
+  const pct=Math.min(100,Math.floor((px/(TW-TILE*3))*100));
+  if(pct>bestPct) bestPct=pct;
+  document.getElementById('hud-pct').textContent=pct+'%';
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('hud-attempts').textContent='Attempt '+(attempts+1);
+}
+
+// ── DRAW ──
+function drawGame(){
+  const W=gameCanvas.width,H=gameCanvas.height,GY=H-TILE*2;
+  const c=levelData.color;
+
+  // Background — dark GH theme
+  gctx.fillStyle='#0d1117';
+  gctx.fillRect(0,0,W,H);
+
+  // Subtle grid
+  gctx.strokeStyle='rgba(48,54,61,0.4)'; gctx.lineWidth=1;
+  for(let x=(-camX%TILE);x<W;x+=TILE){gctx.beginPath();gctx.moveTo(x,0);gctx.lineTo(x,H);gctx.stroke();}
+  for(let y=GY%TILE;y<H;y+=TILE){gctx.beginPath();gctx.moveTo(0,y);gctx.lineTo(W,y);gctx.stroke();}
+
+  // Objects
+  for(const obj of levelData.objects){
+    const sx=obj.col*TILE-camX;
+    if(sx>W+TILE*3||sx<-TILE*3) continue;
+    const oy=(5-obj.row)*TILE+(H-TILE*6);
+    drawObj(sx,oy,obj.type,c);
+  }
+
+  // Ground
+  for(let col=0;col<levelData.length;col++){
+    const sx=col*TILE-camX;
+    if(sx>W+TILE||sx<-TILE) continue;
+    if(!levelData.gaps.has(col)){
+      drawTile(sx,GY,c,1);
+      drawTile(sx,GY+TILE,c,0.5);
+    }
+  }
+
+  // Player
+  drawPlayer(c);
+
+  // Particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.life--;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    gctx.save();
+    gctx.globalAlpha=p.life/p.maxLife;
+    gctx.fillStyle=p.color;
+    gctx.translate(p.x-camX,p.y);
+    gctx.rotate(p.rot); p.rot+=.1;
+    gctx.fillRect(-p.s/2,-p.s/2,p.s,p.s);
+    gctx.restore();
+  }
+}
+
+function drawTile(x,y,color,alpha){
+  gctx.save();
+  gctx.globalAlpha=alpha;
+  gctx.fillStyle=color+'18';
+  gctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+  gctx.strokeStyle=color;
+  gctx.lineWidth=1;
+  gctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
+  // cross detail
+  gctx.globalAlpha=alpha*.12;
+  gctx.strokeStyle=color;
+  gctx.lineWidth=.5;
+  gctx.beginPath();
+  gctx.moveTo(x+TILE/2,y+2);gctx.lineTo(x+TILE/2,y+TILE-2);
+  gctx.moveTo(x+2,y+TILE/2);gctx.lineTo(x+TILE-2,y+TILE/2);
+  gctx.stroke();
+  gctx.restore();
+}
+
+function drawObj(x,y,type,color){
+  if(type==='b'){drawTile(x,y,color,1);}
+  else if(type==='B'){
+    gctx.save();
+    gctx.fillStyle=color+'18';
+    gctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);
+    gctx.strokeStyle=color; gctx.lineWidth=1;
+    gctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2);
+    gctx.restore();
+  }
+  else if(type==='s'){
+    gctx.save();
+    gctx.fillStyle=color+'66';
+    gctx.strokeStyle=color; gctx.lineWidth=1.5;
+    gctx.beginPath();
+    gctx.moveTo(x+TILE/2,y);
+    gctx.lineTo(x+TILE,y+TILE);
+    gctx.lineTo(x,y+TILE);
+    gctx.closePath();
+    gctx.fill(); gctx.stroke();
+    gctx.restore();
+  }
+  else if(type==='p'){
+    gctx.save();
+    gctx.fillStyle=color+'44';
+    gctx.fillRect(x,y,TILE,TILE/4);
+    gctx.strokeStyle=color; gctx.lineWidth=1;
+    gctx.strokeRect(x,y,TILE,TILE/4);
+    gctx.restore();
+  }
+}
+
+function drawPlayer(c){
+  const sx=px-camX,sy=py;
+  gctx.save();
+  gctx.translate(sx+TILE/2,sy+TILE/2);
+  gctx.rotate(prot*Math.PI/180);
+  // outer glow ring
+  gctx.beginPath();
+  gctx.arc(0,0,TILE/2+3,0,Math.PI*2);
+  gctx.strokeStyle=c+'44'; gctx.lineWidth=2; gctx.stroke();
+  // body fill
+  gctx.fillStyle='#161b22';
+  gctx.fillRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
+  // border
+  gctx.strokeStyle=c; gctx.lineWidth=2;
+  gctx.strokeRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
+  // inner square
+  gctx.strokeStyle=c+'aa'; gctx.lineWidth=1;
+  gctx.strokeRect(-TILE/4,-TILE/4,TILE/2,TILE/2);
+  // diagonal
+  gctx.strokeStyle=c+'33'; gctx.lineWidth=1;
+  gctx.beginPath();
+  gctx.moveTo(-TILE/2+4,-TILE/2+4); gctx.lineTo(TILE/2-4,TILE/2-4);
+  gctx.moveTo(TILE/2-4,-TILE/2+4);  gctx.lineTo(-TILE/2+4,TILE/2-4);
+  gctx.stroke();
+  gctx.restore();
+}
+
+function die(){
+  if(isDead) return; isDead=true; attempts++;
+  const c=levelData.color;
+  for(let i=0;i<24;i++){
+    const a=(Math.PI*2/24)*i;
+    const sp=Math.random()*5+2;
+    particles.push({x:px+TILE/2,y:py+TILE/2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,
+      s:Math.random()*7+2,color:[c,'#c9d1d9','#8b949e'][Math.floor(Math.random()*3)],
+      life:Math.floor(Math.random()*20+12),maxLife:35,rot:Math.random()*Math.PI});
+  }
+  const pct=Math.min(100,Math.floor((px/(levelData.length*TILE-TILE*3))*100));
+  document.getElementById('death-pct-msg').textContent='REACHED '+pct+'%';
+  document.getElementById('death-pct-val').textContent=bestPct+'%';
+  document.getElementById('attempt-val').textContent=attempts;
+  setTimeout(()=>document.getElementById('death-overlay').classList.add('show'),500);
+}
+
+function win(){
+  if(isWon) return; isWon=true;
+  document.getElementById('progress-fill').style.width='100%';
+  document.getElementById('hud-pct').textContent='100%';
+  for(let i=0;i<40;i++){
+    particles.push({
+      x:px+TILE/2+(Math.random()-.5)*300, y:gameCanvas.height*.5,
+      vx:(Math.random()-.5)*7, vy:Math.random()*-9-2,
+      s:Math.random()*8+3,
+      color:['#58a6ff','#f78166','#3fb950','#d29922','#c9d1d9'][Math.floor(Math.random()*5)],
+      life:Math.floor(Math.random()*35+25),maxLife:60,rot:0
+    });
+  }
+  setTimeout(()=>document.getElementById('win-overlay').classList.add('show'),700);
+}
+
+function retryLevel(){
+  document.getElementById('death-overlay').classList.remove('show');
+  document.getElementById('win-overlay').classList.remove('show');
+  if(isCustomLevel) initGame(customLevelData);
+  else initGame(buildLevelFromData(BUILT_IN_LEVELS[currentLevelIdx]));
+}
+function nextLevel(){ startLevel((currentLevelIdx+1)%BUILT_IN_LEVELS.length); }
+function backToMenu(){
+  gameRunning=false; cancelAnimationFrame(gameAnimId);
+  document.getElementById('death-overlay').classList.remove('show');
+  document.getElementById('win-overlay').classList.remove('show');
+  showScreen('menu-screen');
+}
+
+// Input
+document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jumpHeld=true;}});
+document.addEventListener('keyup',  e=>{if(e.code==='Space'||e.code==='ArrowUp') jumpHeld=false;});
+gameCanvas.addEventListener('mousedown', ()=>jumpHeld=true);
+gameCanvas.addEventListener('mouseup',   ()=>jumpHeld=false);
+gameCanvas.addEventListener('touchstart',e=>{e.preventDefault();jumpHeld=true;},{passive:false});
+gameCanvas.addEventListener('touchend',  e=>{e.preventDefault();jumpHeld=false;},{passive:false});
+window.addEventListener('resize',()=>{if(document.getElementById('game-screen').classList.contains('active')){gameCanvas.width=window.innerWidth;gameCanvas.height=window.innerHeight;}});
+
+// ═══════════════════════════════════════════════════════════════
+//  LEVEL BUILDER
+// ═══════════════════════════════════════════════════════════════
+const bCanvas=document.getElementById('builder-canvas');
+const bctx=bCanvas.getContext('2d');
+let bTool='block',bScrollX=0,bMouseDown=false,bObjects=[],bGaps=new Set(),bLevelLen=120;
+
+function openBuilder(){showScreen('builder-screen');resizeBuilder();renderBuilder();}
+
+function resizeBuilder(){
+  const w=document.getElementById('builder-wrap');
+  bCanvas.width=w.clientWidth; bCanvas.height=w.clientHeight;
+}
+
+function setTool(t){
+  bTool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool-'+t)?.classList.add('active');
+}
+
+function renderBuilder(){
+  const W=bCanvas.width,H=bCanvas.height;
+  const GY=H-TILE*3, GR=5;
+  bctx.fillStyle='#0d1117';
+  bctx.fillRect(0,0,W,H);
+  // grid
+  bctx.strokeStyle='rgba(48,54,61,0.5)'; bctx.lineWidth=1;
+  for(let c=0;c<=bLevelLen;c++){const sx=c*TILE-bScrollX;if(sx<-TILE||sx>W+TILE)continue;bctx.beginPath();bctx.moveTo(sx,0);bctx.lineTo(sx,H);bctx.stroke();}
+  for(let r=0;r<=8;r++){const sy=GY-(r-GR)*TILE;bctx.beginPath();bctx.moveTo(0,sy);bctx.lineTo(W,sy);bctx.stroke();}
+  // ground line
+  bctx.strokeStyle='rgba(48,54,61,0.9)'; bctx.lineWidth=2;
+  bctx.beginPath(); bctx.moveTo(0,GY+TILE); bctx.lineTo(W,GY+TILE); bctx.stroke();
+  // ground tiles
+  for(let c=0;c<bLevelLen;c++){
+    const sx=c*TILE-bScrollX;
+    if(sx>W+TILE||sx<-TILE) continue;
+    if(!bGaps.has(c)){drawBuilderTile(sx,GY+TILE,'#58a6ff',0.7);}
+    else{
+      bctx.fillStyle='rgba(248,81,73,0.08)';
+      bctx.fillRect(sx,GY+TILE,TILE,TILE);
+      bctx.strokeStyle='#f8514944'; bctx.lineWidth=1;
+      bctx.setLineDash([3,3]); bctx.strokeRect(sx,GY+TILE,TILE,TILE); bctx.setLineDash([]);
+    }
+  }
+  // objects
+  for(const obj of bObjects){
+    const sx=obj.col*TILE-bScrollX;
+    if(sx>W+TILE*3||sx<-TILE*3) continue;
+    const sy=GY-(obj.row-GR)*TILE;
+    drawBuilderObj(sx,sy,obj.type);
+  }
+  // end marker
+  const endX=bLevelLen*TILE-bScrollX;
+  if(endX>0&&endX<W){
+    bctx.strokeStyle='#30363d'; bctx.lineWidth=2;
+    bctx.setLineDash([6,4]); bctx.beginPath(); bctx.moveTo(endX,0); bctx.lineTo(endX,H); bctx.stroke(); bctx.setLineDash([]);
+    bctx.fillStyle='#8b949e'; bctx.font='11px monospace';
+    bctx.fillText('END',endX+5,15);
+  }
+  document.getElementById('scroll-ind').textContent=Math.round((bScrollX/(bLevelLen*TILE))*100)+'%';
+}
+
+function drawBuilderTile(x,y,color,alpha){
+  bctx.save(); bctx.globalAlpha=alpha;
+  bctx.fillStyle=color+'18'; bctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+  bctx.strokeStyle=color; bctx.lineWidth=1; bctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
+  bctx.restore();
+}
+
+function drawBuilderObj(x,y,type){
+  const c='#58a6ff';
+  if(type==='b'){drawBuilderTile(x,y,c,1);}
+  else if(type==='B'){bctx.save();bctx.fillStyle=c+'18';bctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.restore();}
+  else if(type==='s'){bctx.save();bctx.fillStyle=c+'66';bctx.strokeStyle=c;bctx.lineWidth=1.5;bctx.beginPath();bctx.moveTo(x+TILE/2,y);bctx.lineTo(x+TILE,y+TILE);bctx.lineTo(x,y+TILE);bctx.closePath();bctx.fill();bctx.stroke();bctx.restore();}
+  else if(type==='p'){bctx.save();bctx.fillStyle=c+'44';bctx.fillRect(x,y,TILE,TILE/4);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x,y,TILE,TILE/4);bctx.restore();}
+}
+
+function builderClick(e,isRight){
+  const W=bCanvas.width,H=bCanvas.height,GY=H-TILE*3,GR=5;
+  const rect=bCanvas.getBoundingClientRect();
+  const col=Math.floor((e.clientX-rect.left+bScrollX)/TILE);
+  const row=GR+Math.round((GY-(e.clientY-rect.top))/TILE);
+  if(col<0||col>=bLevelLen) return;
+  if(isRight||bTool==='erase'){
+    bObjects=bObjects.filter(o=>!(o.col===col&&o.row===row));
+    if(row===GR||row===GR-1){if(bGaps.has(col))bGaps.delete(col);}
+    renderBuilder(); return;
+  }
+  const typeMap={block:'b',spike:'s',platform:'p',bigblock:'B'};
+  bObjects=bObjects.filter(o=>!(o.col===col&&o.row===row));
+  bObjects.push({col,row:Math.max(1,row),type:typeMap[bTool]});
+  renderBuilder();
+}
+
+bCanvas.addEventListener('contextmenu',e=>{e.preventDefault();builderClick(e,true);});
+bCanvas.addEventListener('mousedown',e=>{bMouseDown=true;if(e.button===2)return;builderClick(e,false);});
+bCanvas.addEventListener('mousemove',e=>{if(bMouseDown&&e.button===0)builderClick(e,false);});
+bCanvas.addEventListener('mouseup',()=>bMouseDown=false);
+bCanvas.addEventListener('wheel',e=>{e.preventDefault();bScrollX=Math.max(0,Math.min(bScrollX+e.deltaY*.5,bLevelLen*TILE-bCanvas.width/2));renderBuilder();},{passive:false});
+window.addEventListener('resize',()=>{if(document.getElementById('builder-screen').classList.contains('active')){resizeBuilder();renderBuilder();}});
+
+function clearBuilder(){if(!confirm('Clear all objects?'))return;bObjects=[];bGaps=new Set();bScrollX=0;renderBuilder();}
+function saveBuilderLevel(){localStorage.setItem('cubic_dash_custom',JSON.stringify({objects:bObjects,gaps:[...bGaps],length:bLevelLen}));alert('Level saved to localStorage.');}
+function loadBuilderLevel(){const raw=localStorage.getItem('cubic_dash_custom');if(!raw){alert('No saved level found.');return;}const d=JSON.parse(raw);bObjects=d.objects||[];bGaps=new Set(d.gaps||[]);bLevelLen=d.length||120;renderBuilder();}
+function testBuilderLevel(){
+  const objs=[...bObjects.map(o=>[o.col,o.row,o.type]),...[...bGaps].map(c=>['gap',c])];
+  customLevelData=buildLevelFromData({name:'CUSTOM LEVEL',color:'#3fb950',length:bLevelLen,objects:objs});
+  isCustomLevel=true; attempts=0;
+  showScreen('game-screen');
+  initGame(customLevelData);
+  startGameLoop();
+}
+
+// ══ SCREEN SWITCHER ════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='builder-screen'){resizeBuilder();renderBuilder();}
+}
+</script>
+</body>
+</html>
