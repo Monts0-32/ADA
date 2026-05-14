@@ -515,96 +515,84 @@
 
         const btn = document.getElementById('like-btn');
 
-        // Step 1: snapshot home position while button is still in normal flow
-        const rect = btn.getBoundingClientRect();
-        runawayHome = { left: rect.left, top: rect.top };
+        // Defer everything by two frames so the browser has finished painting
+        // the button in its final layout position before we snapshot it.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!runawayActive) return; // was disabled before paint
 
-        // Step 2: switch to fixed, place at exact same spot
-        btn.classList.add('runaway');
-        btn.style.left = runawayHome.left + 'px';
-        btn.style.top  = runawayHome.top  + 'px';
+            // Snapshot home from real painted position
+            const rect = btn.getBoundingClientRect();
+            runawayHome = { left: rect.left, top: rect.top };
 
-        let curL = runawayHome.left;
-        let curT = runawayHome.top;
+            // Switch to fixed at exact same spot — visually seamless
+            btn.classList.add('runaway');
+            btn.style.left = runawayHome.left + 'px';
+            btn.style.top  = runawayHome.top  + 'px';
 
-        // Real mouse position — initialise to far away so no immediate flee
-        let mouseX = -9999;
-        let mouseY = -9999;
-        let rafId  = null;
+            let curL = runawayHome.left;
+            let curT = runawayHome.top;
 
-        const PROXIMITY   = 120;   // px — how close the mouse needs to be to trigger flee
-        const FLEE_SPEED  = 11;    // px per frame while fleeing
-        const GLIDE_EASE  = 0.07;  // lerp factor back to home (lower = smoother/slower)
-        const SNAP_DIST   = 0.5;   // px — snap to exact home when this close
+            // Mouse starts far away so no immediate flee on enable
+            let mouseX = -9999;
+            let mouseY = -9999;
+            let rafId  = null;
 
-        function tick() {
-            if (!runawayActive) return;
-            rafId = requestAnimationFrame(tick);
+            const PROXIMITY  = 120;
+            const FLEE_SPEED = 11;
+            const GLIDE_EASE = 0.07;
+            const SNAP_DIST  = 0.5;
 
-            // Use actual rendered size; fall back to reasonable defaults
-            const bW = btn.offsetWidth  || 72;
-            const bH = btn.offsetHeight || 32;
+            function tick() {
+                if (!runawayActive) return;
+                rafId = requestAnimationFrame(tick);
 
-            // Centre of button at current tracked position
-            const cx = curL + bW / 2;
-            const cy = curT + bH / 2;
+                const bW = btn.offsetWidth  || 72;
+                const bH = btn.offsetHeight || 32;
+                const cx = curL + bW / 2;
+                const cy = curT + bH / 2;
 
-            const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
+                const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
 
-            const margin = 8;
-            const maxL   = window.innerWidth  - bW  - margin;
-            const maxT   = window.innerHeight - bH  - margin;
+                const margin = 8;
+                const maxL   = window.innerWidth  - bW  - margin;
+                const maxT   = window.innerHeight - bH  - margin;
 
-            if (distToMouse < PROXIMITY) {
-                // ── FLEE away from mouse ──
-                let dx = cx - mouseX;
-                let dy = cy - mouseY;
-                const len = Math.hypot(dx, dy) || 1;
-                dx = (dx / len) * FLEE_SPEED;
-                dy = (dy / len) * FLEE_SPEED;
+                if (distToMouse < PROXIMITY) {
+                    // FLEE — move directly away from mouse
+                    let dx = cx - mouseX;
+                    let dy = cy - mouseY;
+                    const len = Math.hypot(dx, dy) || 1;
+                    dx = (dx / len) * FLEE_SPEED;
+                    dy = (dy / len) * FLEE_SPEED;
 
-                let newL = curL + dx;
-                let newT = curT + dy;
+                    curL = Math.max(margin, Math.min(maxL, curL + dx));
+                    curT = Math.max(margin, Math.min(maxT, curT + dy));
 
-                // Bounce off viewport edges
-                if (newL < margin) { newL = margin; }
-                if (newL > maxL)   { newL = maxL; }
-                if (newT < margin) { newT = margin; }
-                if (newT > maxT)   { newT = maxT; }
-
-                curL = newL;
-                curT = newT;
-
-            } else {
-                // ── GLIDE back to home ──
-                // Always lerp toward home every frame — no state flag needed
-                const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
-
-                if (distToHome > SNAP_DIST) {
-                    curL += (runawayHome.left - curL) * GLIDE_EASE;
-                    curT += (runawayHome.top  - curT) * GLIDE_EASE;
                 } else {
-                    curL = runawayHome.left;
-                    curT = runawayHome.top;
+                    // GLIDE HOME — lerp toward home every frame mouse is away
+                    const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
+                    if (distToHome > SNAP_DIST) {
+                        curL += (runawayHome.left - curL) * GLIDE_EASE;
+                        curT += (runawayHome.top  - curT) * GLIDE_EASE;
+                    } else {
+                        curL = runawayHome.left;
+                        curT = runawayHome.top;
+                    }
                 }
+
+                btn.style.left = curL + 'px';
+                btn.style.top  = curT + 'px';
             }
 
-            btn.style.left = curL + 'px';
-            btn.style.top  = curT + 'px';
-        }
-
-        function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
-        document.addEventListener('mousemove', onMouseMove);
-
-        // Wait one frame so the browser has painted the fixed button before we start
-        requestAnimationFrame(() => {
+            function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
+            document.addEventListener('mousemove', onMouseMove);
             rafId = requestAnimationFrame(tick);
-        });
 
-        btn._runawayCleanup = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            cancelAnimationFrame(rafId);
-        };
+            btn._runawayCleanup = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                cancelAnimationFrame(rafId);
+            };
+        }));
     }
 
     function disableRunaway() {
@@ -656,7 +644,12 @@
             attachLogic();
         }
 
-        // Social section — always show, comment box only when logged in
+        // Load config FIRST so renderReactions knows the overrides before rendering counts,
+        // and so applyProfileConfig can show/hide buttons before they ever become visible.
+        await loadProfileConfig();
+        applyProfileConfig();
+
+        // Show social section only AFTER config applied (prevents button flash)
         document.getElementById('social-section').style.display = 'block';
         if (myEmail) {
             // Load own profile for avatar/name in comments
@@ -673,8 +666,6 @@
 
         fetchReactions();
         loadComments();
-        await loadProfileConfig();
-        applyProfileConfig();
     }
 
     // ── Reactions ─────────────────────────────────────────────────────────────
