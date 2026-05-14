@@ -101,7 +101,7 @@
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
 
         /* --- REACTION BUTTONS --- */
-        .reaction-bar { display: flex; gap: 10px; margin-top: 0; }
+        .reaction-bar { display: flex; gap: 10px; margin-top: 0; position: relative; min-height: 48px; align-items: center; }
         #social-section { margin-top: 20px; }
         .react-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: #21262d; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.15s; user-select: none; }
         .react-btn:hover { background: #30363d; }
@@ -161,8 +161,8 @@
         #like-btn, #dislike-btn { display: none; }
         #like-btn.react-visible, #dislike-btn.react-visible { display: flex; }
 
-        /* Runaway like button — no position transition, JS handles movement */
-        #like-btn.runaway { position:fixed; pointer-events:auto; z-index:500; }
+        /* Runaway like button — absolute within reaction-bar, no position transition */
+        #like-btn.runaway { position:absolute; pointer-events:auto; z-index:500; }
     </style>
 </head>
 <body id="p-body">
@@ -515,38 +515,28 @@
         if (runawayActive) return;
         runawayActive = true;
 
-        const btn = document.getElementById('like-btn');
-        let rafId = null;
+        const btn       = document.getElementById('like-btn');
+        const container = document.getElementById('reaction-bar');
+        let rafId       = null;
 
         function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
+        document.addEventListener('mousemove', onMouseMove);
 
-        // Use setTimeout so we're completely outside the current JS call stack.
-        // By then the browser has painted, laid out, and the button is fully visible.
         setTimeout(() => {
             if (!runawayActive) return;
 
-            // Read position while button is in normal flow (no .runaway yet)
-            const rect = btn.getBoundingClientRect();
-            console.log('[runaway] BCR:', rect.left, rect.top, rect.width, rect.height, 'scroll:', window.scrollX, window.scrollY);
+            // Snapshot home as offset within reaction-bar (not viewport coords)
+            const homeL = btn.offsetLeft;
+            const homeT = btn.offsetTop;
+            runawayHome = { left: homeL, top: homeT };
 
-            // If still zero, the button isn't visible — don't start
-            if (rect.width === 0 || rect.height === 0) {
-                console.log('[runaway] button has no size, aborting');
-                runawayActive = false;
-                return;
-            }
-
-            // BCR gives viewport coords — correct for position:fixed
-            runawayHome = { left: rect.left, top: rect.top };
-            console.log('[runaway] home set to:', runawayHome);
-
-            // Switch to fixed at that exact position
+            // Switch to absolute within container
             btn.classList.add('runaway');
-            btn.style.left = runawayHome.left + 'px';
-            btn.style.top  = runawayHome.top  + 'px';
+            btn.style.left = homeL + 'px';
+            btn.style.top  = homeT + 'px';
 
-            let curL = runawayHome.left;
-            let curT = runawayHome.top;
+            let curL = homeL;
+            let curT = homeT;
 
             const PROXIMITY  = 120;
             const FLEE_SPEED = 11;
@@ -559,18 +549,23 @@
 
                 const bW = btn.offsetWidth  || 72;
                 const bH = btn.offsetHeight || 32;
-                const cx = curL + bW / 2;
-                const cy = curT + bH / 2;
-                const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
 
-                const margin = 8;
-                const maxL   = window.innerWidth  - bW  - margin;
-                const maxT   = window.innerHeight - bH  - margin;
+                // Convert container-relative position to viewport coords for mouse distance
+                const containerRect = container.getBoundingClientRect();
+                const btnViewportCX = containerRect.left + curL + bW / 2;
+                const btnViewportCY = containerRect.top  + curT + bH / 2;
+
+                const distToMouse = Math.hypot(mouseX - btnViewportCX, mouseY - btnViewportCY);
+
+                // Constrain within reaction-bar bounds
+                const margin = 4;
+                const maxL   = container.offsetWidth  - bW  - margin;
+                const maxT   = container.offsetHeight - bH  - margin;
 
                 if (distToMouse < PROXIMITY) {
-                    // FLEE
-                    let dx = cx - mouseX;
-                    let dy = cy - mouseY;
+                    // FLEE — move away from mouse in container-local space
+                    let dx = btnViewportCX - mouseX;
+                    let dy = btnViewportCY - mouseY;
                     const len = Math.hypot(dx, dy) || 1;
                     curL = Math.max(margin, Math.min(maxL, curL + (dx / len) * FLEE_SPEED));
                     curT = Math.max(margin, Math.min(maxT, curT + (dy / len) * FLEE_SPEED));
@@ -590,7 +585,6 @@
                 btn.style.top  = curT + 'px';
             }
 
-            document.addEventListener('mousemove', onMouseMove);
             rafId = requestAnimationFrame(tick);
 
             btn._runawayCleanup = () => {
@@ -598,9 +592,8 @@
                 cancelAnimationFrame(rafId);
             };
 
-        }, 100); // 100ms is enough for any browser to finish painting
+        }, 100);
 
-        // Store cleanup in case disableRunaway is called before timeout fires
         btn._runawayCleanup = () => {
             document.removeEventListener('mousemove', onMouseMove);
             cancelAnimationFrame(rafId);
