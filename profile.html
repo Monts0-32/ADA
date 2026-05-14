@@ -738,6 +738,13 @@
 
     async function react(type) {
         if (!myEmail) return;
+
+        // ── Runaway mode: like is caught but immediately rejected ──
+        if (type === 'like' && runawayActive && runawayHome) {
+            snapRunawayHome(); // snaps home, bounces, spits out 👍 — no like registered
+            return;
+        }
+
         const likes    = [...(reactionsData.likes    || [])];
         const dislikes = [...(reactionsData.dislikes || [])];
 
@@ -748,15 +755,26 @@
         // Toggle in own list
         const own = type === 'like' ? likes : dislikes;
         const idx = own.indexOf(myEmail);
-        const isNewLike = idx === -1; // true = adding a like, false = removing
+        const isAdding = idx === -1;
         if (idx > -1) own.splice(idx, 1); else own.push(myEmail);
 
         reactionsData = { likes, dislikes };
         renderReactions();
 
-        // ── Runaway caught: snap home + animate ──
-        if (type === 'like' && isNewLike && runawayActive && runawayHome) {
-            snapRunawayHome();
+        // ── Normal mode animations ──
+        if (isAdding) {
+            const container = document.getElementById('reaction-bar');
+            if (type === 'like') {
+                const btn = document.getElementById('like-btn');
+                const r   = btn.getBoundingClientRect();
+                const cr  = container.getBoundingClientRect();
+                spawnParticle(container, r.left - cr.left + btn.offsetWidth / 2, r.top - cr.top, '+1', '#3fb950');
+            } else {
+                const btn = document.getElementById('dislike-btn');
+                const r   = btn.getBoundingClientRect();
+                const cr  = container.getBoundingClientRect();
+                spawnParticle(container, r.left - cr.left + btn.offsetWidth / 2, r.top - cr.top, '+1', '#f85149');
+            }
         }
 
         await saveSystemData('react__' + target, JSON.stringify(reactionsData));
@@ -766,51 +784,51 @@
         const btn       = document.getElementById('like-btn');
         const container = document.getElementById('reaction-bar');
 
-        // Stop the flee loop so it doesn't fight the snap
+        // Stop the flee loop
         if (btn._runawayCleanup) { btn._runawayCleanup(); delete btn._runawayCleanup; }
 
-        // Animate position back to home over ~300ms using JS lerp (fast ease-out)
-        const startL = parseFloat(btn.style.left) || 0;
-        const startT = parseFloat(btn.style.top)  || 0;
+        const startL    = parseFloat(btn.style.left) || 0;
+        const startT    = parseFloat(btn.style.top)  || 0;
         const startTime = performance.now();
         const DURATION  = 300;
 
         function snapTick(now) {
             const t = Math.min((now - startTime) / DURATION, 1);
-            // Ease-out cubic
-            const e = 1 - Math.pow(1 - t, 3);
+            const e = 1 - Math.pow(1 - t, 3); // ease-out cubic
             btn.style.left = (startL + (runawayHome.left - startL) * e) + 'px';
             btn.style.top  = (startT + (runawayHome.top  - startT) * e) + 'px';
 
             if (t < 1) {
                 requestAnimationFrame(snapTick);
             } else {
-                // Arrived — play bounce + shoot particle, then fully restore
                 btn.style.left = runawayHome.left + 'px';
                 btn.style.top  = runawayHome.top  + 'px';
 
-                // Bounce animation
+                // Bounce
                 btn.classList.remove('caught');
-                void btn.offsetWidth; // force reflow so animation restarts cleanly
+                void btn.offsetWidth;
                 btn.classList.add('caught');
                 btn.addEventListener('animationend', () => btn.classList.remove('caught'), { once: true });
 
-                // Spawn +1 particle above the button's home position
-                spawnLikeParticle(container, runawayHome.left + (btn.offsetWidth / 2), runawayHome.top);
+                // Spit out a 👍 — this is the like being rejected, not added
+                spawnParticle(container, runawayHome.left + btn.offsetWidth / 2, runawayHome.top, '👍', null);
 
-                // Restart runaway loop now that button is home
-                runawayActive = false; // reset flag so enableRunaway can re-arm
+                // Re-arm runaway
+                runawayActive = false;
                 enableRunaway();
             }
         }
         requestAnimationFrame(snapTick);
     }
 
-    function spawnLikeParticle(container, x, y) {
+    function spawnParticle(container, x, y, text, color) {
         const p = document.createElement('div');
         p.className   = 'like-particle';
-        p.textContent = '+1';
-        // Position centred above the button
+        p.textContent = text;
+        if (color) p.style.color = color;
+        if (color) p.style.textShadow = `0 0 8px ${color}88`;
+        // For emoji (no color override) use a bigger size
+        if (!color) p.style.fontSize = '20px';
         p.style.left = (x - 12) + 'px';
         p.style.top  = (y - 10) + 'px';
         container.appendChild(p);
