@@ -515,41 +515,40 @@
 
         const btn = document.getElementById('like-btn');
 
-        // ── Snapshot home BEFORE adding .runaway (button is still in normal flow) ──
+        // Step 1: snapshot home position while button is still in normal flow
         const rect = btn.getBoundingClientRect();
         runawayHome = { left: rect.left, top: rect.top };
 
-        // Now switch to fixed and place exactly where it was
+        // Step 2: switch to fixed, place at exact same spot
         btn.classList.add('runaway');
         btn.style.left = runawayHome.left + 'px';
         btn.style.top  = runawayHome.top  + 'px';
 
-        // Current position (what we actually move each frame)
         let curL = runawayHome.left;
         let curT = runawayHome.top;
 
-        // Velocity (used for smooth glide back)
-        let velL = 0;
-        let velT = 0;
+        // Real mouse position — initialise to far away so no immediate flee
+        let mouseX = -9999;
+        let mouseY = -9999;
+        let rafId  = null;
 
-        let mouseX = runawayHome.left + 9999; // start far away so no immediate flee
-        let mouseY = runawayHome.top  + 9999;
-        let isNearMouse = false;
-        let rafId = null;
-
-        const PROXIMITY  = 120;   // px — flee trigger radius
-        const FLEE_SPEED = 10;    // px/frame away from mouse
-        const GLIDE_EASE = 0.08;  // lerp factor for return glide (0=no movement, 1=instant)
-        const ARRIVE_THRESHOLD = 1; // px — snap to home when this close
+        const PROXIMITY   = 120;   // px — how close the mouse needs to be to trigger flee
+        const FLEE_SPEED  = 11;    // px per frame while fleeing
+        const GLIDE_EASE  = 0.07;  // lerp factor back to home (lower = smoother/slower)
+        const SNAP_DIST   = 0.5;   // px — snap to exact home when this close
 
         function tick() {
             if (!runawayActive) return;
             rafId = requestAnimationFrame(tick);
 
-            const bW = btn.offsetWidth  || 80;
-            const bH = btn.offsetHeight || 34;
+            // Use actual rendered size; fall back to reasonable defaults
+            const bW = btn.offsetWidth  || 72;
+            const bH = btn.offsetHeight || 32;
+
+            // Centre of button at current tracked position
             const cx = curL + bW / 2;
             const cy = curT + bH / 2;
+
             const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
 
             const margin = 8;
@@ -557,10 +556,7 @@
             const maxT   = window.innerHeight - bH  - margin;
 
             if (distToMouse < PROXIMITY) {
-                // ── FLEE: move directly away from mouse ──
-                isNearMouse = true;
-                velL = 0; velT = 0; // cancel any glide
-
+                // ── FLEE away from mouse ──
                 let dx = cx - mouseX;
                 let dy = cy - mouseY;
                 const len = Math.hypot(dx, dy) || 1;
@@ -570,32 +566,24 @@
                 let newL = curL + dx;
                 let newT = curT + dy;
 
-                // Bounce off walls instead of sticking
-                if (newL < margin) { newL = margin; dx = Math.abs(dx); }
-                if (newL > maxL)   { newL = maxL;   dx = -Math.abs(dx); }
-                if (newT < margin) { newT = margin;  dy = Math.abs(dy); }
-                if (newT > maxT)   { newT = maxT;    dy = -Math.abs(dy); }
+                // Bounce off viewport edges
+                if (newL < margin) { newL = margin; }
+                if (newL > maxL)   { newL = maxL; }
+                if (newT < margin) { newT = margin; }
+                if (newT > maxT)   { newT = maxT; }
 
                 curL = newL;
                 curT = newT;
 
             } else {
-                // ── GLIDE HOME: smooth lerp back to home position ──
-                if (isNearMouse) {
-                    isNearMouse = false;
-                    // Give it a tiny initial velocity toward home for smoothness
-                    velL = (runawayHome.left - curL) * GLIDE_EASE;
-                    velT = (runawayHome.top  - curT) * GLIDE_EASE;
-                }
-
+                // ── GLIDE back to home ──
+                // Always lerp toward home every frame — no state flag needed
                 const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
 
-                if (distToHome > ARRIVE_THRESHOLD) {
-                    // Ease toward home
+                if (distToHome > SNAP_DIST) {
                     curL += (runawayHome.left - curL) * GLIDE_EASE;
                     curT += (runawayHome.top  - curT) * GLIDE_EASE;
                 } else {
-                    // Snap exactly to home once close enough
                     curL = runawayHome.left;
                     curT = runawayHome.top;
                 }
@@ -607,7 +595,11 @@
 
         function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
         document.addEventListener('mousemove', onMouseMove);
-        rafId = requestAnimationFrame(tick);
+
+        // Wait one frame so the browser has painted the fixed button before we start
+        requestAnimationFrame(() => {
+            rafId = requestAnimationFrame(tick);
+        });
 
         btn._runawayCleanup = () => {
             document.removeEventListener('mousemove', onMouseMove);
@@ -734,8 +726,12 @@
 
         document.getElementById('like-count').textContent    = likeDisplay;
         document.getElementById('dislike-count').textContent = dislikeDisplay;
-        document.getElementById('like-btn').className    = 'react-btn' + (likes.includes(myEmail)    ? ' liked'    : '');
-        document.getElementById('dislike-btn').className = 'react-btn' + (dislikes.includes(myEmail) ? ' disliked' : '');
+
+        // Toggle state classes WITHOUT wiping react-visible or runaway — those are set by applyProfileConfig
+        const likeBtn    = document.getElementById('like-btn');
+        const dislikeBtn = document.getElementById('dislike-btn');
+        likeBtn.classList.toggle('liked',       likes.includes(myEmail));
+        dislikeBtn.classList.toggle('disliked', dislikes.includes(myEmail));
     }
 
     // ── Comments ──────────────────────────────────────────────────────────────
