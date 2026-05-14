@@ -110,6 +110,33 @@
         .react-btn.disliked { background: rgba(248, 81, 73, 0.15); border-color: var(--red); color: var(--red); }
         .react-count { font-size: 12px; opacity: 0.8; }
 
+        /* Runaway catch: button snaps home with a bounce */
+        @keyframes runaway-caught {
+            0%   { transform: scale(1.4); }
+            40%  { transform: scale(0.85); }
+            70%  { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        #like-btn.caught { animation: runaway-caught 0.45s cubic-bezier(.36,.07,.19,.97) forwards; }
+
+        /* Floating +1 particle */
+        @keyframes float-up {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            60%  { opacity: 1; transform: translateY(-28px) scale(1.15); }
+            100% { opacity: 0; transform: translateY(-52px) scale(0.85); }
+        }
+        .like-particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 15px;
+            font-weight: 800;
+            color: #3fb950;
+            text-shadow: 0 0 8px rgba(63,185,80,0.6);
+            white-space: nowrap;
+            animation: float-up 0.75s ease-out forwards;
+            z-index: 600;
+        }
+
         /* --- COMMENTS SECTION --- */
         .comments-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
         .comments-title { font-size: 12px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; }
@@ -721,13 +748,73 @@
         // Toggle in own list
         const own = type === 'like' ? likes : dislikes;
         const idx = own.indexOf(myEmail);
+        const isNewLike = idx === -1; // true = adding a like, false = removing
         if (idx > -1) own.splice(idx, 1); else own.push(myEmail);
 
         reactionsData = { likes, dislikes };
         renderReactions();
 
-        // Save via existing /admin/system/save endpoint
+        // ── Runaway caught: snap home + animate ──
+        if (type === 'like' && isNewLike && runawayActive && runawayHome) {
+            snapRunawayHome();
+        }
+
         await saveSystemData('react__' + target, JSON.stringify(reactionsData));
+    }
+
+    function snapRunawayHome() {
+        const btn       = document.getElementById('like-btn');
+        const container = document.getElementById('reaction-bar');
+
+        // Stop the flee loop so it doesn't fight the snap
+        if (btn._runawayCleanup) { btn._runawayCleanup(); delete btn._runawayCleanup; }
+
+        // Animate position back to home over ~300ms using JS lerp (fast ease-out)
+        const startL = parseFloat(btn.style.left) || 0;
+        const startT = parseFloat(btn.style.top)  || 0;
+        const startTime = performance.now();
+        const DURATION  = 300;
+
+        function snapTick(now) {
+            const t = Math.min((now - startTime) / DURATION, 1);
+            // Ease-out cubic
+            const e = 1 - Math.pow(1 - t, 3);
+            btn.style.left = (startL + (runawayHome.left - startL) * e) + 'px';
+            btn.style.top  = (startT + (runawayHome.top  - startT) * e) + 'px';
+
+            if (t < 1) {
+                requestAnimationFrame(snapTick);
+            } else {
+                // Arrived — play bounce + shoot particle, then fully restore
+                btn.style.left = runawayHome.left + 'px';
+                btn.style.top  = runawayHome.top  + 'px';
+
+                // Bounce animation
+                btn.classList.remove('caught');
+                void btn.offsetWidth; // force reflow so animation restarts cleanly
+                btn.classList.add('caught');
+                btn.addEventListener('animationend', () => btn.classList.remove('caught'), { once: true });
+
+                // Spawn +1 particle above the button's home position
+                spawnLikeParticle(container, runawayHome.left + (btn.offsetWidth / 2), runawayHome.top);
+
+                // Restart runaway loop now that button is home
+                runawayActive = false; // reset flag so enableRunaway can re-arm
+                enableRunaway();
+            }
+        }
+        requestAnimationFrame(snapTick);
+    }
+
+    function spawnLikeParticle(container, x, y) {
+        const p = document.createElement('div');
+        p.className   = 'like-particle';
+        p.textContent = '+1';
+        // Position centred above the button
+        p.style.left = (x - 12) + 'px';
+        p.style.top  = (y - 10) + 'px';
+        container.appendChild(p);
+        p.addEventListener('animationend', () => p.remove(), { once: true });
     }
 
     function renderReactions() {
