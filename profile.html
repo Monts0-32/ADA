@@ -515,84 +515,87 @@
 
         const btn = document.getElementById('like-btn');
 
-        // Defer everything by two frames so the browser has finished painting
-        // the button in its final layout position before we snapshot it.
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            if (!runawayActive) return; // was disabled before paint
+        let curL = null; // null = not yet initialised
+        let curT = null;
+        let mouseX = -9999;
+        let mouseY = -9999;
+        let rafId  = null;
 
-            // Snapshot home from real painted position
-            const rect = btn.getBoundingClientRect();
-            runawayHome = { left: rect.left, top: rect.top };
+        const PROXIMITY  = 120;
+        const FLEE_SPEED = 11;
+        const GLIDE_EASE = 0.07;
+        const SNAP_DIST  = 0.5;
 
-            // Switch to fixed at exact same spot — visually seamless
-            btn.classList.add('runaway');
-            btn.style.left = runawayHome.left + 'px';
-            btn.style.top  = runawayHome.top  + 'px';
-
-            let curL = runawayHome.left;
-            let curT = runawayHome.top;
-
-            // Mouse starts far away so no immediate flee on enable
-            let mouseX = -9999;
-            let mouseY = -9999;
-            let rafId  = null;
-
-            const PROXIMITY  = 120;
-            const FLEE_SPEED = 11;
-            const GLIDE_EASE = 0.07;
-            const SNAP_DIST  = 0.5;
-
-            function tick() {
-                if (!runawayActive) return;
-                rafId = requestAnimationFrame(tick);
-
-                const bW = btn.offsetWidth  || 72;
-                const bH = btn.offsetHeight || 32;
-                const cx = curL + bW / 2;
-                const cy = curT + bH / 2;
-
-                const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
-
-                const margin = 8;
-                const maxL   = window.innerWidth  - bW  - margin;
-                const maxT   = window.innerHeight - bH  - margin;
-
-                if (distToMouse < PROXIMITY) {
-                    // FLEE — move directly away from mouse
-                    let dx = cx - mouseX;
-                    let dy = cy - mouseY;
-                    const len = Math.hypot(dx, dy) || 1;
-                    dx = (dx / len) * FLEE_SPEED;
-                    dy = (dy / len) * FLEE_SPEED;
-
-                    curL = Math.max(margin, Math.min(maxL, curL + dx));
-                    curT = Math.max(margin, Math.min(maxT, curT + dy));
-
-                } else {
-                    // GLIDE HOME — lerp toward home every frame mouse is away
-                    const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
-                    if (distToHome > SNAP_DIST) {
-                        curL += (runawayHome.left - curL) * GLIDE_EASE;
-                        curT += (runawayHome.top  - curT) * GLIDE_EASE;
-                    } else {
-                        curL = runawayHome.left;
-                        curT = runawayHome.top;
-                    }
-                }
-
-                btn.style.left = curL + 'px';
-                btn.style.top  = curT + 'px';
-            }
-
-            function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
-            document.addEventListener('mousemove', onMouseMove);
+        function tick() {
+            if (!runawayActive) return;
             rafId = requestAnimationFrame(tick);
 
-            btn._runawayCleanup = () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                cancelAnimationFrame(rafId);
-            };
-        }));
+            // ── First frame: snapshot home now that button is definitely painted ──
+            if (curL === null) {
+                // Must NOT have .runaway yet when we read BCR — remove it temporarily,
+                // read, then re-apply so the button is in normal flow for the measurement.
+                btn.classList.remove('runaway');
+                btn.style.left = '';
+                btn.style.top  = '';
+
+                const rect = btn.getBoundingClientRect();
+
+                // Only proceed if the button has a real position (not hidden/zero)
+                if (rect.width === 0) return; // not painted yet, try next frame
+
+                runawayHome = { left: rect.left, top: rect.top };
+                curL = rect.left;
+                curT = rect.top;
+
+                // Now switch to fixed at that exact spot
+                btn.classList.add('runaway');
+                btn.style.left = curL + 'px';
+                btn.style.top  = curT + 'px';
+                return; // skip movement on init frame
+            }
+
+            const bW = btn.offsetWidth  || 72;
+            const bH = btn.offsetHeight || 32;
+            const cx = curL + bW / 2;
+            const cy = curT + bH / 2;
+
+            const distToMouse = Math.hypot(mouseX - cx, mouseY - cy);
+
+            const margin = 8;
+            const maxL   = window.innerWidth  - bW  - margin;
+            const maxT   = window.innerHeight - bH  - margin;
+
+            if (distToMouse < PROXIMITY) {
+                // FLEE
+                let dx = cx - mouseX;
+                let dy = cy - mouseY;
+                const len = Math.hypot(dx, dy) || 1;
+                curL = Math.max(margin, Math.min(maxL, curL + (dx / len) * FLEE_SPEED));
+                curT = Math.max(margin, Math.min(maxT, curT + (dy / len) * FLEE_SPEED));
+            } else {
+                // GLIDE HOME
+                const distToHome = Math.hypot(runawayHome.left - curL, runawayHome.top - curT);
+                if (distToHome > SNAP_DIST) {
+                    curL += (runawayHome.left - curL) * GLIDE_EASE;
+                    curT += (runawayHome.top  - curT) * GLIDE_EASE;
+                } else {
+                    curL = runawayHome.left;
+                    curT = runawayHome.top;
+                }
+            }
+
+            btn.style.left = curL + 'px';
+            btn.style.top  = curT + 'px';
+        }
+
+        function onMouseMove(e) { mouseX = e.clientX; mouseY = e.clientY; }
+        document.addEventListener('mousemove', onMouseMove);
+        rafId = requestAnimationFrame(tick);
+
+        btn._runawayCleanup = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            cancelAnimationFrame(rafId);
+        };
     }
 
     function disableRunaway() {
