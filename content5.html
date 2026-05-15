@@ -4,464 +4,470 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CUBIC DASH — ADA Archive</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:       #0d1117;
-  --header:   #161b22;
+  --surface:  #161b22;
+  --surface2: #21262d;
   --border:   #30363d;
   --border-m: #21262d;
-  --text:     #e6edf3;
+  --fg:       #e6edf3;
   --muted:    #8b949e;
   --subtle:   #484f58;
-  --blue:     #58a6ff;
-  --green:    #3fb950;
-  --green-d:  #238636;
-  --red:      #f85149;
+  --blue:     #2f81f7;
+  --blue-fg:  #58a6ff;
+  --green:    #238636;
+  --green-fg: #3fb950;
+  --red:      #da3633;
+  --red-fg:   #f85149;
+  --gold:     #9e6a03;
+  --gold-fg:  #d29922;
   --orange:   #f78166;
-  --gold:     #d29922;
-  --panel:    #161b22;
   --inset:    #010409;
-  --mono:     'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  --r:        6px;
+  --mono:     'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;overflow:hidden;height:100vh}
 
 /* ── SCREENS ── */
 .screen{display:none;width:100vw;height:100vh;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:0;left:0}
 .screen.active{display:flex}
-
-/* ══════════════════════════════════════════════════════
-   MENU
-══════════════════════════════════════════════════════ */
 #menu-screen{background:var(--bg);justify-content:flex-start}
 
-.gh-topbar{position:fixed;top:0;left:0;right:0;height:48px;background:var(--header);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100}
-.gh-topbar-logo{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.gh-topbar-logo svg{fill:var(--text);opacity:.8}
-.gh-topbar-sep{color:var(--border);font-size:18px;line-height:1;margin:0 2px}
-.gh-topbar-repo{font-size:13px;color:var(--blue);font-weight:600;cursor:pointer}
-.gh-topbar-repo:hover{text-decoration:underline}
-.gh-topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.gh-badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(56,139,253,.15);border:1px solid rgba(56,139,253,.4);color:var(--blue)}
+/* ══════════════════════════════════════════
+   TOPBAR  (matches battleships style)
+══════════════════════════════════════════ */
+.topbar{position:fixed;top:0;left:0;right:0;height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100}
+.topbar-logo{font-size:13px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;text-decoration:none}
+.topbar-logo svg{fill:var(--fg);opacity:.8}
+.topbar-sep{color:var(--border);font-size:18px;line-height:1}
+.topbar-title{font-family:var(--mono);font-size:13px;color:var(--blue-fg);font-weight:500}
+.topbar-spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--inset);color:var(--muted)}
+.pill.blue{border-color:var(--blue);color:var(--blue-fg);background:rgba(47,129,247,.1)}
+.pill.green{border-color:var(--green);color:var(--green-fg);background:rgba(35,134,54,.1)}
 
-.menu-content{margin-top:48px;width:100%;max-width:900px;padding:28px 24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:calc(100vh - 48px)}
+/* ── BUTTONS ── */
+.btn{padding:5px 14px;border-radius:var(--r);font-family:var(--mono);font-size:12px;font-weight:500;border:1px solid;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary{background:var(--green);border-color:rgba(240,246,252,.1);color:#fff}
+.btn-primary:not(:disabled):hover{background:#2ea043}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:var(--surface);border-color:var(--border);color:var(--fg)}
+.btn-secondary:hover{background:var(--surface2);border-color:#8b949e}
+.btn-danger{background:rgba(218,54,51,.1);border-color:var(--red);color:var(--red-fg)}
+.btn-danger:hover{background:rgba(218,54,51,.2)}
+.btn-blue{background:rgba(47,129,247,.12);border-color:var(--blue);color:var(--blue-fg)}
+.btn-blue:hover{background:rgba(47,129,247,.22)}
+.btn-gold{background:rgba(158,106,3,.1);border-color:var(--gold);color:var(--gold-fg)}
+.btn-gold:hover{background:rgba(158,106,3,.2)}
+
+/* ══════════════════════════════════════════
+   MENU CONTENT
+══════════════════════════════════════════ */
+.menu-content{margin-top:48px;width:100%;max-width:920px;padding:28px 24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:calc(100vh - 48px)}
 
 .repo-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.repo-title{font-size:20px;font-weight:400;color:var(--text)}
-.repo-title span{color:var(--blue);font-weight:600;cursor:pointer}
-.repo-title span:hover{text-decoration:underline}
+.repo-title{font-size:20px;font-weight:400}
+.repo-title .hl{color:var(--blue-fg);font-weight:600}
 .repo-desc{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
 .repo-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.repo-tag{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(56,139,253,.1);border:1px solid rgba(56,139,253,.3);color:var(--blue);cursor:pointer}
-.repo-tag:hover{background:rgba(56,139,253,.2)}
-.repo-actions{display:flex;gap:8px;flex-shrink:0}
+.repo-tag{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(47,129,247,.1);border:1px solid rgba(47,129,247,.3);color:var(--blue-fg);font-family:var(--mono)}
 
-.btn-gh{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;font-family:inherit}
-.btn-gh:hover{background:#30363d;border-color:#8b949e}
-.btn-gh.green{background:var(--green-d);border-color:#2ea043;color:#fff}
-.btn-gh.green:hover{background:#2ea043}
-.btn-gh.blue{background:rgba(56,139,253,.15);border-color:rgba(56,139,253,.4);color:var(--blue)}
-.btn-gh.blue:hover{background:rgba(56,139,253,.25)}
-
-/* tabs */
+/* TABS */
 .gh-tabs{display:flex;border-bottom:1px solid var(--border)}
 .gh-tab{padding:10px 16px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.1s;user-select:none}
-.gh-tab:hover{color:var(--text);border-bottom-color:var(--border)}
-.gh-tab.active{color:var(--text);border-bottom-color:#f78166;font-weight:600}
-.tab-count{background:#30363d;color:var(--muted);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:400}
+.gh-tab:hover{color:var(--fg);border-bottom-color:var(--border)}
+.gh-tab.active{color:var(--fg);border-bottom-color:var(--orange);font-weight:600}
+.tab-count{background:var(--surface2);color:var(--muted);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:400;font-family:var(--mono)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
-/* file list */
-.gh-file-list{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.gh-file-header{padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
-.gh-file-row{display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);gap:12px;cursor:pointer;transition:.1s}
-.gh-file-row:last-child{border-bottom:none}
-.gh-file-row:hover{background:rgba(255,255,255,.03)}
-.gh-file-icon{color:var(--muted);font-size:14px;flex-shrink:0;width:18px;text-align:center}
-.gh-file-name{font-size:13px;color:var(--blue);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gh-file-desc{font-size:12px;color:var(--muted);flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gh-file-time{font-size:11px;color:var(--muted);flex-shrink:0}
-.gh-file-badge{font-size:10px;padding:1px 7px;border-radius:20px;flex-shrink:0;font-weight:600;border:1px solid}
+/* FILE LIST */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:0}
+.card-head{padding:10px 16px;border-bottom:1px solid var(--border-m);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.file-row{display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border-m);gap:12px;cursor:pointer;transition:background .1s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:rgba(255,255,255,.025)}
+.file-icon{color:var(--muted);font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.file-name{font-size:13px;color:var(--blue-fg);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono)}
+.file-desc{font-size:12px;color:var(--muted);flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-time{font-size:11px;color:var(--muted);flex-shrink:0;font-family:var(--mono)}
+.file-actions{display:flex;gap:6px;flex-shrink:0}
+.file-badge{font-size:10px;padding:1px 7px;border-radius:20px;flex-shrink:0;font-weight:600;border:1px solid;font-family:var(--mono)}
 .badge-easy  {color:#3fb950;border-color:#238636;background:rgba(63,185,80,.1)}
 .badge-medium{color:#d29922;border-color:#9e6a03;background:rgba(210,153,34,.1)}
 .badge-hard  {color:#f85149;border-color:#b91c1c;background:rgba(248,81,73,.1)}
-.badge-custom{color:#58a6ff;border-color:rgba(88,166,255,.4);background:rgba(88,166,255,.08)}
 .badge-tool  {color:#3fb950;border-color:#238636;background:rgba(63,185,80,.08)}
+.badge-locked{color:#8b949e;border-color:#484f58;background:rgba(72,79,88,.1)}
 
-/* community empty/loading */
+/* level thumbnail */
+.level-thumb{width:48px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:var(--inset)}
+.level-thumb-placeholder{width:48px;height:32px;border-radius:4px;border:1px solid var(--border-m);background:var(--inset);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* community */
 .community-empty{text-align:center;padding:48px 16px;color:var(--subtle);font-size:12px;font-family:var(--mono);line-height:2}
-.community-empty .big{font-size:28px;margin-bottom:8px}
-.spinner-sm{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+.community-empty .ico{font-size:28px;margin-bottom:8px}
+.spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue-fg);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* readme */
-.gh-readme{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-.gh-readme-header{padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.gh-readme-body{padding:18px 22px;font-size:13px;line-height:1.6;color:var(--muted)}
-.gh-readme-body h3{color:var(--text);margin-bottom:6px;font-size:14px}
-.gh-readme-body ul{padding-left:18px}
-.gh-readme-body li{margin-bottom:3px}
-.gh-readme-body code{background:var(--inset);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:12px;font-family:var(--mono);color:var(--blue)}
-.kbd{display:inline-block;padding:2px 7px;background:#21262d;border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--text);margin:0 2px}
+/* README */
+.readme{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.readme-head{padding:10px 16px;border-bottom:1px solid var(--border-m);font-size:12px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.readme-body{padding:18px 22px;font-size:13px;line-height:1.6;color:var(--muted)}
+.readme-body h3{color:var(--fg);margin-bottom:6px;font-size:14px}
+.readme-body ul{padding-left:18px}
+.readme-body li{margin-bottom:3px}
+.readme-body code{background:var(--inset);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:12px;font-family:var(--mono);color:var(--blue-fg)}
+.kbd{display:inline-block;padding:2px 7px;background:var(--surface2);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--fg);margin:0 2px}
 
-/* ══════════════════════════════════════════════════════
+/* ══════════════════════════════════════════
    GAME SCREEN
-══════════════════════════════════════════════════════ */
+══════════════════════════════════════════ */
 #game-screen{background:#000}
 #game-canvas{display:block}
-
-.game-hud{position:fixed;top:0;left:0;right:0;height:48px;background:var(--header);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:10}
-.hud-level-name{font-size:13px;font-weight:600;color:var(--text);font-family:var(--mono)}
+.game-hud{position:fixed;top:0;left:0;right:0;height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:10}
+.hud-name{font-size:13px;font-weight:600;color:var(--fg);font-family:var(--mono)}
 .hud-pct{font-size:12px;color:var(--muted);font-family:var(--mono);padding:2px 8px;background:var(--inset);border:1px solid var(--border);border-radius:4px}
-.hud-attempts{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.hud-back{margin-left:auto;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:12px;cursor:pointer;transition:.15s;font-family:inherit}
-.hud-back:hover{background:#30363d;border-color:#8b949e}
-.progress-bar{position:fixed;bottom:0;left:0;right:0;height:3px;background:var(--panel);z-index:10}
-.progress-fill{height:100%;width:0%;transition:width .1s linear}
+.hud-att{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.hud-back{margin-left:auto;padding:5px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;cursor:pointer;transition:.15s;font-family:var(--mono)}
+.hud-back:hover{background:var(--surface2);border-color:#8b949e}
+.prog-bar{position:fixed;bottom:0;left:0;right:0;height:3px;background:var(--surface);z-index:10}
+.prog-fill{height:100%;width:0%;transition:width .1s linear}
 
 /* overlays */
 .overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(13,17,23,.92);backdrop-filter:blur(6px);z-index:20}
 .overlay.show{display:flex}
-.overlay-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:32px 40px;min-width:360px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 16px 48px rgba(0,0,0,.6)}
-.overlay-icon{font-size:32px;margin-bottom:4px}
-.overlay-title{font-size:18px;font-weight:700;color:var(--text)}
-.overlay-sub{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:.05em;margin-bottom:8px}
-.overlay-divider{width:100%;height:1px;background:var(--border);margin:8px 0}
-.overlay-btns{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;justify-content:center}
-.obtn{padding:7px 18px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;border:1px solid;font-family:inherit}
-.obtn-retry{background:var(--green-d);border-color:#2ea043;color:#fff}
-.obtn-retry:hover{background:#2ea043}
-.obtn-menu{background:var(--panel);border-color:var(--border);color:var(--muted)}
-.obtn-menu:hover{background:#30363d;border-color:#8b949e;color:var(--text)}
-.obtn-next{background:rgba(56,139,253,.15);border-color:rgba(56,139,253,.4);color:var(--blue)}
-.obtn-next:hover{background:rgba(56,139,253,.25)}
+.ov-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px 40px;min-width:340px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.ov-icon{font-size:32px;margin-bottom:4px}
+.ov-title{font-size:18px;font-weight:700}
+.ov-sub{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:.05em;margin-bottom:8px}
+.ov-div{width:100%;height:1px;background:var(--border);margin:8px 0}
+.ov-btns{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;justify-content:center}
+.obtn{padding:7px 18px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;border:1px solid;font-family:var(--mono)}
+.obtn-g{background:var(--green);border-color:#2ea043;color:#fff}.obtn-g:hover{background:#2ea043}
+.obtn-m{background:var(--surface);border-color:var(--border);color:var(--muted)}.obtn-m:hover{background:var(--surface2);border-color:#8b949e;color:var(--fg)}
+.obtn-b{background:rgba(47,129,247,.12);border-color:var(--blue);color:var(--blue-fg)}.obtn-b:hover{background:rgba(47,129,247,.22)}
 .stat-row{display:flex;gap:24px;margin-top:4px}
 .stat-item{text-align:center}
-.stat-val{font-size:20px;font-weight:700;color:var(--text);font-family:var(--mono)}
-.stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:2px}
+.stat-val{font-size:20px;font-weight:700;font-family:var(--mono)}
+.stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-top:2px;font-family:var(--mono)}
 
-/* ══════════════════════════════════════════════════════
+/* ══════════════════════════════════════════
    BUILDER SCREEN
-══════════════════════════════════════════════════════ */
+══════════════════════════════════════════ */
 #builder-screen{flex-direction:row;align-items:stretch}
-.builder-sidebar{width:230px;min-width:230px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
-.sidebar-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.sidebar-section{padding:10px 16px 6px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.builder-sidebar{width:230px;min-width:230px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sb-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.sb-section{padding:10px 16px 6px;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono)}
 .tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 12px 10px}
-.tool-btn{padding:10px 6px;background:var(--inset);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:center;font-size:10px;font-weight:600;color:var(--muted);transition:.15s;display:flex;flex-direction:column;align-items:center;gap:4px;user-select:none;letter-spacing:.05em}
+.tool-btn{padding:10px 6px;background:var(--inset);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;font-size:10px;font-weight:600;color:var(--muted);transition:.15s;display:flex;flex-direction:column;align-items:center;gap:4px;user-select:none;letter-spacing:.05em;font-family:var(--mono)}
 .tool-btn .t-icon{font-size:18px;line-height:1}
-.tool-btn:hover{background:#21262d;border-color:#8b949e;color:var(--text)}
-.tool-btn.active{border-color:var(--blue);color:var(--blue);background:rgba(56,139,253,.1)}
-.tool-btn.erase.active{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.1)}
+.tool-btn:hover{background:var(--surface2);border-color:#8b949e;color:var(--fg)}
+.tool-btn.active{border-color:var(--blue-fg);color:var(--blue-fg);background:rgba(47,129,247,.1)}
+.tool-btn.erase.active{border-color:var(--red-fg);color:var(--red-fg);background:rgba(248,81,73,.1)}
 .erase-row{padding:0 12px 10px}
-.erase-full{width:100%;padding:8px;background:var(--inset);border:1px solid var(--border);border-radius:6px;cursor:pointer;text-align:center;font-size:10px;font-weight:600;color:var(--muted);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px;user-select:none;letter-spacing:.05em}
-.erase-full:hover{background:#21262d;border-color:#8b949e;color:var(--text)}
-.erase-full.active{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.1)}
-.sidebar-divider{height:1px;background:var(--border);margin:4px 0}
-
-/* Level name field in builder */
-.builder-name-row{padding:8px 12px}
-.builder-name-input{width:100%;padding:6px 10px;background:var(--inset);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;transition:border-color .15s}
-.builder-name-input:focus{border-color:var(--blue)}
-.builder-name-input::placeholder{color:var(--subtle)}
-
+.erase-full{width:100%;padding:8px;background:var(--inset);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;text-align:center;font-size:10px;font-weight:600;color:var(--muted);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px;user-select:none;letter-spacing:.05em;font-family:var(--mono)}
+.erase-full:hover{background:var(--surface2);border-color:#8b949e;color:var(--fg)}
+.erase-full.active{border-color:var(--red-fg);color:var(--red-fg);background:rgba(248,81,73,.1)}
+.sb-div{height:1px;background:var(--border);margin:4px 0}
+.sb-name-row{padding:8px 12px}
+.sb-name-input{width:100%;padding:6px 10px;background:var(--inset);border:1px solid var(--border);border-radius:var(--r);color:var(--fg);font-size:12px;font-family:var(--mono);outline:none;transition:border-color .15s}
+.sb-name-input:focus{border-color:var(--blue-fg)}
+.sb-name-input::placeholder{color:var(--subtle)}
 .builder-actions{padding:12px;display:flex;flex-direction:column;gap:6px;margin-top:auto;border-top:1px solid var(--border)}
-.baction{width:100%;padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;text-align:left;display:flex;align-items:center;gap:8px;font-family:inherit}
-.baction:hover{background:#30363d;border-color:#8b949e;color:var(--text)}
-.baction.green{border-color:#2ea043;color:var(--green);background:rgba(35,134,54,.1)}
-.baction.green:hover{background:rgba(35,134,54,.2)}
-.baction.blue{border-color:rgba(56,139,253,.4);color:var(--blue);background:rgba(56,139,253,.08)}
-.baction.blue:hover{background:rgba(56,139,253,.15)}
-.baction.publish{border-color:rgba(210,153,34,.5);color:var(--gold);background:rgba(210,153,34,.08)}
-.baction.publish:hover{background:rgba(210,153,34,.15)}
-.baction.danger{border-color:rgba(248,81,73,.4);color:var(--red);background:rgba(248,81,73,.06)}
-.baction.danger:hover{background:rgba(248,81,73,.12)}
-.baction:disabled{opacity:.4;cursor:not-allowed}
-
+.bact{width:100%;padding:7px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;text-align:left;display:flex;align-items:center;gap:8px;font-family:var(--mono)}
+.bact:hover{background:var(--surface2);border-color:#8b949e;color:var(--fg)}
+.bact.g{border-color:#2ea043;color:var(--green-fg);background:rgba(35,134,54,.1)}.bact.g:hover{background:rgba(35,134,54,.2)}
+.bact.b{border-color:rgba(47,129,247,.5);color:var(--blue-fg);background:rgba(47,129,247,.08)}.bact.b:hover{background:rgba(47,129,247,.15)}
+.bact.gold{border-color:rgba(158,106,3,.6);color:var(--gold-fg);background:rgba(158,106,3,.08)}.bact.gold:hover{background:rgba(158,106,3,.15)}
+.bact.r{border-color:rgba(248,81,73,.4);color:var(--red-fg);background:rgba(248,81,73,.06)}.bact.r:hover{background:rgba(248,81,73,.12)}
 .builder-canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);cursor:crosshair}
 #builder-canvas{display:block}
-.builder-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);opacity:.5;pointer-events:none;white-space:nowrap;font-family:var(--mono)}
-.builder-scroll-pct{position:absolute;right:12px;top:12px;font-size:11px;color:var(--muted);font-family:var(--mono);background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:2px 8px}
+.b-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);opacity:.5;pointer-events:none;white-space:nowrap;font-family:var(--mono)}
+.b-pct{position:absolute;right:12px;top:12px;font-size:11px;color:var(--muted);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 8px}
 
-/* ── PUBLISH MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(1,4,9,.85);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:500}
-.modal-overlay.open{display:flex}
-.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:28px;width:400px;max-width:92vw;animation:mi .25s cubic-bezier(.34,1.56,.64,1)}
+/* ══════════════════════════════════════════
+   MODALS (shared)
+══════════════════════════════════════════ */
+.modal-bg{position:fixed;inset:0;background:rgba(1,4,9,.85);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:500}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:26px;width:440px;max-width:94vw;animation:mi .25s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
 @keyframes mi{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
-.modal-title{font-size:15px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.modal-sm{width:360px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;font-family:var(--mono)}
 .modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5}
 .modal-field{margin-bottom:12px}
 .modal-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;font-family:var(--mono)}
-.modal-input{width:100%;padding:7px 10px;background:var(--inset);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--mono);outline:none;transition:border-color .15s}
-.modal-input:focus{border-color:var(--blue)}
+.modal-input{width:100%;padding:7px 10px;background:var(--inset);border:1px solid var(--border);border-radius:var(--r);color:var(--fg);font-size:13px;font-family:var(--mono);outline:none;transition:border-color .15s}
+.modal-input:focus{border-color:var(--blue-fg)}
 .modal-input::placeholder{color:var(--subtle)}
-.modal-select{width:100%;padding:7px 10px;background:var(--inset);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:var(--mono);outline:none;cursor:pointer}
+.modal-select{width:100%;padding:7px 10px;background:var(--inset);border:1px solid var(--border);border-radius:var(--r);color:var(--fg);font-size:13px;font-family:var(--mono);outline:none;cursor:pointer}
 .modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
 
-/* ── TOASTS ── */
+/* image upload preview */
+.img-upload-area{border:2px dashed var(--border);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:.15s;background:var(--inset)}
+.img-upload-area:hover{border-color:var(--blue-fg);background:rgba(47,129,247,.04)}
+.img-upload-area p{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
+.img-preview{width:100%;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);margin-top:8px;display:none}
+#pub-img-input{display:none}
+
+/* ── CONFIRM MODAL ── */
+#confirmModal .modal-title{color:var(--red-fg)}
+
+/* ══════════════════════════════════════════
+   TOASTS
+══════════════════════════════════════════ */
 .toasts{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
-.toast{padding:8px 14px;background:var(--panel);border:1px solid var(--border);border-radius:6px;font-size:12px;animation:tst .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:7px;font-family:var(--mono)}
-.toast.s{border-color:var(--green-d);color:var(--green)}
-.toast.e{border-color:var(--red);color:var(--red)}
-.toast.i{border-color:rgba(56,139,253,.5);color:var(--blue)}
+.toast{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:11px;animation:tst .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;gap:7px;font-family:var(--mono)}
+.toast.s{border-color:var(--green);color:var(--green-fg)}
+.toast.e{border-color:var(--red);color:var(--red-fg)}
+.toast.i{border-color:var(--blue);color:var(--blue-fg)}
 @keyframes tst{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════
-     MENU SCREEN
-══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════ MENU ═══════════════════════════ -->
 <div id="menu-screen" class="screen active">
-  <div class="gh-topbar">
-    <div class="gh-topbar-logo">
+
+  <div class="topbar">
+    <a class="topbar-logo" href="#">
       <svg height="20" viewBox="0 0 16 16" width="20"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       ADA Archive
-    </div>
-    <div class="gh-topbar-sep">/</div>
-    <div class="gh-topbar-repo">cubic-dash</div>
-    <div class="gh-topbar-right">
-      <div class="gh-badge">Public</div>
-      <button class="btn-gh green" onclick="openBuilder()">
-        <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 00-.064.108l-.558 1.953 1.953-.558a.253.253 0 00.108-.064l6.286-6.286zm1.238-3.763a.25.25 0 00-.354 0L10.811 3.65l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086z"/></svg>
-        Level Builder
-      </button>
-    </div>
+    </a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-title">cubic-dash</span>
+    <div class="topbar-spacer"></div>
+    <span class="pill blue">Public</span>
+    <button class="btn btn-primary" onclick="openBuilder()">
+      <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61z"/></svg>
+      Level Builder
+    </button>
   </div>
 
   <div class="menu-content">
+
     <div class="repo-header">
       <div>
-        <div class="repo-title"><span>ADA Archive</span> / <span>cubic-dash</span></div>
-        <div class="repo-desc">A Geometry Dash–style rhythm platformer. Jump over spikes and gaps, survive platforms, and clear every level. Build and share your own.</div>
+        <div class="repo-title"><span class="hl">ADA Archive</span> / <span class="hl">cubic-dash</span></div>
+        <div class="repo-desc">A Geometry Dash–style rhythm platformer. Jump over spikes and gaps, land on platforms, clear every level. Build and share your own.</div>
         <div class="repo-tags">
           <span class="repo-tag">game</span>
           <span class="repo-tag">platformer</span>
           <span class="repo-tag">geometry-dash</span>
-          <span class="repo-tag">javascript</span>
           <span class="repo-tag">canvas</span>
         </div>
       </div>
-      <div class="repo-actions">
-        <button class="btn-gh">
-          <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-secondary">
+          <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg>
           Star
         </button>
       </div>
     </div>
 
-    <!-- TABS -->
     <div>
       <div class="gh-tabs">
         <div class="gh-tab active" id="tab-builtin" onclick="switchTab('builtin')">
-          <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A2.5 2.5 0 013.5 0h8.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V1.5h-8a1 1 0 00-1 1v6.708A2.492 2.492 0 013.5 9h3.25a.75.75 0 010 1.5H3.5a1 1 0 100 2h5.75a.75.75 0 010 1.5H3.5A2.5 2.5 0 011 11.5v-9z"/></svg>
-          Built-in Levels
+          <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A2.5 2.5 0 013.5 0h8.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V1.5h-8a1 1 0 00-1 1v6.708A2.492 2.492 0 013.5 9h3.25a.75.75 0 010 1.5H3.5a1 1 0 100 2h5.75a.75.75 0 010 1.5H3.5A2.5 2.5 0 011 11.5v-9z"/></svg>
+          Built-in
           <span class="tab-count">3</span>
         </div>
         <div class="gh-tab" id="tab-community" onclick="switchTab('community')">
-          <svg height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
-          Community Levels
+          <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
+          Community
           <span class="tab-count" id="community-count">…</span>
         </div>
       </div>
 
-      <!-- Built-in tab -->
+      <!-- BUILT-IN -->
       <div class="tab-panel active" id="panel-builtin">
-        <div class="gh-file-list">
-          <div class="gh-file-header">
-            <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
-            <span style="color:var(--text)">feat: add 3 built-in levels</span>
-            <span style="margin-left:auto;font-size:11px">3 levels</span>
+        <div class="card">
+          <div class="card-head">
+            <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
+            <span style="color:var(--fg)">feat: 3 built-in levels</span>
+            <span style="margin-left:auto">3 levels</span>
           </div>
-          <div class="gh-file-row" onclick="startLevel(0)">
-            <span class="gh-file-icon">🎮</span>
-            <span class="gh-file-name">level_01_stereo_madness.js</span>
-            <span class="gh-file-desc">Intro stage — gaps, single spikes, gentle platforms</span>
-            <span class="gh-file-badge badge-easy">Easy</span>
-            <span class="gh-file-time">built-in</span>
+          <div class="file-row" onclick="startLevel(0)">
+            <span class="file-icon">🎮</span>
+            <span class="file-name">level_01_stereo_madness.js</span>
+            <span class="file-desc">Intro stage — gaps, single spikes, gentle platforms</span>
+            <span class="file-badge badge-easy">Easy</span>
+            <span class="file-time">built-in</span>
           </div>
-          <div class="gh-file-row" onclick="startLevel(1)">
-            <span class="gh-file-icon">🎮</span>
-            <span class="gh-file-name">level_02_back_on_track.js</span>
-            <span class="gh-file-desc">Double spikes, tall blocks, tighter timing windows</span>
-            <span class="gh-file-badge badge-medium">Medium</span>
-            <span class="gh-file-time">built-in</span>
+          <div class="file-row" onclick="startLevel(1)">
+            <span class="file-icon">🎮</span>
+            <span class="file-name">level_02_back_on_track.js</span>
+            <span class="file-desc">Double spikes, tall blocks, tighter timing</span>
+            <span class="file-badge badge-medium">Medium</span>
+            <span class="file-time">built-in</span>
           </div>
-          <div class="gh-file-row" onclick="startLevel(2)">
-            <span class="gh-file-icon">🎮</span>
-            <span class="gh-file-name">level_03_polargeist.js</span>
-            <span class="gh-file-desc">Brutal obstacle density, high platforms, almost no margin</span>
-            <span class="gh-file-badge badge-hard">Hard</span>
-            <span class="gh-file-time">built-in</span>
+          <div class="file-row" onclick="startLevel(2)">
+            <span class="file-icon">🎮</span>
+            <span class="file-name">level_03_polargeist.js</span>
+            <span class="file-desc">Brutal density, high platforms, almost no margin</span>
+            <span class="file-badge badge-hard">Hard</span>
+            <span class="file-time">built-in</span>
           </div>
-          <div class="gh-file-row" onclick="openBuilder()">
-            <span class="gh-file-icon" style="color:var(--green)">⬡</span>
-            <span class="gh-file-name" style="color:var(--green)">level_builder.js</span>
-            <span class="gh-file-desc">Create and publish your own custom levels</span>
-            <span class="gh-file-badge badge-tool">Tool</span>
-            <span class="gh-file-time">built-in</span>
+          <div class="file-row" onclick="openBuilder()">
+            <span class="file-icon" style="color:var(--green-fg)">⬡</span>
+            <span class="file-name" style="color:var(--green-fg)">level_builder.js</span>
+            <span class="file-desc">Create and publish your own levels to the community</span>
+            <span class="file-badge badge-tool">Tool</span>
+            <span class="file-time">built-in</span>
           </div>
         </div>
       </div>
 
-      <!-- Community tab -->
+      <!-- COMMUNITY -->
       <div class="tab-panel" id="panel-community">
-        <div class="gh-file-list">
-          <div class="gh-file-header">
-            <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
-            <span style="color:var(--text)">Community published levels</span>
+        <div class="card">
+          <div class="card-head">
+            <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
+            <span style="color:var(--fg)">Community published levels</span>
             <span style="margin-left:auto">
-              <button class="btn-gh" style="padding:2px 10px;font-size:11px" onclick="loadCommunityLevels()">↻ refresh</button>
+              <button class="btn btn-secondary" style="padding:2px 8px;font-size:11px" onclick="loadCommunityLevels()">↻ refresh</button>
             </span>
           </div>
           <div id="community-list">
-            <div class="community-empty"><div class="big">🌐</div>Loading community levels…<br><span class="spinner-sm"></span></div>
+            <div class="community-empty"><span class="spin"></span> Loading…</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="gh-readme">
-      <div class="gh-readme-header">
-        <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M0 3.75A.75.75 0 01.75 3h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 3.75zm0 4A.75.75 0 01.75 7h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 7.75zm0 4a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 11.75z"/></svg>
+    <div class="readme">
+      <div class="readme-head">
+        <svg height="13" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M0 3.75A.75.75 0 01.75 3h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 3.75zm0 4A.75.75 0 01.75 7h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 7.75zm0 4a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 11.75z"/></svg>
         README.md
       </div>
-      <div class="gh-readme-body">
+      <div class="readme-body">
         <h3>Controls</h3>
         <ul>
-          <li><span class="kbd">Space</span> <span class="kbd">↑</span> or <span class="kbd">Click</span> / <span class="kbd">Tap</span> — Jump (hold for longer jump)</li>
-          <li>Avoid spikes and gaps — one hit and you restart from the beginning</li>
-          <li>Land on platforms and blocks to navigate high obstacles</li>
+          <li><span class="kbd">Space</span> <span class="kbd">↑</span> or <span class="kbd">Click/Tap</span> — Jump (tap for short hop, hold for full jump)</li>
+          <li>One hit kills — spikes and gaps restart the level</li>
+          <li>Land on platforms and blocks to cross obstacles</li>
         </ul>
         <br>
         <h3>Level Builder</h3>
         <ul>
-          <li><code>Left click / drag</code> — Place selected object</li>
-          <li><code>Right click</code> — Erase object or toggle a ground gap</li>
-          <li><code>Scroll wheel</code> — Pan the level left / right</li>
-          <li>Press <strong>Test Play</strong> to instantly run your level</li>
-          <li>Press <strong>Publish to Site</strong> to share with the community</li>
+          <li><code>Left click / drag</code> — place object &nbsp; <code>Right click</code> — erase / toggle gap</li>
+          <li><code>Scroll</code> — pan left/right &nbsp; <strong>Test Play</strong> to run your level instantly</li>
+          <li><strong>Publish to Site</strong> — share with the community (add a thumbnail image!)</li>
         </ul>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     GAME SCREEN
-══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════ GAME ═══════════════════════════ -->
 <div id="game-screen" class="screen">
   <canvas id="game-canvas"></canvas>
   <div class="game-hud">
-    <div class="hud-level-name" id="hud-name">LEVEL</div>
-    <div class="hud-pct" id="hud-pct">0%</div>
-    <div class="hud-attempts" id="hud-attempts"></div>
+    <div class="hud-name" id="hud-name">LEVEL</div>
+    <div class="hud-pct"  id="hud-pct">0%</div>
+    <div class="hud-att"  id="hud-att"></div>
     <button class="hud-back" onclick="backToMenu()">← Menu</button>
   </div>
-  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
 </div>
 
-<!-- DEATH OVERLAY -->
+<!-- DEATH -->
 <div class="overlay" id="death-overlay">
-  <div class="overlay-card">
-    <div class="overlay-icon">💀</div>
-    <div class="overlay-title">You Died</div>
-    <div class="overlay-sub" id="death-pct-msg">REACHED 0%</div>
-    <div class="overlay-divider"></div>
+  <div class="ov-card">
+    <div class="ov-icon">💀</div>
+    <div class="ov-title">You Died</div>
+    <div class="ov-sub" id="death-msg">REACHED 0%</div>
+    <div class="ov-div"></div>
     <div class="stat-row">
-      <div class="stat-item"><div class="stat-val" id="death-pct-val">0%</div><div class="stat-lbl">BEST</div></div>
-      <div class="stat-item"><div class="stat-val" id="attempt-val">1</div><div class="stat-lbl">ATTEMPTS</div></div>
+      <div class="stat-item"><div class="stat-val" id="death-best">0%</div><div class="stat-lbl">BEST</div></div>
+      <div class="stat-item"><div class="stat-val" id="death-att">1</div><div class="stat-lbl">ATTEMPTS</div></div>
     </div>
-    <div class="overlay-divider"></div>
-    <div class="overlay-btns">
-      <button class="obtn obtn-retry" onclick="retryLevel()">↺ Retry</button>
-      <button class="obtn obtn-menu"  onclick="backToMenu()">Menu</button>
+    <div class="ov-div"></div>
+    <div class="ov-btns">
+      <button class="obtn obtn-g" onclick="retryLevel()">↺ Retry</button>
+      <button class="obtn obtn-m" onclick="backToMenu()">Menu</button>
     </div>
   </div>
 </div>
 
-<!-- WIN OVERLAY -->
+<!-- WIN -->
 <div class="overlay" id="win-overlay">
-  <div class="overlay-card">
-    <div class="overlay-icon">🎉</div>
-    <div class="overlay-title">Level Complete!</div>
-    <div class="overlay-sub">100% — CLEARED</div>
-    <div class="overlay-divider"></div>
-    <div class="overlay-btns">
-      <button class="obtn obtn-retry" onclick="retryLevel()">↺ Again</button>
-      <button class="obtn obtn-next"  onclick="nextLevel()" id="btn-next-level">Next →</button>
-      <button class="obtn obtn-menu"  onclick="backToMenu()">Menu</button>
+  <div class="ov-card">
+    <div class="ov-icon">🎉</div>
+    <div class="ov-title">Level Complete!</div>
+    <div class="ov-sub">100% — CLEARED</div>
+    <div class="ov-div"></div>
+    <div class="ov-btns">
+      <button class="obtn obtn-g" onclick="retryLevel()">↺ Again</button>
+      <button class="obtn obtn-b" onclick="nextLevel()" id="btn-next">Next →</button>
+      <button class="obtn obtn-m" onclick="backToMenu()">Menu</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     BUILDER SCREEN
-══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════ BUILDER ═══════════════════════════ -->
 <div id="builder-screen" class="screen">
   <div class="builder-sidebar">
-    <div class="sidebar-header">
-      <svg height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 00-.064.108l-.558 1.953 1.953-.558a.253.253 0 00.108-.064l6.286-6.286zm1.238-3.763a.25.25 0 00-.354 0L10.811 3.65l1.439 1.44 1.263-1.263a.25.25 0 000-.354l-1.086-1.086z"/></svg>
+    <div class="sb-head">
+      <svg height="13" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M11.013 1.427a1.75 1.75 0 012.474 0l1.086 1.086a1.75 1.75 0 010 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 01-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61z"/></svg>
       Level Builder
     </div>
-
-    <div class="builder-name-row">
-      <input class="builder-name-input" id="builder-level-name" placeholder="Level name…" maxlength="40">
+    <div class="sb-name-row">
+      <input class="sb-name-input" id="builder-level-name" placeholder="Level name…" maxlength="40">
     </div>
-
-    <div class="sidebar-section">Objects</div>
+    <div class="sb-section">Objects</div>
     <div class="tool-grid">
       <div class="tool-btn active" id="tool-block"    onclick="setTool('block')">   <div class="t-icon">⬛</div>Block</div>
       <div class="tool-btn"        id="tool-spike"    onclick="setTool('spike')">   <div class="t-icon">🔺</div>Spike</div>
       <div class="tool-btn"        id="tool-platform" onclick="setTool('platform')"><div class="t-icon">▬</div>Platform</div>
       <div class="tool-btn"        id="tool-bigblock" onclick="setTool('bigblock')"><div class="t-icon">⬛</div>2× Block</div>
     </div>
-    <div class="sidebar-section">Tools</div>
+    <div class="sb-section">Tools</div>
     <div class="erase-row">
       <div class="erase-full tool-btn erase" id="tool-erase" onclick="setTool('erase')">
         <span class="t-icon" style="font-size:14px">🗑</span> Erase
       </div>
     </div>
-    <div class="sidebar-divider"></div>
+    <div class="sb-div"></div>
     <div class="builder-actions">
-      <button class="baction green"   onclick="testBuilderLevel()">▶&ensp;Test Play</button>
-      <button class="baction publish" id="btn-publish" onclick="openPublishModal()">⬆&ensp;Publish to Site</button>
-      <button class="baction blue"    onclick="saveBuilderLevel()">↓&ensp;Save Local</button>
-      <button class="baction"         onclick="loadBuilderLevel()">↑&ensp;Load Local</button>
-      <button class="baction danger"  onclick="clearBuilder()">✕&ensp;Clear All</button>
-      <button class="baction"         onclick="backToMenu()">←&ensp;Back to Menu</button>
+      <button class="bact g"    onclick="testBuilderLevel()">▶&ensp;Test Play</button>
+      <button class="bact gold" onclick="openPublishModal()">⬆&ensp;Publish to Site</button>
+      <button class="bact b"    onclick="saveBuilderLevel()">↓&ensp;Save Local</button>
+      <button class="bact"      onclick="loadBuilderLevel()">↑&ensp;Load Local</button>
+      <button class="bact r"    onclick="clearBuilder()">✕&ensp;Clear All</button>
+      <button class="bact"      onclick="backToMenu()">←&ensp;Back to Menu</button>
     </div>
   </div>
-
   <div class="builder-canvas-wrap" id="builder-wrap">
     <canvas id="builder-canvas"></canvas>
-    <div class="builder-hint">Left click: place &nbsp;·&nbsp; Right click: erase/gap &nbsp;·&nbsp; Scroll: pan</div>
-    <div class="builder-scroll-pct" id="scroll-ind">0%</div>
+    <div class="b-hint">Left click: place &nbsp;·&nbsp; Right click: erase/gap &nbsp;·&nbsp; Scroll: pan</div>
+    <div class="b-pct" id="scroll-ind">0%</div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     PUBLISH MODAL
-══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="publishModal">
-  <div class="modal-box">
+<!-- ═══════════════════════════ PUBLISH MODAL ═══════════════════════════ -->
+<div class="modal-bg" id="publishModal">
+  <div class="modal">
     <div class="modal-title">⬆ Publish Level</div>
-    <div class="modal-sub">Your level will appear in the Community Levels tab for everyone to play.</div>
+    <div class="modal-sub">Share your level with the community. It'll appear in the Community tab for everyone to play.</div>
     <div class="modal-field">
       <label class="modal-label">Level Name</label>
       <input class="modal-input" id="pub-name" placeholder="My Awesome Level" maxlength="40">
     </div>
     <div class="modal-field">
-      <label class="modal-label">Author (your email or name)</label>
-      <input class="modal-input" id="pub-author" placeholder="your@email.com" maxlength="60">
+      <label class="modal-label">Author</label>
+      <input class="modal-input" id="pub-author" placeholder="your name or email" maxlength="60">
     </div>
     <div class="modal-field">
       <label class="modal-label">Difficulty</label>
-      <select class="modal-select modal-input" id="pub-difficulty">
+      <select class="modal-select" id="pub-difficulty">
         <option value="easy">Easy</option>
         <option value="medium" selected>Medium</option>
         <option value="hard">Hard</option>
@@ -469,7 +475,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     </div>
     <div class="modal-field">
       <label class="modal-label">Level Color</label>
-      <select class="modal-select modal-input" id="pub-color">
+      <select class="modal-select" id="pub-color">
         <option value="#58a6ff">Blue</option>
         <option value="#f78166">Orange</option>
         <option value="#3fb950">Green</option>
@@ -478,157 +484,159 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <option value="#bc8cff">Purple</option>
       </select>
     </div>
+    <div class="modal-field">
+      <label class="modal-label">Thumbnail Image (optional)</label>
+      <div class="img-upload-area" onclick="document.getElementById('pub-img-input').click()">
+        <div style="font-size:22px">🖼</div>
+        <p>Click to upload a screenshot or image<br>JPG / PNG / GIF — max 500 KB</p>
+        <img id="pub-img-preview" class="img-preview" alt="preview">
+      </div>
+      <input type="file" id="pub-img-input" accept="image/jpeg,image/png,image/gif" onchange="handleImgUpload(event)">
+    </div>
     <div class="modal-actions">
-      <button class="btn-gh" onclick="closePublishModal()">Cancel</button>
-      <button class="btn-gh green" id="btn-publish-submit" onclick="submitPublish()">Publish →</button>
+      <button class="btn btn-secondary" onclick="closePublishModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-pub-submit" onclick="submitPublish()">Publish →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CONFIRM MODAL ═══════════════════════════ -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal modal-sm">
+    <div class="modal-title" id="confirm-title">⚠ Confirm</div>
+    <div class="modal-sub"   id="confirm-msg">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger"    id="confirm-ok">Delete</button>
     </div>
   </div>
 </div>
 
 <div class="toasts" id="toasts"></div>
 
-<!-- ══════════════════════════════════════════════════════
-     SCRIPT
-══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════ SCRIPT ═══════════════════════════ -->
 <script>
-// ─────────────────────────────────────────────────────
-//  CONFIG
-// ─────────────────────────────────────────────────────
-const API   = "https://ada-relay.andrewdinglearchive.workers.dev";  // ← replace
-const EMAIL = window.ADA_EMAIL || "";     // ← from your login system
+// ─────────────────────────────────────────────────────────────
+//  CONFIG  — update both before deploying
+// ─────────────────────────────────────────────────────────────
+const API   = "https://YOUR_WORKER_URL";
+const EMAIL = window.ADA_EMAIL   || "";
+const IS_ADMIN = window.ADA_IS_ADMIN || false;  // set window.ADA_IS_ADMIN=true from your login system
 
-// ─────────────────────────────────────────────────────
-//  CONSTANTS
-// ─────────────────────────────────────────────────────
-const TILE  = 40;
-const GRAV  = 0.65;
-const JUMP  = -13.5;
-const SPEED = 7;
+// ─────────────────────────────────────────────────────────────
+//  PHYSICS CONSTANTS  (Geometry Dash feel)
+//  GD uses a fixed timestep. We approximate with:
+//  - Fast horizontal speed
+//  - Short, snappy jump with variable height (tap = short, hold = full)
+//  - Slightly higher gravity so the arc feels tight not floaty
+// ─────────────────────────────────────────────────────────────
+const TILE      = 40;
+const SPEED     = 8.4;       // px per frame horizontal
+const GRAV      = 1.1;       // gravity per frame
+const JUMP_VEL  = -16.5;     // initial jump velocity (full jump)
+const JUMP_CUT  = 0.45;      // multiply vy by this on release (short hop)
+const MAX_FALL  = 22;        // terminal velocity downward
 
-// ─────────────────────────────────────────────────────
-//  BUILT-IN LEVELS
-//  Object row coords: row 1 = ground surface, row 2 = one tile up, etc.
-//  Gaps: columns where ground is missing
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────────────────────────
 function range(a,b){ const r=[]; for(let i=a;i<b;i++) r.push(i); return r; }
+const escHtml  = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const escAttr  = s => String(s).replace(/"/g,'&quot;');
 
+function toast(msg, type='i'){
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${{i:'ℹ',s:'✓',e:'✕'}[type]||'·'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+
+async function api(path, method='GET', body=null){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(API+path,opts);
+  return r.json().catch(()=>({}));
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CONFIRM DIALOG
+// ─────────────────────────────────────────────────────────────
+let _confirmResolve = null;
+function showConfirm(title, msg){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  document.getElementById('confirmModal').classList.add('open');
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-ok').onclick = () => { closeConfirm(); resolve(true); };
+  });
+}
+function closeConfirm(){
+  document.getElementById('confirmModal').classList.remove('open');
+  if(_confirmResolve){ _confirmResolve(false); _confirmResolve=null; }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  BUILT-IN LEVELS
+// ─────────────────────────────────────────────────────────────
 const BUILT_IN_LEVELS = [
-  // ── LEVEL 1: STEREO MADNESS (Easy) ──────────────────
-  // Gentle intro: small gaps, single spikes, low platforms to hop onto
   {
     name:'STEREO MADNESS', color:'#58a6ff', length:160,
     objects:[
-      // gaps
-      ...range(10,13).map(c=>['gap',c]),
-      ...range(25,28).map(c=>['gap',c]),
-      ...range(42,46).map(c=>['gap',c]),
-      ...range(62,65).map(c=>['gap',c]),
-      ...range(82,87).map(c=>['gap',c]),
-      ...range(105,110).map(c=>['gap',c]),
-      ...range(125,131).map(c=>['gap',c]),
-      ...range(142,148).map(c=>['gap',c]),
-      // spikes at gap edges
-      [9,1,'s'],[13,1,'s'],
-      [24,1,'s'],[28,1,'s'],
-      [41,1,'s'],[46,1,'s'],
-      [61,1,'s'],[65,1,'s'],
-      [81,1,'s'],[87,1,'s'],
-      [104,1,'s'],[110,1,'s'],
+      ...range(10,13).map(c=>['gap',c]), ...range(25,28).map(c=>['gap',c]),
+      ...range(42,46).map(c=>['gap',c]), ...range(62,65).map(c=>['gap',c]),
+      ...range(82,87).map(c=>['gap',c]), ...range(105,110).map(c=>['gap',c]),
+      ...range(125,131).map(c=>['gap',c]), ...range(142,148).map(c=>['gap',c]),
+      [9,1,'s'],[13,1,'s'],[24,1,'s'],[28,1,'s'],[41,1,'s'],[46,1,'s'],
+      [61,1,'s'],[65,1,'s'],[81,1,'s'],[87,1,'s'],[104,1,'s'],[110,1,'s'],
       [124,1,'s'],[131,1,'s'],
-      // blocks to jump over / land on
-      [3,2,'b'],[4,2,'b'],
-      [19,2,'b'],[20,2,'b'],
-      [35,2,'b'],[36,2,'b'],[36,3,'b'],
-      [55,2,'b'],
-      [75,2,'b'],[76,2,'b'],
-      [95,2,'b'],[96,2,'b'],[96,3,'b'],
-      [115,2,'b'],
-      // platforms over gaps
-      [11,3,'p'],[12,3,'p'],
-      [26,3,'p'],[27,3,'p'],
-      [43,3,'p'],[44,3,'p'],[45,3,'p'],
+      [3,2,'b'],[4,2,'b'],[19,2,'b'],[20,2,'b'],
+      [35,2,'b'],[36,2,'b'],[36,3,'b'],[55,2,'b'],
+      [75,2,'b'],[76,2,'b'],[95,2,'b'],[96,2,'b'],[96,3,'b'],[115,2,'b'],
+      [11,3,'p'],[12,3,'p'],[26,3,'p'],[27,3,'p'],[43,3,'p'],[44,3,'p'],[45,3,'p'],
     ]
   },
-
-  // ── LEVEL 2: BACK ON TRACK (Medium) ─────────────────
-  // Double spikes, taller block stacks, platforms mid-air over longer gaps
   {
     name:'BACK ON TRACK', color:'#f78166', length:190,
     objects:[
-      ...range(10,14).map(c=>['gap',c]),
-      ...range(28,33).map(c=>['gap',c]),
-      ...range(50,56).map(c=>['gap',c]),
-      ...range(72,79).map(c=>['gap',c]),
-      ...range(95,103).map(c=>['gap',c]),
-      ...range(118,127).map(c=>['gap',c]),
-      ...range(142,152).map(c=>['gap',c]),
-      ...range(163,174).map(c=>['gap',c]),
-      // double spikes
-      [9,1,'s'],[14,1,'s'],[15,1,'s'],
-      [27,1,'s'],[33,1,'s'],[34,1,'s'],
-      [49,1,'s'],[56,1,'s'],[57,1,'s'],
-      [71,1,'s'],[79,1,'s'],[80,1,'s'],
-      [94,1,'s'],[103,1,'s'],[104,1,'s'],
-      [117,1,'s'],[127,1,'s'],[128,1,'s'],
+      ...range(10,14).map(c=>['gap',c]), ...range(28,33).map(c=>['gap',c]),
+      ...range(50,56).map(c=>['gap',c]), ...range(72,79).map(c=>['gap',c]),
+      ...range(95,103).map(c=>['gap',c]), ...range(118,127).map(c=>['gap',c]),
+      ...range(142,152).map(c=>['gap',c]), ...range(163,174).map(c=>['gap',c]),
+      [9,1,'s'],[14,1,'s'],[15,1,'s'],[27,1,'s'],[33,1,'s'],[34,1,'s'],
+      [49,1,'s'],[56,1,'s'],[57,1,'s'],[71,1,'s'],[79,1,'s'],[80,1,'s'],
+      [94,1,'s'],[103,1,'s'],[104,1,'s'],[117,1,'s'],[127,1,'s'],[128,1,'s'],
       [141,1,'s'],[152,1,'s'],[153,1,'s'],
-      // tall block stacks (must jump over, not onto)
-      [5,2,'b'],[5,3,'b'],
-      [20,2,'b'],[20,3,'b'],[20,4,'b'],
-      [38,2,'b'],[38,3,'b'],
-      [60,2,'b'],[60,3,'b'],[60,4,'b'],
-      [84,2,'b'],[84,3,'b'],
-      [110,2,'b'],[110,3,'b'],[110,4,'b'],
-      [135,2,'b'],[135,3,'b'],
-      [158,2,'b'],[158,3,'b'],[158,4,'b'],
-      // big blocks mid-level
+      [5,2,'b'],[5,3,'b'],[20,2,'b'],[20,3,'b'],[20,4,'b'],
+      [38,2,'b'],[38,3,'b'],[60,2,'b'],[60,3,'b'],[60,4,'b'],
+      [84,2,'b'],[84,3,'b'],[110,2,'b'],[110,3,'b'],[110,4,'b'],
+      [135,2,'b'],[135,3,'b'],[158,2,'b'],[158,3,'b'],[158,4,'b'],
       [45,2,'B'],[88,2,'B'],[155,2,'B'],
-      // platforms over wide gaps
       [29,3,'p'],[30,3,'p'],[31,3,'p'],[32,3,'p'],
       [51,3,'p'],[52,3,'p'],[53,3,'p'],[54,3,'p'],[55,3,'p'],
       [119,3,'p'],[120,3,'p'],[121,3,'p'],[122,3,'p'],
     ]
   },
-
-  // ── LEVEL 3: POLARGEIST (Hard) ───────────────────────
-  // Rapid-fire narrow gaps, stacked spikes everywhere, platforms only at height
   {
     name:'POLARGEIST', color:'#3fb950', length:220,
     objects:[
-      ...range(7,11).map(c=>['gap',c]),
-      ...range(18,23).map(c=>['gap',c]),
-      ...range(31,37).map(c=>['gap',c]),
-      ...range(45,52).map(c=>['gap',c]),
-      ...range(60,68).map(c=>['gap',c]),
-      ...range(75,84).map(c=>['gap',c]),
-      ...range(90,100).map(c=>['gap',c]),
-      ...range(107,118).map(c=>['gap',c]),
-      ...range(123,135).map(c=>['gap',c]),
-      ...range(140,153).map(c=>['gap',c]),
-      ...range(158,172).map(c=>['gap',c]),
-      ...range(177,192).map(c=>['gap',c]),
+      ...range(7,11).map(c=>['gap',c]),  ...range(18,23).map(c=>['gap',c]),
+      ...range(31,37).map(c=>['gap',c]), ...range(45,52).map(c=>['gap',c]),
+      ...range(60,68).map(c=>['gap',c]), ...range(75,84).map(c=>['gap',c]),
+      ...range(90,100).map(c=>['gap',c]),...range(107,118).map(c=>['gap',c]),
+      ...range(123,135).map(c=>['gap',c]),...range(140,153).map(c=>['gap',c]),
+      ...range(158,172).map(c=>['gap',c]),...range(177,192).map(c=>['gap',c]),
       ...range(196,210).map(c=>['gap',c]),
-      // spikes flanking every gap
-      [6,1,'s'],[11,1,'s'],[12,1,'s'],
-      [17,1,'s'],[23,1,'s'],[24,1,'s'],
-      [30,1,'s'],[37,1,'s'],[38,1,'s'],
-      [44,1,'s'],[52,1,'s'],[53,1,'s'],
-      [59,1,'s'],[68,1,'s'],[69,1,'s'],
-      [74,1,'s'],[84,1,'s'],[85,1,'s'],
-      [89,1,'s'],[100,1,'s'],[101,1,'s'],
-      [106,1,'s'],[118,1,'s'],[119,1,'s'],
-      [122,1,'s'],[135,1,'s'],[136,1,'s'],
-      [139,1,'s'],[153,1,'s'],[154,1,'s'],
-      [157,1,'s'],[172,1,'s'],[173,1,'s'],
-      [176,1,'s'],[192,1,'s'],[193,1,'s'],
-      [195,1,'s'],[210,1,'s'],[211,1,'s'],
-      // tall block obstacles
-      [3,2,'b'],[3,3,'b'],
-      [14,2,'b'],[25,2,'b'],[25,3,'b'],
-      [40,2,'b'],[40,3,'b'],[40,4,'b'],
-      [55,2,'b'],
-      [71,2,'b'],[71,3,'b'],
-      [87,2,'b'],[87,3,'b'],[87,4,'b'],
-      // mandatory elevated platforms
+      [6,1,'s'],[11,1,'s'],[12,1,'s'],[17,1,'s'],[23,1,'s'],[24,1,'s'],
+      [30,1,'s'],[37,1,'s'],[38,1,'s'],[44,1,'s'],[52,1,'s'],[53,1,'s'],
+      [59,1,'s'],[68,1,'s'],[69,1,'s'],[74,1,'s'],[84,1,'s'],[85,1,'s'],
+      [89,1,'s'],[100,1,'s'],[101,1,'s'],[106,1,'s'],[118,1,'s'],[119,1,'s'],
+      [122,1,'s'],[135,1,'s'],[136,1,'s'],[139,1,'s'],[153,1,'s'],[154,1,'s'],
+      [157,1,'s'],[172,1,'s'],[173,1,'s'],[176,1,'s'],[192,1,'s'],[193,1,'s'],
+      [195,1,'s'],[210,1,'s'],
+      [3,2,'b'],[3,3,'b'],[14,2,'b'],[25,2,'b'],[25,3,'b'],
+      [40,2,'b'],[40,3,'b'],[40,4,'b'],[55,2,'b'],[71,2,'b'],[71,3,'b'],
       [8,3,'p'],[9,3,'p'],[10,3,'p'],
       [19,3,'p'],[20,3,'p'],[21,3,'p'],[22,3,'p'],
       [32,3,'p'],[33,3,'p'],[34,3,'p'],[35,3,'p'],[36,3,'p'],
@@ -641,9 +649,6 @@ const BUILT_IN_LEVELS = [
   }
 ];
 
-// ─────────────────────────────────────────────────────
-//  LEVEL BUILDER DATA
-// ─────────────────────────────────────────────────────
 function buildLevelFromData(raw){
   const gaps=new Set(), objects=[];
   for(const o of raw.objects){
@@ -653,38 +658,34 @@ function buildLevelFromData(raw){
   return {name:raw.name, color:raw.color, length:raw.length, gaps, objects};
 }
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 //  GAME ENGINE
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const gameCanvas = document.getElementById('game-canvas');
 const gctx       = gameCanvas.getContext('2d');
 let gameRunning=false, gameAnimId=null, levelData=null;
 let px,py,pvy,prot,onGround,isDead,isWon,camX,particles,bestPct;
-let jumpHeld=false, currentLevelIdx=0, attempts=0;
+let jumpHeld=false, justJumped=false, currentLevelIdx=0, attempts=0;
 let isCustomLevel=false, customLevelData=null;
 
 function initGame(lvl){
-  levelData = lvl;
-  gameCanvas.width  = window.innerWidth;
-  gameCanvas.height = window.innerHeight;
-  const GH = gameCanvas.height;
-  const GY = GH - TILE*2;   // ground y (top of ground row)
-  px = TILE*2; py = GY - TILE; pvy=0; prot=0;
+  levelData=lvl;
+  gameCanvas.width=window.innerWidth; gameCanvas.height=window.innerHeight;
+  const GY=gameCanvas.height-TILE*2;
+  px=TILE*2; py=GY-TILE; pvy=0; prot=0;
   onGround=true; isDead=false; isWon=false; camX=0;
-  particles=[]; bestPct=0;
+  justJumped=false; particles=[]; bestPct=0;
   document.getElementById('death-overlay').classList.remove('show');
   document.getElementById('win-overlay').classList.remove('show');
-  document.getElementById('hud-name').textContent  = lvl.name;
-  document.getElementById('hud-pct').textContent   = '0%';
-  document.getElementById('progress-fill').style.width      = '0%';
-  document.getElementById('progress-fill').style.background = lvl.color;
+  document.getElementById('hud-name').textContent=lvl.name;
+  document.getElementById('hud-pct').textContent='0%';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('prog-fill').style.background=lvl.color;
 }
 
 function startLevel(idx){
   currentLevelIdx=idx; isCustomLevel=false; attempts=0;
-  // Show/hide "Next" button if there's a next level
-  document.getElementById('btn-next-level').style.display =
-    (idx < BUILT_IN_LEVELS.length-1) ? '' : 'none';
+  document.getElementById('btn-next').style.display=(idx<BUILT_IN_LEVELS.length-1)?'':'none';
   showScreen('game-screen');
   initGame(buildLevelFromData(BUILT_IN_LEVELS[idx]));
   startGameLoop();
@@ -692,9 +693,9 @@ function startLevel(idx){
 
 function startCustomLevel(data){
   isCustomLevel=true; attempts=0;
-  document.getElementById('btn-next-level').style.display='none';
+  document.getElementById('btn-next').style.display='none';
   showScreen('game-screen');
-  customLevelData = buildLevelFromData(data);
+  customLevelData=buildLevelFromData(data);
   initGame(customLevelData);
   startGameLoop();
 }
@@ -704,227 +705,168 @@ function startGameLoop(){
   if(gameAnimId) cancelAnimationFrame(gameAnimId);
   gameLoop();
 }
-function gameLoop(){
-  if(!gameRunning) return;
-  update(); drawGame();
-  gameAnimId = requestAnimationFrame(gameLoop);
-}
+function gameLoop(){ if(!gameRunning) return; update(); drawGame(); gameAnimId=requestAnimationFrame(gameLoop); }
 
-// ── UPDATE ──────────────────────────────────────────
+// ── UPDATE ─────────────────────────────────────────────────────
 function update(){
   if(isDead||isWon) return;
-  const GH  = gameCanvas.height;
-  const GY  = GH - TILE*2;
-  const TW  = levelData.length * TILE;
+  const GH=gameCanvas.height, GY=GH-TILE*2, TW=levelData.length*TILE;
 
-  px  += SPEED;
-  camX = px - gameCanvas.width*0.25;
-  pvy += GRAV;
-  py  += pvy;
-  prot += 4;
+  // Horizontal
+  px+=SPEED;
+  camX=px-gameCanvas.width*0.25;
 
-  const col = Math.floor(px/TILE);
+  // Jump cut — if player releases jump while moving up, reduce velocity
+  if(!jumpHeld && pvy<0 && justJumped){
+    pvy*=JUMP_CUT;
+    justJumped=false;
+  }
+
+  // Gravity + terminal velocity
+  pvy+=GRAV;
+  if(pvy>MAX_FALL) pvy=MAX_FALL;
+  py+=pvy;
+  prot+=5;
 
   // Ground collision
-  const groundHere = !levelData.gaps.has(col) && !levelData.gaps.has(col+1);
-  if(py + TILE >= GY && groundHere){
-    py=GY-TILE; pvy=0; onGround=true; prot=Math.round(prot/90)*90;
-  } else {
-    onGround=false;
-  }
+  const col=Math.floor(px/TILE);
+  const groundHere=!levelData.gaps.has(col)&&!levelData.gaps.has(col+1);
+  if(py+TILE>=GY&&groundHere){
+    py=GY-TILE; pvy=0; onGround=true; justJumped=false;
+    prot=Math.round(prot/90)*90;
+  } else { onGround=false; }
 
-  // Fall through gap or off screen
-  if(py + TILE > GH){ die(); return; }
+  // Fall off screen
+  if(py+TILE>GH){ die(); return; }
 
-  // Jump input
-  if(jumpHeld && onGround){ pvy=JUMP; onGround=false; }
+  // Jump trigger
+  if(jumpHeld&&onGround){ pvy=JUMP_VEL; onGround=false; justJumped=true; }
 
-  // Object collision
-  // Object row 1 = ground surface (y = GY - TILE)
-  // Object row 2 = one tile above ground (y = GY - TILE*2), etc.
+  // Object collisions
   for(const obj of levelData.objects){
-    const ox = obj.col * TILE;
-    const oy = GY - obj.row * TILE;           // row 1 sits exactly on ground
-    const ow = obj.type==='B' ? TILE*2 : TILE;
-    const oh = obj.type==='B' ? TILE*2 : obj.type==='p' ? TILE/4 : TILE;
-
-    // AABB with slight shrink for fairness
-    if(px+TILE*.82 > ox && px+TILE*.18 < ox+ow &&
-       py+TILE*.82 > oy && py+TILE*.18 < oy+oh){
+    const ox=obj.col*TILE;
+    const oy=GY-obj.row*TILE;
+    const ow=obj.type==='B'?TILE*2:TILE;
+    const oh=obj.type==='B'?TILE*2:obj.type==='p'?TILE/4:TILE;
+    // Slightly more forgiving hitbox
+    if(px+TILE*.80>ox&&px+TILE*.20<ox+ow&&py+TILE*.85>oy&&py+TILE*.15<oy+oh){
       if(obj.type==='s'){ die(); return; }
       if(obj.type==='b'||obj.type==='B'){
-        if(pvy>=0 && py+TILE < oy+oh*0.5+8){
-          // Land on top
-          py=oy-TILE; pvy=0; onGround=true; prot=Math.round(prot/90)*90;
-        } else if(pvy<0 && py > oy+oh*0.5){
-          // Hit from below
-          py=oy+oh; pvy=0;
-        } else {
-          die(); return;
-        }
+        if(pvy>=0&&py+TILE<oy+oh*.5+10){ py=oy-TILE; pvy=0; onGround=true; justJumped=false; prot=Math.round(prot/90)*90; }
+        else if(pvy<0&&py>oy+oh*.5){ py=oy+oh; pvy=0; }
+        else { die(); return; }
       }
-      if(obj.type==='p' && pvy>=0 && py+TILE < oy+oh+8){
-        py=oy-TILE; pvy=0; onGround=true; prot=Math.round(prot/90)*90;
-      }
+      if(obj.type==='p'&&pvy>=0&&py+TILE<oy+oh+10){ py=oy-TILE; pvy=0; onGround=true; justJumped=false; prot=Math.round(prot/90)*90; }
     }
   }
 
-  // Win condition
-  if(px > TW - TILE*3){ win(); return; }
-
-  // Progress
-  const pct = Math.min(100, Math.floor((px / (TW-TILE*3))*100));
-  if(pct > bestPct) bestPct=pct;
-  document.getElementById('hud-pct').textContent     = pct+'%';
-  document.getElementById('progress-fill').style.width = pct+'%';
-  document.getElementById('hud-attempts').textContent  = 'Attempt '+(attempts+1);
+  if(px>TW-TILE*3){ win(); return; }
+  const pct=Math.min(100,Math.floor((px/(TW-TILE*3))*100));
+  if(pct>bestPct) bestPct=pct;
+  document.getElementById('hud-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('hud-att').textContent='Attempt '+(attempts+1);
 }
 
-// ── DRAW ────────────────────────────────────────────
+// ── DRAW ───────────────────────────────────────────────────────
 function drawGame(){
-  const W=gameCanvas.width, H=gameCanvas.height;
-  const GY=H-TILE*2;
+  const W=gameCanvas.width,H=gameCanvas.height,GY=H-TILE*2;
   const c=levelData.color;
-
-  gctx.fillStyle='#0d1117';
-  gctx.fillRect(0,0,W,H);
-
-  // Subtle grid
+  gctx.fillStyle='#0d1117'; gctx.fillRect(0,0,W,H);
+  // Grid
   gctx.strokeStyle='rgba(48,54,61,0.35)'; gctx.lineWidth=1;
-  for(let x=(-camX%TILE);x<W;x+=TILE){ gctx.beginPath();gctx.moveTo(x,0);gctx.lineTo(x,H);gctx.stroke(); }
-  for(let y=GY%TILE;y<H;y+=TILE){      gctx.beginPath();gctx.moveTo(0,y);gctx.lineTo(W,y);gctx.stroke(); }
-
-  // Objects (drawn before ground so they render correctly)
+  for(let x=(-camX%TILE);x<W;x+=TILE){gctx.beginPath();gctx.moveTo(x,0);gctx.lineTo(x,H);gctx.stroke();}
+  for(let y=GY%TILE;y<H;y+=TILE){gctx.beginPath();gctx.moveTo(0,y);gctx.lineTo(W,y);gctx.stroke();}
+  // Objects
   for(const obj of levelData.objects){
-    const sx = obj.col*TILE - camX;
-    if(sx>W+TILE*3||sx<-TILE*3) continue;
-    const oy = H - TILE*2 - obj.row*TILE;  // match update() coord
-    drawObj(sx, oy, obj.type, c);
+    const sx=obj.col*TILE-camX; if(sx>W+TILE*3||sx<-TILE*3) continue;
+    drawObj(sx, H-TILE*2-obj.row*TILE, obj.type, c);
   }
-
   // Ground
-  for(let col=0; col<levelData.length; col++){
-    const sx = col*TILE - camX;
-    if(sx>W+TILE||sx<-TILE) continue;
-    if(!levelData.gaps.has(col)){
-      drawTile(sx, GY,        c, 1);
-      drawTile(sx, GY+TILE,   c, 0.45);
-    }
+  for(let col=0;col<levelData.length;col++){
+    const sx=col*TILE-camX; if(sx>W+TILE||sx<-TILE) continue;
+    if(!levelData.gaps.has(col)){ drawTile(sx,GY,c,1); drawTile(sx,GY+TILE,c,.45); }
   }
-
-  // Player
   drawPlayer(c);
-
   // Particles
-  for(let i=particles.length-1; i>=0; i--){
-    const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.life--;
-    if(p.life<=0){ particles.splice(i,1); continue; }
-    gctx.save();
-    gctx.globalAlpha = p.life/p.maxLife;
-    gctx.fillStyle   = p.color;
-    gctx.translate(p.x - camX, p.y);
-    gctx.rotate(p.rot); p.rot+=.1;
-    gctx.fillRect(-p.s/2,-p.s/2,p.s,p.s);
-    gctx.restore();
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.life--;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    gctx.save(); gctx.globalAlpha=p.life/p.maxLife; gctx.fillStyle=p.color;
+    gctx.translate(p.x-camX,p.y); gctx.rotate(p.rot); p.rot+=.1;
+    gctx.fillRect(-p.s/2,-p.s/2,p.s,p.s); gctx.restore();
   }
 }
 
 function drawTile(x,y,color,alpha){
-  gctx.save();
-  gctx.globalAlpha=alpha;
-  gctx.fillStyle  =color+'18'; gctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+  gctx.save(); gctx.globalAlpha=alpha;
+  gctx.fillStyle=color+'18'; gctx.fillRect(x+1,y+1,TILE-2,TILE-2);
   gctx.strokeStyle=color; gctx.lineWidth=1; gctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-  gctx.globalAlpha=alpha*.12;
-  gctx.strokeStyle=color; gctx.lineWidth=.5;
+  gctx.globalAlpha=alpha*.12; gctx.strokeStyle=color; gctx.lineWidth=.5;
   gctx.beginPath();
-  gctx.moveTo(x+TILE/2,y+2);   gctx.lineTo(x+TILE/2,y+TILE-2);
-  gctx.moveTo(x+2,y+TILE/2);   gctx.lineTo(x+TILE-2,y+TILE/2);
-  gctx.stroke();
-  gctx.restore();
+  gctx.moveTo(x+TILE/2,y+2);gctx.lineTo(x+TILE/2,y+TILE-2);
+  gctx.moveTo(x+2,y+TILE/2);gctx.lineTo(x+TILE-2,y+TILE/2);
+  gctx.stroke(); gctx.restore();
 }
 
 function drawObj(x,y,type,color){
-  if(type==='b'){ drawTile(x,y,color,1); }
+  if(type==='b') drawTile(x,y,color,1);
   else if(type==='B'){
-    gctx.save();
-    gctx.fillStyle  =color+'18'; gctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);
-    gctx.strokeStyle=color; gctx.lineWidth=1; gctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2);
-    gctx.restore();
+    gctx.save(); gctx.fillStyle=color+'18'; gctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);
+    gctx.strokeStyle=color; gctx.lineWidth=1; gctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2); gctx.restore();
   }
   else if(type==='s'){
-    gctx.save();
-    gctx.fillStyle  =color+'66';
-    gctx.strokeStyle=color; gctx.lineWidth=1.5;
-    gctx.beginPath();
-    gctx.moveTo(x+TILE/2, y);
-    gctx.lineTo(x+TILE,   y+TILE);
-    gctx.lineTo(x,        y+TILE);
-    gctx.closePath();
-    gctx.fill(); gctx.stroke();
-    gctx.restore();
+    gctx.save(); gctx.fillStyle=color+'66'; gctx.strokeStyle=color; gctx.lineWidth=1.5;
+    gctx.beginPath(); gctx.moveTo(x+TILE/2,y); gctx.lineTo(x+TILE,y+TILE); gctx.lineTo(x,y+TILE);
+    gctx.closePath(); gctx.fill(); gctx.stroke(); gctx.restore();
   }
   else if(type==='p'){
-    gctx.save();
-    gctx.fillStyle  =color+'44'; gctx.fillRect(x,y,TILE,TILE/4);
-    gctx.strokeStyle=color; gctx.lineWidth=1; gctx.strokeRect(x,y,TILE,TILE/4);
-    gctx.restore();
+    gctx.save(); gctx.fillStyle=color+'44'; gctx.fillRect(x,y,TILE,TILE/4);
+    gctx.strokeStyle=color; gctx.lineWidth=1; gctx.strokeRect(x,y,TILE,TILE/4); gctx.restore();
   }
 }
 
 function drawPlayer(c){
-  const sx=px-camX, sy=py;
-  gctx.save();
-  gctx.translate(sx+TILE/2, sy+TILE/2);
-  gctx.rotate(prot*Math.PI/180);
-  gctx.beginPath();
-  gctx.arc(0,0,TILE/2+3,0,Math.PI*2);
+  const sx=px-camX,sy=py;
+  gctx.save(); gctx.translate(sx+TILE/2,sy+TILE/2); gctx.rotate(prot*Math.PI/180);
+  gctx.beginPath(); gctx.arc(0,0,TILE/2+3,0,Math.PI*2);
   gctx.strokeStyle=c+'44'; gctx.lineWidth=2; gctx.stroke();
-  gctx.fillStyle='#161b22';
-  gctx.fillRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
-  gctx.strokeStyle=c; gctx.lineWidth=2;
-  gctx.strokeRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
-  gctx.strokeStyle=c+'aa'; gctx.lineWidth=1;
-  gctx.strokeRect(-TILE/4,-TILE/4,TILE/2,TILE/2);
+  gctx.fillStyle='#161b22'; gctx.fillRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
+  gctx.strokeStyle=c; gctx.lineWidth=2; gctx.strokeRect(-TILE/2+2,-TILE/2+2,TILE-4,TILE-4);
+  gctx.strokeStyle=c+'aa'; gctx.lineWidth=1; gctx.strokeRect(-TILE/4,-TILE/4,TILE/2,TILE/2);
   gctx.strokeStyle=c+'33'; gctx.lineWidth=1;
   gctx.beginPath();
   gctx.moveTo(-TILE/2+4,-TILE/2+4); gctx.lineTo(TILE/2-4,TILE/2-4);
   gctx.moveTo(TILE/2-4,-TILE/2+4);  gctx.lineTo(-TILE/2+4,TILE/2-4);
-  gctx.stroke();
-  gctx.restore();
+  gctx.stroke(); gctx.restore();
 }
 
-// ── DIE / WIN ────────────────────────────────────────
 function die(){
   if(isDead) return; isDead=true; attempts++;
   const c=levelData.color;
   for(let i=0;i<24;i++){
-    const a=(Math.PI*2/24)*i, sp=Math.random()*5+2;
+    const a=(Math.PI*2/24)*i,sp=Math.random()*5+2;
     particles.push({x:px+TILE/2,y:py+TILE/2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,
       s:Math.random()*7+2,color:[c,'#e6edf3','#8b949e'][Math.floor(Math.random()*3)],
       life:Math.floor(Math.random()*20+12),maxLife:35,rot:Math.random()*Math.PI});
   }
-  const TW = levelData.length*TILE;
-  const pct = Math.min(100,Math.floor((px/(TW-TILE*3))*100));
-  document.getElementById('death-pct-msg').textContent = 'REACHED '+pct+'%';
-  document.getElementById('death-pct-val').textContent = bestPct+'%';
-  document.getElementById('attempt-val').textContent   = attempts;
+  const pct=Math.min(100,Math.floor((px/(levelData.length*TILE-TILE*3))*100));
+  document.getElementById('death-msg').textContent='REACHED '+pct+'%';
+  document.getElementById('death-best').textContent=bestPct+'%';
+  document.getElementById('death-att').textContent=attempts;
   setTimeout(()=>document.getElementById('death-overlay').classList.add('show'),500);
 }
 
 function win(){
   if(isWon) return; isWon=true;
-  document.getElementById('progress-fill').style.width='100%';
+  document.getElementById('prog-fill').style.width='100%';
   document.getElementById('hud-pct').textContent='100%';
-  for(let i=0;i<40;i++){
-    particles.push({
-      x:px+TILE/2+(Math.random()-.5)*300, y:gameCanvas.height*.5,
-      vx:(Math.random()-.5)*7, vy:Math.random()*-9-2,
-      s:Math.random()*8+3,
-      color:['#58a6ff','#f78166','#3fb950','#d29922','#e6edf3'][Math.floor(Math.random()*5)],
-      life:Math.floor(Math.random()*35+25),maxLife:60,rot:0
-    });
-  }
+  for(let i=0;i<40;i++) particles.push({
+    x:px+TILE/2+(Math.random()-.5)*300,y:gameCanvas.height*.5,
+    vx:(Math.random()-.5)*7,vy:Math.random()*-9-2,s:Math.random()*8+3,
+    color:['#58a6ff','#f78166','#3fb950','#d29922','#e6edf3'][Math.floor(Math.random()*5)],
+    life:Math.floor(Math.random()*35+25),maxLife:60,rot:0
+  });
   setTimeout(()=>document.getElementById('win-overlay').classList.add('show'),700);
 }
 
@@ -935,9 +877,8 @@ function retryLevel(){
   else initGame(buildLevelFromData(BUILT_IN_LEVELS[currentLevelIdx]));
 }
 function nextLevel(){
-  const next=currentLevelIdx+1;
-  if(next < BUILT_IN_LEVELS.length) startLevel(next);
-  else backToMenu();
+  const n=currentLevelIdx+1;
+  if(n<BUILT_IN_LEVELS.length) startLevel(n); else backToMenu();
 }
 function backToMenu(){
   gameRunning=false; cancelAnimationFrame(gameAnimId);
@@ -946,29 +887,28 @@ function backToMenu(){
   showScreen('menu-screen');
 }
 
-// ── INPUT ────────────────────────────────────────────
-document.addEventListener('keydown', e=>{ if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jumpHeld=true;} });
-document.addEventListener('keyup',   e=>{ if(e.code==='Space'||e.code==='ArrowUp') jumpHeld=false; });
+// ── INPUT ──────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(!jumpHeld){jumpHeld=true;}}});
+document.addEventListener('keyup',  e=>{if(e.code==='Space'||e.code==='ArrowUp') jumpHeld=false;});
 gameCanvas.addEventListener('mousedown', ()=>jumpHeld=true);
 gameCanvas.addEventListener('mouseup',   ()=>jumpHeld=false);
 gameCanvas.addEventListener('touchstart',e=>{e.preventDefault();jumpHeld=true;},{passive:false});
 gameCanvas.addEventListener('touchend',  e=>{e.preventDefault();jumpHeld=false;},{passive:false});
-window.addEventListener('resize',()=>{ if(document.getElementById('game-screen').classList.contains('active')){ gameCanvas.width=window.innerWidth; gameCanvas.height=window.innerHeight; } });
+window.addEventListener('resize',()=>{
+  if(document.getElementById('game-screen').classList.contains('active')){
+    gameCanvas.width=window.innerWidth; gameCanvas.height=window.innerHeight;
+  }
+});
 
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
 //  LEVEL BUILDER
-// ═════════════════════════════════════════════════════
-const bCanvas = document.getElementById('builder-canvas');
-const bctx    = bCanvas.getContext('2d');
-let bTool='block', bScrollX=0, bMouseDown=false;
-let bObjects=[], bGaps=new Set(), bLevelLen=120;
+// ─────────────────────────────────────────────────────────────
+const bCanvas=document.getElementById('builder-canvas');
+const bctx=bCanvas.getContext('2d');
+let bTool='block',bScrollX=0,bMouseDown=false,bObjects=[],bGaps=new Set(),bLevelLen=120;
 
 function openBuilder(){ showScreen('builder-screen'); resizeBuilder(); renderBuilder(); }
-
-function resizeBuilder(){
-  const w = document.getElementById('builder-wrap');
-  bCanvas.width=w.clientWidth; bCanvas.height=w.clientHeight;
-}
+function resizeBuilder(){ const w=document.getElementById('builder-wrap'); bCanvas.width=w.clientWidth; bCanvas.height=w.clientHeight; }
 
 function setTool(t){
   bTool=t;
@@ -977,293 +917,232 @@ function setTool(t){
 }
 
 function renderBuilder(){
-  const W=bCanvas.width, H=bCanvas.height;
-  const GY=H-TILE*3;   // builder ground row top
-
+  const W=bCanvas.width,H=bCanvas.height,GY=H-TILE*3;
   bctx.fillStyle='#0d1117'; bctx.fillRect(0,0,W,H);
-
-  // Grid
   bctx.strokeStyle='rgba(48,54,61,0.45)'; bctx.lineWidth=1;
-  for(let c=0;c<=bLevelLen;c++){
-    const sx=c*TILE-bScrollX; if(sx<-TILE||sx>W+TILE) continue;
-    bctx.beginPath();bctx.moveTo(sx,0);bctx.lineTo(sx,H);bctx.stroke();
-  }
-  for(let r=0;r<=10;r++){
-    const sy=GY-r*TILE; bctx.beginPath();bctx.moveTo(0,sy);bctx.lineTo(W,sy);bctx.stroke();
-  }
-
-  // Ground line
-  bctx.strokeStyle='rgba(48,54,61,0.9)'; bctx.lineWidth=2;
+  for(let c=0;c<=bLevelLen;c++){const sx=c*TILE-bScrollX;if(sx<-TILE||sx>W+TILE)continue;bctx.beginPath();bctx.moveTo(sx,0);bctx.lineTo(sx,H);bctx.stroke();}
+  for(let r=0;r<=10;r++){const sy=GY-r*TILE;bctx.beginPath();bctx.moveTo(0,sy);bctx.lineTo(W,sy);bctx.stroke();}
+  bctx.strokeStyle='rgba(48,54,61,.9)'; bctx.lineWidth=2;
   bctx.beginPath();bctx.moveTo(0,GY+TILE);bctx.lineTo(W,GY+TILE);bctx.stroke();
-
-  // Row labels (to help builders)
-  for(let r=1;r<=6;r++){
-    bctx.fillStyle='rgba(139,148,158,0.3)';
-    bctx.font='9px monospace';
-    bctx.fillText('row '+r, 4, GY-(r-1)*TILE-4);
-  }
-
-  // Ground tiles
+  for(let r=1;r<=6;r++){bctx.fillStyle='rgba(139,148,158,0.25)';bctx.font='9px monospace';bctx.fillText('row '+r,4,GY-(r-1)*TILE-4);}
   for(let c=0;c<bLevelLen;c++){
     const sx=c*TILE-bScrollX; if(sx>W+TILE||sx<-TILE) continue;
-    if(!bGaps.has(c)){
-      bBuilderTile(sx, GY, '#58a6ff', 0.65);
-    } else {
-      bctx.fillStyle='rgba(248,81,73,0.06)';
-      bctx.fillRect(sx,GY,TILE,TILE);
-      bctx.strokeStyle='#f8514933'; bctx.lineWidth=1;
-      bctx.setLineDash([3,3]); bctx.strokeRect(sx,GY,TILE,TILE); bctx.setLineDash([]);
-    }
+    if(!bGaps.has(c)){bBuilderTile(sx,GY,'#2f81f7',0.65);}
+    else{bctx.fillStyle='rgba(248,81,73,.06)';bctx.fillRect(sx,GY,TILE,TILE);bctx.strokeStyle='#f8514933';bctx.lineWidth=1;bctx.setLineDash([3,3]);bctx.strokeRect(sx,GY,TILE,TILE);bctx.setLineDash([]);}
   }
-
-  // Objects — use same row coord system as the game
   for(const obj of bObjects){
-    const sx = obj.col*TILE - bScrollX;
-    if(sx>W+TILE*3||sx<-TILE*3) continue;
-    const sy = GY - obj.row*TILE;   // row 1 = ground surface = GY-TILE offset below GY
-    bDrawObj(sx, sy, obj.type);
+    const sx=obj.col*TILE-bScrollX; if(sx>W+TILE*3||sx<-TILE*3) continue;
+    bDrawObj(sx, GY-obj.row*TILE, obj.type);
   }
-
-  // End marker
   const endX=bLevelLen*TILE-bScrollX;
   if(endX>0&&endX<W){
-    bctx.strokeStyle='#30363d'; bctx.lineWidth=2;
-    bctx.setLineDash([6,4]);
-    bctx.beginPath();bctx.moveTo(endX,0);bctx.lineTo(endX,H);bctx.stroke();
-    bctx.setLineDash([]);
-    bctx.fillStyle='#8b949e'; bctx.font='11px monospace';
-    bctx.fillText('END',endX+5,14);
+    bctx.strokeStyle='#30363d';bctx.lineWidth=2;bctx.setLineDash([6,4]);
+    bctx.beginPath();bctx.moveTo(endX,0);bctx.lineTo(endX,H);bctx.stroke();bctx.setLineDash([]);
+    bctx.fillStyle='#8b949e';bctx.font='11px monospace';bctx.fillText('END',endX+5,14);
   }
-
-  document.getElementById('scroll-ind').textContent =
-    Math.round((bScrollX/(bLevelLen*TILE))*100)+'%';
+  document.getElementById('scroll-ind').textContent=Math.round((bScrollX/(bLevelLen*TILE))*100)+'%';
 }
 
 function bBuilderTile(x,y,color,alpha){
-  bctx.save(); bctx.globalAlpha=alpha;
-  bctx.fillStyle  =color+'18'; bctx.fillRect(x+1,y+1,TILE-2,TILE-2);
-  bctx.strokeStyle=color; bctx.lineWidth=1; bctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-  bctx.restore();
+  bctx.save();bctx.globalAlpha=alpha;bctx.fillStyle=color+'18';bctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+  bctx.strokeStyle=color;bctx.lineWidth=1;bctx.strokeRect(x+1,y+1,TILE-2,TILE-2);bctx.restore();
 }
-
 function bDrawObj(x,y,type){
-  const c='#58a6ff';
-  if(type==='b')      bBuilderTile(x,y,c,1);
-  else if(type==='B'){ bctx.save();bctx.fillStyle=c+'18';bctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.restore(); }
-  else if(type==='s'){ bctx.save();bctx.fillStyle=c+'66';bctx.strokeStyle=c;bctx.lineWidth=1.5;bctx.beginPath();bctx.moveTo(x+TILE/2,y);bctx.lineTo(x+TILE,y+TILE);bctx.lineTo(x,y+TILE);bctx.closePath();bctx.fill();bctx.stroke();bctx.restore(); }
-  else if(type==='p'){ bctx.save();bctx.fillStyle=c+'44';bctx.fillRect(x,y,TILE,TILE/4);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x,y,TILE,TILE/4);bctx.restore(); }
+  const c='#2f81f7';
+  if(type==='b') bBuilderTile(x,y,c,1);
+  else if(type==='B'){bctx.save();bctx.fillStyle=c+'18';bctx.fillRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x+1,y+1,TILE*2-2,TILE*2-2);bctx.restore();}
+  else if(type==='s'){bctx.save();bctx.fillStyle=c+'66';bctx.strokeStyle=c;bctx.lineWidth=1.5;bctx.beginPath();bctx.moveTo(x+TILE/2,y);bctx.lineTo(x+TILE,y+TILE);bctx.lineTo(x,y+TILE);bctx.closePath();bctx.fill();bctx.stroke();bctx.restore();}
+  else if(type==='p'){bctx.save();bctx.fillStyle=c+'44';bctx.fillRect(x,y,TILE,TILE/4);bctx.strokeStyle=c;bctx.lineWidth=1;bctx.strokeRect(x,y,TILE,TILE/4);bctx.restore();}
 }
 
-function builderClick(e, isRight){
-  const W=bCanvas.width, H=bCanvas.height;
-  const GY=H-TILE*3;
+function builderClick(e,isRight){
+  const W=bCanvas.width,H=bCanvas.height,GY=H-TILE*3;
   const rect=bCanvas.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
-  const col = Math.floor((mx+bScrollX)/TILE);
-  // row = how many tiles above ground surface clicked
-  // GY is the TOP of ground row. row 1 object top = GY-TILE (sits on ground)
-  const rawRow = Math.round((GY - my)/TILE);
-  const row    = Math.max(1, Math.min(rawRow, 8));
-
+  const col=Math.floor((e.clientX-rect.left+bScrollX)/TILE);
+  const rawRow=Math.round((GY-(e.clientY-rect.top))/TILE);
+  const row=Math.max(1,Math.min(rawRow,8));
   if(col<0||col>=bLevelLen) return;
-
   if(isRight||bTool==='erase'){
-    bObjects = bObjects.filter(o=>!(o.col===col && o.row===row));
-    // Also allow toggling ground gaps by right-clicking ground row
-    if(row===0||row===1){
-      if(bGaps.has(col)) bGaps.delete(col); else bGaps.add(col);
-    }
-    renderBuilder(); return;
+    bObjects=bObjects.filter(o=>!(o.col===col&&o.row===row));
+    if(row<=1){if(bGaps.has(col))bGaps.delete(col);else bGaps.add(col);}
+    renderBuilder();return;
   }
-
-  if(bTool==='gap'){
-    if(bGaps.has(col)) bGaps.delete(col); else bGaps.add(col);
-    renderBuilder(); return;
-  }
-
-  const typeMap={block:'b', spike:'s', platform:'p', bigblock:'B'};
-  bObjects = bObjects.filter(o=>!(o.col===col && o.row===row));
-  bObjects.push({col, row, type:typeMap[bTool]});
+  const typeMap={block:'b',spike:'s',platform:'p',bigblock:'B'};
+  bObjects=bObjects.filter(o=>!(o.col===col&&o.row===row));
+  bObjects.push({col,row,type:typeMap[bTool]});
   renderBuilder();
 }
 
-bCanvas.addEventListener('contextmenu', e=>{e.preventDefault(); builderClick(e,true);});
-bCanvas.addEventListener('mousedown',   e=>{bMouseDown=true; if(e.button===2)return; builderClick(e,false);});
-bCanvas.addEventListener('mousemove',   e=>{if(bMouseDown&&e.button===0) builderClick(e,false);});
-bCanvas.addEventListener('mouseup',     ()=>bMouseDown=false);
-bCanvas.addEventListener('wheel',       e=>{
-  e.preventDefault();
-  bScrollX = Math.max(0, Math.min(bScrollX+e.deltaY*.5, bLevelLen*TILE - bCanvas.width/2));
-  renderBuilder();
-},{passive:false});
-window.addEventListener('resize',()=>{ if(document.getElementById('builder-screen').classList.contains('active')){ resizeBuilder(); renderBuilder(); } });
+bCanvas.addEventListener('contextmenu',e=>{e.preventDefault();builderClick(e,true);});
+bCanvas.addEventListener('mousedown',e=>{bMouseDown=true;if(e.button===2)return;builderClick(e,false);});
+bCanvas.addEventListener('mousemove',e=>{if(bMouseDown&&e.button===0)builderClick(e,false);});
+bCanvas.addEventListener('mouseup',()=>bMouseDown=false);
+bCanvas.addEventListener('wheel',e=>{e.preventDefault();bScrollX=Math.max(0,Math.min(bScrollX+e.deltaY*.5,bLevelLen*TILE-bCanvas.width/2));renderBuilder();},{passive:false});
+window.addEventListener('resize',()=>{if(document.getElementById('builder-screen').classList.contains('active')){resizeBuilder();renderBuilder();}});
 
-function clearBuilder(){
-  if(!confirm('Clear all objects?')) return;
-  bObjects=[]; bGaps=new Set(); bScrollX=0; renderBuilder();
-}
-
+function clearBuilder(){if(!confirm('Clear all objects?'))return;bObjects=[];bGaps=new Set();bScrollX=0;renderBuilder();}
 function saveBuilderLevel(){
-  localStorage.setItem('cubic_dash_custom', JSON.stringify({
-    name:    document.getElementById('builder-level-name').value || 'Custom Level',
-    objects: bObjects,
-    gaps:    [...bGaps],
-    length:  bLevelLen
-  }));
-  toast('Saved to localStorage','s');
+  localStorage.setItem('cubic_dash_custom',JSON.stringify({name:document.getElementById('builder-level-name').value||'Custom Level',objects:bObjects,gaps:[...bGaps],length:bLevelLen}));
+  toast('Saved locally','s');
 }
-
 function loadBuilderLevel(){
-  const raw = localStorage.getItem('cubic_dash_custom');
-  if(!raw){ toast('No saved level found','e'); return; }
-  const d = JSON.parse(raw);
-  bObjects = d.objects||[]; bGaps=new Set(d.gaps||[]); bLevelLen=d.length||120;
-  if(d.name) document.getElementById('builder-level-name').value=d.name;
-  renderBuilder();
-  toast('Level loaded','s');
+  const raw=localStorage.getItem('cubic_dash_custom');
+  if(!raw){toast('No saved level found','e');return;}
+  const d=JSON.parse(raw);
+  bObjects=d.objects||[];bGaps=new Set(d.gaps||[]);bLevelLen=d.length||120;
+  if(d.name)document.getElementById('builder-level-name').value=d.name;
+  renderBuilder();toast('Level loaded','s');
 }
-
 function testBuilderLevel(){
-  const name = document.getElementById('builder-level-name').value.trim() || 'CUSTOM LEVEL';
-  const raw = {name, color:'#3fb950', length:bLevelLen,
-    objects:[
-      ...bObjects.map(o=>[o.col, o.row, o.type]),
-      ...[...bGaps].map(c=>['gap',c])
-    ]
-  };
-  startCustomLevel(raw);
+  const name=document.getElementById('builder-level-name').value.trim()||'CUSTOM LEVEL';
+  startCustomLevel({name,color:'#3fb950',length:bLevelLen,objects:[...bObjects.map(o=>[o.col,o.row,o.type]),...[...bGaps].map(c=>['gap',c])]});
 }
 
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
+//  IMAGE UPLOAD
+// ─────────────────────────────────────────────────────────────
+let _pubImageBase64 = null;
+
+function handleImgUpload(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  if(file.size>512000){ toast('Image must be under 500 KB','e'); return; }
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    _pubImageBase64=ev.target.result; // data:image/...;base64,...
+    const preview=document.getElementById('pub-img-preview');
+    preview.src=_pubImageBase64; preview.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─────────────────────────────────────────────────────────────
 //  PUBLISH MODAL
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
 function openPublishModal(){
-  if(bObjects.length===0 && bGaps.size===0){
-    toast('Build something first!','e'); return;
-  }
-  const name = document.getElementById('builder-level-name').value.trim();
+  if(bObjects.length===0&&bGaps.size===0){toast('Build something first!','e');return;}
+  const name=document.getElementById('builder-level-name').value.trim();
   if(name) document.getElementById('pub-name').value=name;
+  if(EMAIL) document.getElementById('pub-author').value=EMAIL;
+  _pubImageBase64=null;
+  document.getElementById('pub-img-preview').style.display='none';
+  document.getElementById('pub-img-input').value='';
   document.getElementById('publishModal').classList.add('open');
 }
-
-function closePublishModal(){
-  document.getElementById('publishModal').classList.remove('open');
-}
+function closePublishModal(){ document.getElementById('publishModal').classList.remove('open'); }
 
 async function submitPublish(){
-  const name       = document.getElementById('pub-name').value.trim();
-  const author     = document.getElementById('pub-author').value.trim() || EMAIL || 'Anonymous';
-  const difficulty = document.getElementById('pub-difficulty').value;
-  const color      = document.getElementById('pub-color').value;
-
-  if(!name){ toast('Enter a level name','e'); return; }
-
-  const btn = document.getElementById('btn-publish-submit');
+  const name=document.getElementById('pub-name').value.trim();
+  const author=document.getElementById('pub-author').value.trim()||EMAIL||'Anonymous';
+  const difficulty=document.getElementById('pub-difficulty').value;
+  const color=document.getElementById('pub-color').value;
+  if(!name){toast('Enter a level name','e');return;}
+  const btn=document.getElementById('btn-pub-submit');
   btn.disabled=true; btn.textContent='Publishing…';
-
-  const levelPayload = {
-    name, author, difficulty, color,
-    length:  bLevelLen,
-    objects: JSON.stringify([
-      ...bObjects.map(o=>[o.col, o.row, o.type]),
-      ...[...bGaps].map(c=>['gap',c])
-    ])
-  };
-
   try {
-    const res = await fetch(API+'/cubic/publish', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(levelPayload)
+    const res=await fetch(API+'/cubic/publish',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name,author,difficulty,color,
+        length:bLevelLen,
+        image_url: _pubImageBase64||null,
+        objects:JSON.stringify([...bObjects.map(o=>[o.col,o.row,o.type]),...[...bGaps].map(c=>['gap',c])])
+      })
     });
-    const data = await res.json();
-    if(data.success){
-      toast('Level published! 🎉','s');
-      closePublishModal();
-      loadCommunityLevels();
-    } else {
-      toast(data.error||'Publish failed','e');
-    }
-  } catch(err){
-    toast('Network error','e');
-  } finally {
-    btn.disabled=false; btn.textContent='Publish →';
-  }
+    const data=await res.json();
+    if(data.success){toast('Level published! 🎉','s');closePublishModal();loadCommunityLevels();}
+    else toast(data.error||'Publish failed','e');
+  } catch { toast('Network error','e'); }
+  finally { btn.disabled=false; btn.textContent='Publish →'; }
 }
 
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
 //  COMMUNITY LEVELS
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
 async function loadCommunityLevels(){
-  const list = document.getElementById('community-list');
-  const cnt  = document.getElementById('community-count');
-  list.innerHTML = '<div class="community-empty"><span class="spinner-sm"></span> Loading…</div>';
+  const list=document.getElementById('community-list');
+  const cnt=document.getElementById('community-count');
+  list.innerHTML='<div class="community-empty"><span class="spin"></span> Loading…</div>';
   try {
-    const res    = await fetch(API+'/cubic/levels');
-    const data   = await res.json();
-    const levels = data.levels || [];
-    cnt.textContent = levels.length;
-
+    const res=await fetch(API+'/cubic/levels');
+    const data=await res.json();
+    const levels=data.levels||[];
+    cnt.textContent=levels.length;
+    window._communityLevels=levels;
     if(!levels.length){
-      list.innerHTML = '<div class="community-empty"><div class="big">🌍</div>No community levels yet.<br>Be the first to publish one!</div>';
+      list.innerHTML='<div class="community-empty"><div class="ico">🌍</div>No community levels yet.<br>Be the first to publish one!</div>';
       return;
     }
-
-    // Store levels in memory, reference by index
-    window._communityLevels = levels;
-
-    list.innerHTML = levels.map((l, i) => {
-      const diff     = l.difficulty || 'medium';
-      const badgeCls = {easy:'badge-easy', medium:'badge-medium', hard:'badge-hard'}[diff] || 'badge-custom';
-      const badgeTxt = diff.charAt(0).toUpperCase() + diff.slice(1);
-      const ago      = timeAgo(l.created_at);
-      return `<div class="gh-file-row" onclick="playPublished(${i})">
-        <span class="gh-file-icon" style="color:${escAttr(l.color||'#58a6ff')}">🎮</span>
-        <span class="gh-file-name">${escHtml(l.name)}.js</span>
-        <span class="gh-file-desc">by ${escHtml(l.author||'Anonymous')}</span>
-        <span class="gh-file-badge ${badgeCls}">${badgeTxt}</span>
-        <span class="gh-file-time">${ago}</span>
+    list.innerHTML=levels.map((l,i)=>{
+      const diff=l.difficulty||'medium';
+      const badgeCls={easy:'badge-easy',medium:'badge-medium',hard:'badge-hard'}[diff]||'';
+      const badgeTxt=diff.charAt(0).toUpperCase()+diff.slice(1);
+      const ago=timeAgo(l.created_at);
+      const isOwner=EMAIL&&(l.author===EMAIL);
+      const thumb=l.image_url
+        ?`<img class="level-thumb" src="${escAttr(l.image_url)}" alt="">`
+        :`<div class="level-thumb-placeholder" style="color:${escAttr(l.color||'#58a6ff')}">🎮</div>`;
+      const locked=l.is_locked?'<span class="file-badge badge-locked">Locked</span>':'';
+      // Delete button: show for owner OR admin
+      const canDelete=isOwner||IS_ADMIN;
+      const canLock=IS_ADMIN;
+      const delBtn=canDelete?`<button class="btn btn-danger" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteLevel(${l.id},'${escAttr(l.name)}')">🗑</button>`:'';
+      const lockBtn=canLock?`<button class="btn btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();toggleLock(${l.id},${!!l.is_locked})">${l.is_locked?'🔓':'🔒'}</button>`:'';
+      return `<div class="file-row" onclick="${l.is_locked&&!IS_ADMIN?'toast(\'This level is locked\',\'e\')':'playPublished('+i+')'}">
+        ${thumb}
+        <span class="file-name">${escHtml(l.name)}.js</span>
+        <span class="file-desc">by ${escHtml(l.author||'Anonymous')} · ${l.plays||0} plays</span>
+        ${locked}
+        <span class="file-badge ${badgeCls}">${badgeTxt}</span>
+        <span class="file-time">${ago}</span>
+        <div class="file-actions" style="gap:4px">${lockBtn}${delBtn}</div>
       </div>`;
     }).join('');
   } catch(e){
-    list.innerHTML = '<div class="community-empty">⚠ Could not load levels.<br>Check worker config.</div>';
-    cnt.textContent = '!';
+    list.innerHTML='<div class="community-empty">⚠ Could not load levels.</div>';
+    cnt.textContent='!';
   }
 }
 
 function playPublished(index){
-  const l = window._communityLevels[index];
-  if(!l){ toast('Level not found','e'); return; }
+  const l=window._communityLevels[index];
+  if(!l){toast('Level not found','e');return;}
+  if(l.is_locked&&!IS_ADMIN){toast('This level is locked','e');return;}
   try {
-    const raw = {
-      name:    l.name,
-      color:   l.color || '#58a6ff',
-      length:  parseInt(l.length) || 120,
-      objects: JSON.parse(l.objects || '[]')
-    };
-    // Increment play count in background
-    fetch(API + '/cubic/play?id=' + l.id).catch(()=>{});
-    startCustomLevel(raw);
-  } catch(e){
-    toast('Could not parse level data','e');
-    console.error(e);
-  }
+    startCustomLevel({name:l.name,color:l.color||'#58a6ff',length:parseInt(l.length)||120,objects:JSON.parse(l.objects||'[]')});
+    fetch(API+'/cubic/play?id='+l.id).catch(()=>{});
+  } catch(e){ toast('Could not parse level data','e'); }
 }
 
+async function deleteLevel(id, name){
+  const ok=await showConfirm('🗑 Delete Level','Delete "'+name+'"? This cannot be undone.');
+  if(!ok) return;
+  const res=await api('/cubic/delete','POST',{id,email:EMAIL});
+  if(res.success){ toast('Level deleted','s'); loadCommunityLevels(); }
+  else toast(res.error||'Delete failed','e');
+}
+
+async function toggleLock(id, currentlyLocked){
+  const action=currentlyLocked?'Unlock':'Lock';
+  const ok=await showConfirm((currentlyLocked?'🔓':'🔒')+' '+action+' Level',action+' this level? '+(currentlyLocked?'Players will be able to access it again.':'Players will not be able to play it.'));
+  if(!ok) return;
+  const res=await api('/cubic/lock','POST',{id,admin_email:EMAIL});
+  if(res.success){ toast('Level '+(currentlyLocked?'unlocked':'locked'),'s'); loadCommunityLevels(); }
+  else toast(res.error||'Failed','e');
+}
+
+// ─────────────────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────────────────
 function timeAgo(ts){
   if(!ts) return 'recently';
-  const secs = Math.floor((Date.now()-new Date(ts).getTime())/1000);
-  if(secs<60)  return 'just now';
-  if(secs<3600) return Math.floor(secs/60)+'m ago';
-  if(secs<86400) return Math.floor(secs/3600)+'h ago';
-  return Math.floor(secs/86400)+'d ago';
+  const s=Math.floor((Date.now()-new Date(ts).getTime())/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
 }
-function escHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escAttr(s){ return String(s).replace(/"/g,'&quot;'); }
 
-// ═════════════════════════════════════════════════════
-//  TABS
-// ═════════════════════════════════════════════════════
 function switchTab(name){
   document.querySelectorAll('.gh-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
@@ -1272,31 +1151,19 @@ function switchTab(name){
   if(name==='community') loadCommunityLevels();
 }
 
-// ═════════════════════════════════════════════════════
-//  UI HELPERS
-// ═════════════════════════════════════════════════════
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='builder-screen'){ resizeBuilder(); renderBuilder(); }
+  if(id==='builder-screen'){resizeBuilder();renderBuilder();}
 }
 
-function toast(msg, type='i'){
-  const el=document.createElement('div');
-  el.className=`toast ${type}`;
-  el.innerHTML=`<span>${{i:'ℹ',s:'✓',e:'✕'}[type]||'·'}</span><span>${msg}</span>`;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>el.remove(), 3000);
-}
-
-// ═════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
 //  INIT
-// ═════════════════════════════════════════════════════
-// Load community count badge on startup
+// ─────────────────────────────────────────────────────────────
 (async()=>{
   try {
-    const r = await fetch(API+'/cubic/levels');
-    const d = await r.json();
+    const r=await fetch(API+'/cubic/levels');
+    const d=await r.json();
     document.getElementById('community-count').textContent=(d.levels||[]).length;
   } catch { document.getElementById('community-count').textContent='?'; }
 })();
