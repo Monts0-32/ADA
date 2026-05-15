@@ -15,7 +15,7 @@
   --surface2: #21262d;
   --border:   #30363d;
   --border-m: #21262d;
-  --fg:       #e6edf3;
+  --fg:       #c9d1d9;
   --muted:    #8b949e;
   --subtle:   #484f58;
   --blue:     #2f81f7;
@@ -28,13 +28,14 @@
   --gold-fg:  #d29922;
   --orange:   #f78166;
   --inset:    #010409;
-  --r:        6px;
+  --r:        8px;
   --mono:     'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:#444c56}
 body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;overflow:hidden;height:100vh}
 
 /* ── SCREENS ── */
@@ -42,26 +43,13 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 .screen.active{display:flex}
 #menu-screen{background:var(--bg);justify-content:flex-start}
 
-/* ══════════════════════════════════════════
-   TOPBAR  (matches battleships style)
-══════════════════════════════════════════ */
-.topbar{position:fixed;top:0;left:0;right:0;height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100}
-.topbar-logo{font-size:13px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;text-decoration:none}
-.topbar-logo svg{fill:var(--fg);opacity:.8}
-.topbar-sep{color:var(--border);font-size:18px;line-height:1}
-.topbar-title{font-family:var(--mono);font-size:13px;color:var(--blue-fg);font-weight:500}
-.topbar-spacer{flex:1}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-family:var(--mono);font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--inset);color:var(--muted)}
-.pill.blue{border-color:var(--blue);color:var(--blue-fg);background:rgba(47,129,247,.1)}
-.pill.green{border-color:var(--green);color:var(--green-fg);background:rgba(35,134,54,.1)}
-
 /* ── BUTTONS ── */
-.btn{padding:5px 14px;border-radius:var(--r);font-family:var(--mono);font-size:12px;font-weight:500;border:1px solid;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn-primary{background:var(--green);border-color:rgba(240,246,252,.1);color:#fff}
+.btn{padding:6px 16px;border-radius:var(--r);font-size:12px;font-weight:600;border:1px solid;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary{background:var(--green);border-color:var(--green);color:#fff}
 .btn-primary:not(:disabled):hover{background:#2ea043}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed}
-.btn-secondary{background:var(--surface);border-color:var(--border);color:var(--fg)}
-.btn-secondary:hover{background:var(--surface2);border-color:#8b949e}
+.btn-secondary{background:var(--surface2);border-color:var(--border);color:var(--fg)}
+.btn-secondary:hover{background:#30363d;border-color:#8b949e}
 .btn-danger{background:rgba(218,54,51,.1);border-color:var(--red);color:var(--red-fg)}
 .btn-danger:hover{background:rgba(218,54,51,.2)}
 .btn-blue{background:rgba(47,129,247,.12);border-color:var(--blue);color:var(--blue-fg)}
@@ -72,61 +60,53 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 /* ══════════════════════════════════════════
    MENU CONTENT
 ══════════════════════════════════════════ */
-.menu-content{margin-top:48px;width:100%;max-width:920px;padding:28px 24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:calc(100vh - 48px);padding-bottom:40px}
+.menu-content{margin-top:56px;width:100%;max-width:860px;padding:24px 20px 60px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:calc(100vh - 56px)}
 
-.repo-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.repo-title{font-size:20px;font-weight:400}
-.repo-title .hl{color:var(--blue-fg);font-weight:600}
-.repo-desc{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
-.repo-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.repo-tag{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(47,129,247,.1);border:1px solid rgba(47,129,247,.3);color:var(--blue-fg);font-family:var(--mono)}
+/* PAGE HEADER */
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px}
+.page-title{font-size:20px;font-weight:600;color:var(--fg)}
+.page-desc{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5}
 
 /* TABS */
-.gh-tabs{display:flex;border-bottom:1px solid var(--border)}
-.gh-tab{padding:10px 16px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.1s;user-select:none}
-.gh-tab:hover{color:var(--fg);border-bottom-color:var(--border)}
-.gh-tab.active{color:var(--fg);border-bottom-color:var(--orange);font-weight:600}
-.tab-count{background:var(--surface2);color:var(--muted);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:400;font-family:var(--mono)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:0}
+.tab{padding:8px 16px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.1s;user-select:none;border-radius:var(--r) var(--r) 0 0}
+.tab:hover{color:var(--fg);background:rgba(255,255,255,.03)}
+.tab.active{color:var(--fg);border-bottom-color:var(--blue-fg);font-weight:600}
+.tab-count{background:var(--surface2);color:var(--muted);border-radius:20px;padding:1px 7px;font-size:11px;font-weight:400}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
-/* FILE LIST */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:0}
-.card-head{padding:10px 16px;border-bottom:1px solid var(--border-m);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
-.file-row{display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border-m);gap:12px;cursor:pointer;transition:background .1s}
-.file-row:last-child{border-bottom:none}
-.file-row:hover{background:rgba(255,255,255,.025)}
-.file-icon{color:var(--muted);font-size:14px;flex-shrink:0;width:18px;text-align:center}
-.file-name{font-size:13px;color:var(--blue-fg);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono)}
-.file-desc{font-size:12px;color:var(--muted);flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-time{font-size:11px;color:var(--muted);flex-shrink:0;font-family:var(--mono)}
-.file-actions{display:flex;gap:6px;flex-shrink:0}
-.file-badge{font-size:10px;padding:1px 7px;border-radius:20px;flex-shrink:0;font-weight:600;border:1px solid;font-family:var(--mono)}
+/* LEVEL CARDS */
+.levels-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.levels-panel-head{padding:10px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+.level-row{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border-m);gap:12px;cursor:pointer;transition:background .1s}
+.level-row:last-child{border-bottom:none}
+.level-row:hover{background:rgba(255,255,255,.03)}
+.level-thumb{width:48px;height:32px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:var(--inset)}
+.level-thumb-placeholder{width:48px;height:32px;border-radius:6px;border:1px solid var(--border-m);background:var(--inset);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.level-info{flex:1;min-width:0}
+.level-name{font-size:13px;font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.level-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.level-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.level-badge{font-size:10px;padding:2px 8px;border-radius:20px;flex-shrink:0;font-weight:600;border:1px solid}
 .badge-easy  {color:#3fb950;border-color:#238636;background:rgba(63,185,80,.1)}
 .badge-medium{color:#d29922;border-color:#9e6a03;background:rgba(210,153,34,.1)}
 .badge-hard  {color:#f85149;border-color:#b91c1c;background:rgba(248,81,73,.1)}
 .badge-tool  {color:#3fb950;border-color:#238636;background:rgba(63,185,80,.08)}
 .badge-locked{color:#8b949e;border-color:#484f58;background:rgba(72,79,88,.1)}
 
-/* level thumbnail */
-.level-thumb{width:48px;height:32px;border-radius:4px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:var(--inset)}
-.level-thumb-placeholder{width:48px;height:32px;border-radius:4px;border:1px solid var(--border-m);background:var(--inset);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px}
-
 /* community */
-.community-empty{text-align:center;padding:48px 16px;color:var(--subtle);font-size:12px;font-family:var(--mono);line-height:2}
+.community-empty{text-align:center;padding:48px 16px;color:var(--subtle);font-size:13px;line-height:2}
 .community-empty .ico{font-size:28px;margin-bottom:8px}
 .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--blue-fg);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* README */
-.readme{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.readme-head{padding:10px 16px;border-bottom:1px solid var(--border-m);font-size:12px;font-weight:600;color:var(--fg);display:flex;align-items:center;gap:8px;font-family:var(--mono)}
-.readme-body{padding:18px 22px;font-size:13px;line-height:1.6;color:var(--muted)}
-.readme-body h3{color:var(--fg);margin-bottom:6px;font-size:14px}
-.readme-body ul{padding-left:18px}
-.readme-body li{margin-bottom:3px}
-.readme-body code{background:var(--inset);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:12px;font-family:var(--mono);color:var(--blue-fg)}
-.kbd{display:inline-block;padding:2px 7px;background:var(--surface2);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--fg);margin:0 2px}
+/* CONTROLS BOX */
+.controls-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.controls-box h3{font-size:13px;font-weight:600;color:var(--fg);margin-bottom:10px}
+.controls-box p,.controls-box li{font-size:13px;color:var(--muted);line-height:1.7}
+.controls-box ul{padding-left:18px}
+.kbd{display:inline-block;padding:1px 6px;background:var(--surface2);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--mono);color:var(--fg);margin:0 2px}
 
 /* ══════════════════════════════════════════
    GAME SCREEN
@@ -134,11 +114,11 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 #game-screen{background:#000}
 #game-canvas{display:block}
 .game-hud{position:fixed;top:0;left:0;right:0;height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:10}
-.hud-name{font-size:13px;font-weight:600;color:var(--fg);font-family:var(--mono)}
-.hud-pct{font-size:12px;color:var(--muted);font-family:var(--mono);padding:2px 8px;background:var(--inset);border:1px solid var(--border);border-radius:4px}
+.hud-name{font-size:13px;font-weight:600;color:var(--fg)}
+.hud-pct{font-size:12px;color:var(--muted);padding:2px 8px;background:var(--inset);border:1px solid var(--border);border-radius:4px;font-family:var(--mono)}
 .hud-att{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.hud-back{margin-left:auto;padding:5px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;cursor:pointer;transition:.15s;font-family:var(--mono)}
-.hud-back:hover{background:var(--surface2);border-color:#8b949e}
+.hud-back{margin-left:auto;padding:5px 14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface2);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.hud-back:hover{background:#30363d;border-color:#8b949e}
 .prog-bar{position:fixed;bottom:0;left:0;right:0;height:3px;background:var(--surface);z-index:10}
 .prog-fill{height:100%;width:0%;transition:width .1s linear}
 
@@ -234,91 +214,73 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 </style>
 </head>
 <body>
-
 <div id="ada-header-anchor"></div>
 
 <!-- ═══════════════════════════ MENU ═══════════════════════════ -->
 <div id="menu-screen" class="screen active">
-
   <div class="menu-content">
 
-    <div class="repo-header">
+    <div class="page-header">
       <div>
-        <div class="repo-title">Dingle Dash</span></div>
-        <div class="repo-desc">Requested by big A</div>
-        <div class="repo-tags">
-          <span class="repo-tag">game</span>
-          <span class="repo-tag">platformer</span>
-          <span class="repo-tag">geometry-dash</span>
-          <span class="repo-tag">canvas</span>
-        </div>
+        <div class="page-title">Cubic Dash</div>
+        <div class="page-desc">A Geometry Dash–style platformer. Jump over spikes and gaps, clear every level. Build and share your own.</div>
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
-      </div>
+      <button class="btn btn-primary" onclick="openBuilder()">+ Level Builder</button>
     </div>
 
     <div>
-      <div class="gh-tabs">
-        <div class="gh-tab active" id="tab-builtin" onclick="switchTab('builtin')">
-          <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A2.5 2.5 0 013.5 0h8.75a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0V1.5h-8a1 1 0 00-1 1v6.708A2.492 2.492 0 013.5 9h3.25a.75.75 0 010 1.5H3.5a1 1 0 100 2h5.75a.75.75 0 010 1.5H3.5A2.5 2.5 0 011 11.5v-9z"/></svg>
-          Built-in
-          <span class="tab-count">3</span>
+      <div class="tabs">
+        <div class="tab active" id="tab-builtin" onclick="switchTab('builtin')">
+          Built-in <span class="tab-count">3</span>
         </div>
-        <div class="gh-tab" id="tab-community" onclick="switchTab('community')">
-          <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
-          Community
-          <span class="tab-count" id="community-count">…</span>
+        <div class="tab" id="tab-community" onclick="switchTab('community')">
+          Community <span class="tab-count" id="community-count">…</span>
         </div>
       </div>
 
       <!-- BUILT-IN -->
       <div class="tab-panel active" id="panel-builtin">
-        <div class="card">
-          <div class="card-head">
-            <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
-            <span style="color:var(--fg)">feat: 3 built-in levels</span>
-            <span style="margin-left:auto">3 levels</span>
+        <div class="levels-panel">
+          <div class="levels-panel-head"><span>Built-in Levels</span></div>
+          <div class="level-row" onclick="startLevel(0)">
+            <div class="level-thumb-placeholder">🟢</div>
+            <div class="level-info">
+              <div class="level-name">Stereo Madness</div>
+              <div class="level-meta">Intro stage — gaps, single spikes, gentle platforms</div>
+            </div>
+            <div class="level-actions">
+              <span class="level-badge badge-easy">Easy</span>
+            </div>
           </div>
-          <div class="file-row" onclick="startLevel(0)">
-            <span class="file-icon">🎮</span>
-            <span class="file-name">level_01_stereo_madness.js</span>
-            <span class="file-desc">Intro stage — gaps, single spikes, gentle platforms</span>
-            <span class="file-badge badge-easy">Easy</span>
-            <span class="file-time">built-in</span>
+          <div class="level-row" onclick="startLevel(1)">
+            <div class="level-thumb-placeholder">🟡</div>
+            <div class="level-info">
+              <div class="level-name">Back on Track</div>
+              <div class="level-meta">Double spikes, tall blocks, tighter timing</div>
+            </div>
+            <div class="level-actions">
+              <span class="level-badge badge-medium">Medium</span>
+            </div>
           </div>
-          <div class="file-row" onclick="startLevel(1)">
-            <span class="file-icon">🎮</span>
-            <span class="file-name">level_02_back_on_track.js</span>
-            <span class="file-desc">Double spikes, tall blocks, tighter timing</span>
-            <span class="file-badge badge-medium">Medium</span>
-            <span class="file-time">built-in</span>
-          </div>
-          <div class="file-row" onclick="startLevel(2)">
-            <span class="file-icon">🎮</span>
-            <span class="file-name">level_03_polargeist.js</span>
-            <span class="file-desc">Brutal density, high platforms, almost no margin</span>
-            <span class="file-badge badge-hard">Hard</span>
-            <span class="file-time">built-in</span>
-          </div>
-          <div class="file-row" onclick="openBuilder()">
-            <span class="file-icon" style="color:var(--green-fg)">⬡</span>
-            <span class="file-name" style="color:var(--green-fg)">level_builder.js</span>
-            <span class="file-desc">Create and publish your own levels to the community</span>
-            <span class="file-badge badge-tool">Tool</span>
-            <span class="file-time">built-in</span>
+          <div class="level-row" onclick="startLevel(2)">
+            <div class="level-thumb-placeholder">🔴</div>
+            <div class="level-info">
+              <div class="level-name">Polargeist</div>
+              <div class="level-meta">Brutal density, high platforms, almost no margin</div>
+            </div>
+            <div class="level-actions">
+              <span class="level-badge badge-hard">Hard</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- COMMUNITY -->
       <div class="tab-panel" id="panel-community">
-        <div class="card">
-          <div class="card-head">
-            <svg height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 2.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75zM0 6a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 6zm1.75 3.5a.25.25 0 000 .5h12.5a.25.25 0 000-.5H1.75z"/></svg>
-            <span style="color:var(--fg)">Community published levels</span>
-            <span style="margin-left:auto">
-              <button class="btn btn-secondary" style="padding:2px 8px;font-size:11px" onclick="loadCommunityLevels()">↻ refresh</button>
-            </span>
+        <div class="levels-panel">
+          <div class="levels-panel-head">
+            <span>Community Levels</span>
+            <button class="btn btn-secondary" style="padding:3px 10px;font-size:11px" onclick="loadCommunityLevels()">↻ Refresh</button>
           </div>
           <div id="community-list">
             <div class="community-empty"><span class="spin"></span> Loading…</div>
@@ -327,26 +289,20 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
       </div>
     </div>
 
-    <div class="readme">
-      <div class="readme-head">
-        <svg height="13" viewBox="0 0 16 16" fill="currentColor" style="color:var(--muted)"><path d="M0 3.75A.75.75 0 01.75 3h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 3.75zm0 4A.75.75 0 01.75 7h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 7.75zm0 4a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H.75A.75.75 0 010 11.75z"/></svg>
-        Info
-      </div>
-      <div class="readme-body">
-        <h3>Controls</h3>
-        <ul>
-          <li><span class="kbd">Space</span> <span class="kbd">↑</span> or <span class="kbd">Click/Tap</span> — Jump (tap for short hop, hold for full jump)</li>
-          <li>One hit kills — spikes and gaps restart the level</li>
-          <li>Land on platforms and blocks to cross obstacles</li>
-        </ul>
-        <br>
-        <h3>Level Builder</h3>
-        <ul>
-          <li><code>Left click / drag</code> — place object &nbsp; <code>Right click</code> — erase / toggle gap</li>
-          <li><code>Scroll</code> — pan left/right &nbsp; <strong>Test Play</strong> to run your level instantly</li>
-          <li><strong>Publish to Site</strong> — share with the community (add a thumbnail image!)</li>
-        </ul>
-      </div>
+    <div class="controls-box">
+      <h3>Controls</h3>
+      <ul>
+        <li><span class="kbd">Space</span> <span class="kbd">↑</span> or <span class="kbd">Click</span> — Jump (tap for short hop, hold for full jump)</li>
+        <li>One hit kills — spikes and gaps restart the level</li>
+        <li>Land on platforms and blocks to cross obstacles</li>
+      </ul>
+      <br>
+      <h3>Level Builder</h3>
+      <ul>
+        <li><span class="kbd">Left click</span> drag to place &nbsp;·&nbsp; <span class="kbd">Right click</span> to erase</li>
+        <li><span class="kbd">Scroll</span> to pan &nbsp;·&nbsp; <strong style="color:var(--fg)">Test Play</strong> to run your level instantly</li>
+        <li><strong style="color:var(--fg)">Publish to Site</strong> — share with the community</li>
+      </ul>
     </div>
 
   </div>
@@ -505,9 +461,9 @@ body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSyst
 // ─────────────────────────────────────────────────────────────
 //  CONFIG  — update both before deploying
 // ─────────────────────────────────────────────────────────────
-const API   = "https://ada-relay.andrewdinglearchive.workers.dev";
-const EMAIL = window.ADA_EMAIL   || "";
-const IS_ADMIN = window.ADA_IS_ADMIN || false;  // set window.ADA_IS_ADMIN=true from your login system
+const API      = "https://ada-relay.andrewdinglearchive.workers.dev";
+let EMAIL      = localStorage.getItem('ada_user_email') || "";
+let IS_ADMIN   = false;
 
 // ─────────────────────────────────────────────────────────────
 //  PHYSICS CONSTANTS  (Geometry Dash feel)
@@ -1064,24 +1020,27 @@ async function loadCommunityLevels(){
       const badgeCls={easy:'badge-easy',medium:'badge-medium',hard:'badge-hard'}[diff]||'';
       const badgeTxt=diff.charAt(0).toUpperCase()+diff.slice(1);
       const ago=timeAgo(l.created_at);
-      const isOwner=EMAIL&&(l.author===EMAIL);
+      const isOwner=EMAIL&&(l.author===EMAIL||l.author_email===EMAIL);
+      const canDelete=isOwner||IS_ADMIN;
+      const canLock=IS_ADMIN;
       const thumb=l.image_url
         ?`<img class="level-thumb" src="${escAttr(l.image_url)}" alt="">`
         :`<div class="level-thumb-placeholder" style="color:${escAttr(l.color||'#58a6ff')}">🎮</div>`;
-      const locked=l.is_locked?'<span class="file-badge badge-locked">Locked</span>':'';
-      // Delete button: show for owner OR admin
-      const canDelete=isOwner||IS_ADMIN;
-      const canLock=IS_ADMIN;
+      const lockedBadge=l.is_locked?'<span class="level-badge badge-locked">Locked</span>':'';
       const delBtn=canDelete?`<button class="btn btn-danger" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();deleteLevel(${l.id},'${escAttr(l.name)}')">🗑</button>`:'';
       const lockBtn=canLock?`<button class="btn btn-secondary" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();toggleLock(${l.id},${!!l.is_locked})">${l.is_locked?'🔓':'🔒'}</button>`:'';
-      return `<div class="file-row" onclick="${l.is_locked&&!IS_ADMIN?'toast(\'This level is locked\',\'e\')':'playPublished('+i+')'}">
+      const clickAction=l.is_locked&&!IS_ADMIN?`toast('This level is locked','e')`:`playPublished(${i})`;
+      return `<div class="level-row" onclick="${clickAction}">
         ${thumb}
-        <span class="file-name">${escHtml(l.name)}.js</span>
-        <span class="file-desc">by ${escHtml(l.author||'Anonymous')} · ${l.plays||0} plays</span>
-        ${locked}
-        <span class="file-badge ${badgeCls}">${badgeTxt}</span>
-        <span class="file-time">${ago}</span>
-        <div class="file-actions" style="gap:4px">${lockBtn}${delBtn}</div>
+        <div class="level-info">
+          <div class="level-name">${escHtml(l.name)}</div>
+          <div class="level-meta">by ${escHtml(l.author||'Anonymous')} · ${l.plays||0} plays · ${ago}</div>
+        </div>
+        <div class="level-actions">
+          ${lockedBadge}
+          <span class="level-badge ${badgeCls}">${badgeTxt}</span>
+          ${lockBtn}${delBtn}
+        </div>
       </div>`;
     }).join('');
   } catch(e){
@@ -1130,7 +1089,7 @@ function timeAgo(ts){
 }
 
 function switchTab(name){
-  document.querySelectorAll('.gh-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
@@ -1148,7 +1107,10 @@ function showScreen(id){
 // ─────────────────────────────────────────────────────────────
 async function init() {
   if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
-  await runNeuralGuard();
+  const data = await runNeuralGuard();
+  if (!data) return;
+  EMAIL    = localStorage.getItem('ada_user_email') || "";
+  IS_ADMIN = data.user.is_admin === 1;
   try {
     const r=await fetch(API+'/cubic/levels');
     const d=await r.json();
