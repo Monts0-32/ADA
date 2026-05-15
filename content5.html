@@ -1028,10 +1028,11 @@ async function submitPublish(){
     const res=await fetch(API+'/cubic/publish',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        name,author,difficulty,color,
-        length:bLevelLen,
-        image_url: _pubImageBase64||null,
-        objects:JSON.stringify([...bObjects.map(o=>[o.col,o.row,o.type]),...[...bGaps].map(c=>['gap',c])])
+          name, author, email: EMAIL,  // ✅ add this
+          difficulty, color,
+          length: bLevelLen || 120,    // ✅ fallback in case bLevelLen is undefined
+          image_url: _pubImageBase64 || null,
+          objects: JSON.stringify([...bObjects.map(o=>[o.col,o.row,o.type]),...[...bGaps].map(c=>['gap',c])])
       })
     });
     const data=await res.json();
