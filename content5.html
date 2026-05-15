@@ -1199,8 +1199,8 @@ async function loadCommunityLevels(){
   const cnt  = document.getElementById('community-count');
   list.innerHTML = '<div class="community-empty"><span class="spinner-sm"></span> Loading…</div>';
   try {
-    const res  = await fetch(API+'/cubic/levels');
-    const data = await res.json();
+    const res    = await fetch(API+'/cubic/levels');
+    const data   = await res.json();
     const levels = data.levels || [];
     cnt.textContent = levels.length;
 
@@ -1209,12 +1209,15 @@ async function loadCommunityLevels(){
       return;
     }
 
-    list.innerHTML = levels.map(l => {
-      const diff = l.difficulty||'medium';
-      const badgeCls = {easy:'badge-easy',medium:'badge-medium',hard:'badge-hard'}[diff]||'badge-custom';
-      const badgeTxt = diff.charAt(0).toUpperCase()+diff.slice(1);
-      const ago = timeAgo(l.created_at);
-      return `<div class="gh-file-row" onclick="playPublished(${JSON.stringify(JSON.stringify(l)).slice(1,-1)})">
+    // Store levels in memory, reference by index
+    window._communityLevels = levels;
+
+    list.innerHTML = levels.map((l, i) => {
+      const diff     = l.difficulty || 'medium';
+      const badgeCls = {easy:'badge-easy', medium:'badge-medium', hard:'badge-hard'}[diff] || 'badge-custom';
+      const badgeTxt = diff.charAt(0).toUpperCase() + diff.slice(1);
+      const ago      = timeAgo(l.created_at);
+      return `<div class="gh-file-row" onclick="playPublished(${i})">
         <span class="gh-file-icon" style="color:${escAttr(l.color||'#58a6ff')}">🎮</span>
         <span class="gh-file-name">${escHtml(l.name)}.js</span>
         <span class="gh-file-desc">by ${escHtml(l.author||'Anonymous')}</span>
@@ -1223,22 +1226,28 @@ async function loadCommunityLevels(){
       </div>`;
     }).join('');
   } catch(e){
-    list.innerHTML='<div class="community-empty">⚠ Could not load levels.<br>Check worker config.</div>';
-    cnt.textContent='!';
+    list.innerHTML = '<div class="community-empty">⚠ Could not load levels.<br>Check worker config.</div>';
+    cnt.textContent = '!';
   }
 }
 
-function playPublished(jsonStr){
+function playPublished(index){
+  const l = window._communityLevels[index];
+  if(!l){ toast('Level not found','e'); return; }
   try {
-    const l = JSON.parse(jsonStr);
     const raw = {
       name:    l.name,
-      color:   l.color||'#58a6ff',
-      length:  l.length||120,
-      objects: JSON.parse(l.objects||'[]')
+      color:   l.color || '#58a6ff',
+      length:  parseInt(l.length) || 120,
+      objects: JSON.parse(l.objects || '[]')
     };
+    // Increment play count in background
+    fetch(API + '/cubic/play?id=' + l.id).catch(()=>{});
     startCustomLevel(raw);
-  } catch(e){ toast('Could not load level','e'); }
+  } catch(e){
+    toast('Could not parse level data','e');
+    console.error(e);
+  }
 }
 
 function timeAgo(ts){
