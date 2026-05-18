@@ -35,6 +35,12 @@
         .floating-nav { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: #161b22; border: 1px solid var(--border); padding: 10px 25px; border-radius: 50px; display: flex; gap: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; }
         .floating-nav a { color: var(--blue); text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
     </style>
+    <script src="/uv/uv.bundle.js"></script>
+    <script src="/uv/uv.config.js"></script>
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/chat-widget.js"></script>
+    <script src="/escape-key.js"></script>
 </head>
 <body>
 <script>
@@ -55,10 +61,7 @@
     }
     establishNeuralLink();
 </script>
-<script src="/uplink.js"></script>
-<script src="/header-engine.js"></script>
-<script src="/chat-widget.js"></script>
-<script src="/escape-key.js"></script>
+
 <script>
     async function start() {
         if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
@@ -66,11 +69,7 @@
     }
     start();
 </script>
-<div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
 
-<script src="/chat-widget.js"></script>
-<script src="/escape-key.js"></script>
 
 <div id="setup">
     <div class="box">
@@ -96,7 +95,45 @@
         <a href="/dash.html">Terminate Session</a>
     </div>
 </div>
+<script>
+    // Register the Ultraviolet service worker
+    async function registerSW() {
+        if (!navigator.serviceWorker) {
+            console.warn('Service workers not supported');
+            return;
+        }
+        try {
+            await navigator.serviceWorker.register('/uv/uv.sw.js', {
+                scope: '/uv/service/'
+            });
+        } catch (err) {
+            console.error('SW registration failed:', err);
+        }
+    }
+    registerSW();
 
+    function launch() {
+        let val = document.getElementById('target').value.trim();
+        if (!val) return;
+
+        let finalUrl;
+        const isUrl = val.includes('.') && !val.includes(' ');
+
+        if (isUrl) {
+            finalUrl = val.startsWith('http') ? val : 'https://' + val;
+        } else {
+            finalUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
+        }
+
+        // Use Ultraviolet to encode the URL instead of your old relay
+        const encoded = __uv$config.encodeUrl(finalUrl);
+        const proxiedUrl = __uv$config.prefix + encoded;
+
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('viewer').style.display = 'block';
+        document.getElementById('frame').src = proxiedUrl;
+    }
+</script>
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     
