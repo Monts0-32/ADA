@@ -99,15 +99,19 @@
             </div>
         </div>
 
-        <!-- CALENDAR WIDGET -->
+        <!-- CLOCK WIDGET -->
         <div class="widget-box">
             <div class="widget-title">
-                Archive Calendar
+                System Time
                 <button class="btn-edit admin-only" onclick="toggleOverlay('edit-calendar')">Edit Note</button>
             </div>
-            <div class="calendar-grid" id="calendar-display"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 0;">
+                <div id="clock-day" style="font-size:12px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:2px;"></div>
+                <div id="clock-date" style="font-size:14px;color:var(--text);font-weight:600;"></div>
+                <div id="clock-time" style="font-size:36px;font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;color:var(--blue);letter-spacing:3px;margin:4px 0;"></div>
+            </div>
             <div id="calendar-note-display" class="cal-note"></div>
-            
+
             <!-- Edit Overlay -->
             <div class="edit-overlay" id="edit-calendar">
                 <label style="font-size:10px; color:var(--blue); font-weight:bold; display:block; margin-bottom:5px;">GLOBAL SYSTEM NOTE</label>
@@ -183,7 +187,7 @@
             document.getElementById('calendar-note-display').innerText = data.widgets.calendar_note || "System running nominal parameters.";
             document.getElementById('in-cal-note').value = data.widgets.calendar_note || "";
         }
-        renderCalendar();
+        startClock();
 
         // 5. Apply Page Locks
         data.locks.forEach(l => {
@@ -223,18 +227,24 @@
         });
     }
 
-    function renderCalendar() {
-        const display = document.getElementById('calendar-display');
-        const now = new Date();
-        const today = now.getDate();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-        
-        let html = ['S','M','T','W','T','F','S'].map(d => `<div class="cal-header">${d}</div>`).join('');
-        for(let i=1; i<=daysInMonth; i++) {
-            const isToday = i === today ? 'cal-today' : '';
-            html += `<div class="cal-date ${isToday}">${i}</div>`;
+    function startClock() {
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        function tick() {
+            const now = new Date();
+            const day = DAYS[now.getDay()];
+            const date = now.getDate();
+            const month = MONTHS[now.getMonth()];
+            const year = now.getFullYear();
+            const hh = String(now.getHours()).padStart(2,'0');
+            const mm = String(now.getMinutes()).padStart(2,'0');
+            const ss = String(now.getSeconds()).padStart(2,'0');
+            document.getElementById('clock-day').textContent = day;
+            document.getElementById('clock-date').textContent = `${date} ${month} ${year}`;
+            document.getElementById('clock-time').textContent = `${hh} : ${mm} : ${ss}`;
         }
-        display.innerHTML = html;
+        tick();
+        setInterval(tick, 1000);
     }
 
     function toggleOverlay(id) {
