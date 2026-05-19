@@ -1,2 +1,2 @@
-/service/*
+/uv/uv.sw.js
   Service-Worker-Allowed: /
