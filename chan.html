@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chan's Page</title>
+<script src="/uplink.js"></script>
+<script src="/header-engine.js"></script>
+<script src="/chat-widget.js"></script>
+<script src="/escape-key.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'sans-serif';
+    background: #0c0c10;
+    color: #f0ede8;
+    overflow-x: hidden;
+  }
+
+  .hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 60%, #1a1230 0%, #0c0c10 70%);
+  }
+
+  .title-wrap {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #8b7eaa;
+    margin-bottom: 1.2rem;
+  }
+
+  .main-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 7vw, 6rem);
+    font-weight: 700;
+    line-height: 1.05;
+    color: #f0ede8;
+  }
+
+  .main-title em {
+    font-style: italic;
+    color: #c9b8f0;
+  }
+
+  .subtitle {
+    margin-top: 1.4rem;
+    font-size: 15px;
+    font-weight: 300;
+    color: #8b8694;
+    letter-spacing: 0.04em;
+  }
+
+  .float-img {
+    position: absolute;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    will-change: transform;
+    transition: box-shadow 0.3s;
+  }
+
+  .float-img:hover {
+    box-shadow: 0 28px 80px rgba(0,0,0,0.7);
+    z-index: 20 !important;
+  }
+
+  .float-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.88) saturate(1.1);
+    transition: filter 0.3s;
+  }
+
+  .float-img:hover img { filter: brightness(1) saturate(1.2); }
+
+  .content {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem;
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .content p {
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.9;
+    color: #8b8694;
+  }
+</style>
+</head>
+<body>
+
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="title-wrap">
+    <p class="eyebrow"></p>
+    <h1 class="main-title"></h1>
+    <p class="subtitle"></p>
+  </div>
+</section>
+
+<section class="content">
+  <p>Your images float above, drifting at different speeds as you scroll — each layer moving at its own pace, creating depth and motion.</p>
+</section>
+
+<script>
+  /* ============================================================
+     DEVELOPER CONFIG — edit these two sections only
+     ============================================================ */
+
+  /* 1. ADD YOUR IMAGE PATHS OR URLs HERE
+     Use relative paths e.g. "images/photo1.jpg"
+     or full URLs e.g. "https://example.com/photo.jpg"
+     You can have fewer images than slots — unused slots are hidden. */
+  const IMAGES = [
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600",
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600",
+    "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600",
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600",
+    "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=600",
+    "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=600",
+    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600",
+    "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=600",
+  ];
+
+  /* 2. TITLE TEXT */
+  const TITLE_EYEBROW = "Your collection";
+  const TITLE_LINE1   = "Beautiful";
+  const TITLE_LINE2   = "Moments";   // rendered in italic accent colour
+  const SUBTITLE      = "Scroll to explore";
+
+  /* ============================================================
+     Layout slots — tweak position, size, parallax speed, tilt
+     ============================================================ */
+  const slots = [
+    { top: '8%',  left: '4%',  w: 200, h: 260, speed: 0.12, rot: -4, z: 3 },
+    { top: '5%',  left: '28%', w: 160, h: 200, speed: 0.22, rot:  2, z: 2 },
+    { top: '12%', left: '62%', w: 220, h: 170, speed: 0.08, rot: -2, z: 4 },
+    { top: '2%',  left: '78%', w: 155, h: 210, speed: 0.18, rot:  5, z: 3 },
+    { top: '52%', left: '2%',  w: 170, h: 130, speed: 0.28, rot: -3, z: 2 },
+    { top: '58%', left: '20%', w: 130, h: 170, speed: 0.14, rot:  4, z: 3 },
+    { top: '55%', left: '72%', w: 180, h: 140, speed: 0.20, rot: -5, z: 2 },
+    { top: '68%', left: '55%', w: 145, h: 185, speed: 0.10, rot:  3, z: 4 },
+  ];
+
+  /* ============================================================
+     Runtime — no need to edit below this line
+     ============================================================ */
+
+  document.querySelector('.eyebrow').textContent  = TITLE_EYEBROW;
+  document.querySelector('.main-title').innerHTML = `${TITLE_LINE1}<br><em>${TITLE_LINE2}</em>`;
+  document.querySelector('.subtitle').textContent = SUBTITLE;
+
+  const hero = document.getElementById('hero');
+  const live = [];
+
+  slots.forEach((s, i) => {
+    if (!IMAGES[i]) return;
+
+    const el = document.createElement('div');
+    el.className = 'float-img';
+    el.style.cssText = `
+      top:${s.top}; left:${s.left};
+      width:${s.w}px; height:${s.h}px;
+      z-index:${s.z};
+      transform: rotate(${s.rot}deg) translateY(0px);
+    `;
+
+    const img = document.createElement('img');
+    img.src = IMAGES[i];
+    img.alt = '';
+    el.appendChild(img);
+    hero.appendChild(el);
+    live.push({ el, speed: s.speed, rot: s.rot });
+  });
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const sy = window.scrollY;
+        live.forEach(({ el, speed, rot }) => {
+          el.style.transform = `rotate(${rot}deg) translateY(${-sy * speed}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+</script>
+</body>
+</html>
