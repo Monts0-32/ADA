@@ -1,4 +1,3 @@
-/*global Ultraviolet*/
 self.__uv$config = {
     prefix: '/service/',
     bare: 'https://ada-app-production.up.railway.app/bare/',
