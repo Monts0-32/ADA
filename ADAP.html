@@ -104,7 +104,7 @@
         }
         try {
             await navigator.serviceWorker.register('/uv/uv.sw.js', {
-                scope: '/uv/service/'
+                scope: '/service/'
             });
         } catch (err) {
             console.error('SW registration failed:', err);
@@ -126,8 +126,7 @@
         }
 
         // Use Ultraviolet to encode the URL instead of your old relay
-        const encoded = __uv$config.encodeUrl(finalUrl);
-        const proxiedUrl = __uv$config.prefix + encoded;
+        const proxiedUrl = __uv$config.prefix + __uv$config.encodeUrl(finalUrl);
 
         document.getElementById('setup').style.display = 'none';
         document.getElementById('viewer').style.display = 'block';
@@ -139,11 +138,17 @@
     
     async function init() {
         const email = localStorage.getItem('ada_user_email');
-        if(!email) { window.location.href='/login.html'; return; }
-        const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-        const d = await res.json();
-        document.getElementById('pill-name').innerText = d.user.display_name || d.user.email;
-        document.getElementById('pill-pic').src = d.user.profile_picture;
+        if (!email) { window.location.href = '/login.html'; return; }
+        try {
+            const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+            const d = await res.json();
+            const pillName = document.getElementById('pill-name');
+            const pillPic  = document.getElementById('pill-pic');
+            if (pillName) pillName.innerText = d.user.display_name || d.user.email;
+            if (pillPic)  pillPic.src = d.user.profile_picture;
+        } catch(e) {
+            console.warn('Init error:', e);
+        }
     }
 
     function launch() {
