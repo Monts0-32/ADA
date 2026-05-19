@@ -115,19 +115,19 @@
     function launch() {
         let val = document.getElementById('target').value.trim();
         if (!val) return;
-
+    
         let finalUrl;
         const isUrl = val.includes('.') && !val.includes(' ');
-
+    
         if (isUrl) {
             finalUrl = val.startsWith('http') ? val : 'https://' + val;
         } else {
             finalUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
         }
-
-        // Use Ultraviolet to encode the URL instead of your old relay
-        const proxiedUrl = __uv$config.prefix + __uv$config.encodeUrl(finalUrl);
-
+    
+        const encoded = __uv$config.encodeUrl(finalUrl);
+        const proxiedUrl = __uv$config.prefix + encoded;
+    
         document.getElementById('setup').style.display = 'none';
         document.getElementById('viewer').style.display = 'block';
         document.getElementById('frame').src = proxiedUrl;
