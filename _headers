@@ -1,4 +1,4 @@
 /uv/uv.sw.entry.js
   Service-Worker-Allowed: /
-/uv/bare.cjs
+/uv/bare.js
   Content-Type: application/javascript
