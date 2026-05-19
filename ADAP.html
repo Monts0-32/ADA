@@ -37,6 +37,7 @@
     </style>
     <script src="/uv/uv.bundle.js"></script>
     <script src="/uv/uv.config.js"></script>
+    <script src="/uv/uv.handler.js"></script>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/chat-widget.js"></script>
@@ -103,9 +104,21 @@
             return;
         }
         try {
-            await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
+            // Register the service worker
+            const reg = await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
                 scope: '/service/'
-            });            
+            });
+    
+            // Set up bare-mux transport — this is what the SW uses to talk to your bare server
+            const { BareMuxConnection } = await import('/uv/uv.bundle.js').catch(() => window);
+            
+            // Use the built-in bare mux from the already-loaded bundle
+            const conn = new BareMuxConnection('/uv/bare.cjs');
+            await conn.setTransport('/uv/epoxy.cjs', [
+                { wisp: 'wss://ada-relay.andrewdinglearchive.workers.dev/wisp/' }
+            ]);
+    
+            console.log('SW + bare-mux ready');
         } catch (err) {
             console.error('SW registration failed:', err);
         }
