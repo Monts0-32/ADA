@@ -28,7 +28,6 @@
         .btn { background: var(--green); color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn:hover { background: #2ea043; transform: translateY(-1px); }
 
-        /* VIEWER UI */
         #viewer { flex: 1; display: none; background: #fff; position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
         
@@ -43,43 +42,23 @@
     <script src="/escape-key.js"></script>
 </head>
 <body>
+
 <script>
     async function establishNeuralLink() {
-        // If uplink.js isn't ready yet, wait 100ms and try again
-        if (typeof runNeuralGuard !== 'function') {
-            setTimeout(establishNeuralLink, 100);
-            return;
-        }
-
-        // Call the guard (Add a tag here if the page is restricted, e.g. 'wiki_access')
-        const data = await runNeuralGuard('ADAP_access'); 
-        
-        if (data) {
-            // Signal to the rest of your page that it's safe to load
-            window.dispatchEvent(new CustomEvent('ada-ready', { detail: data }));
-        }
+        if (typeof runNeuralGuard !== 'function') { setTimeout(establishNeuralLink, 100); return; }
+        const data = await runNeuralGuard('ADAP_access');
+        if (data) window.dispatchEvent(new CustomEvent('ada-ready', { detail: data }));
     }
     establishNeuralLink();
 </script>
 
-<script>
-    async function start() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
-        await runNeuralGuard('ADAP_access');
-    }
-    start();
-</script>
-
-
 <div id="setup">
     <div class="box">
         <div class="beta-alert">
-            <strong>BETA_NOTICE_v4:</strong> Neural Relay is in active development. We have implemented <b>Deep Asset Rewriting</b> for CSS stability. Use search queries for automated DuckDuckGo (HTML Edition) routing.
+            <strong>BETA_NOTICE_v4:</strong> Neural Relay is in active development. Powered by Ultraviolet. Use search queries for automated Google routing.
         </div>
-
         <h2 style="margin:0; font-size: 24px;">Initialize Neural Link</h2>
         <p style="color:#8b949e; font-size:13px; margin-top:10px;">Establishing unlogged, cloaked uplink to external nodes.</p>
-        
         <div class="input-group">
             <input type="text" id="target" placeholder="Search query or destination URL..." onkeydown="if(event.key==='Enter') launch()">
             <button class="btn" onclick="launch()">Initialize</button>
@@ -95,47 +74,11 @@
         <a href="/dash.html">Terminate Session</a>
     </div>
 </div>
-<script>
-    async function registerSW() {
-        if (!navigator.serviceWorker) {
-            console.warn('Service workers not supported');
-            return;
-        }
-        try {
-            await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
-                scope: '/service/'
-            });
-            console.log('Neural relay ready');
-        } catch (err) {
-            console.error('SW registration failed:', err);
-        }
-    }
-    registerSW();
-    
-    function launch() {
-        let val = document.getElementById('target').value.trim();
-        if (!val) return;
-    
-        let finalUrl;
-        const isUrl = val.includes('.') && !val.includes(' ');
-    
-        if (isUrl) {
-            finalUrl = val.startsWith('http') ? val : 'https://' + val;
-        } else {
-            finalUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
-        }
-    
-        const encoded = __uv$config.encodeUrl(finalUrl);
-        const proxiedUrl = __uv$config.prefix + encoded;
-    
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('viewer').style.display = 'block';
-        document.getElementById('frame').src = proxiedUrl;
-    }
-</script>
+
 <script>
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-    
+
+    // ── Auth check ────────────────────────────────────────────
     async function init() {
         const email = localStorage.getItem('ada_user_email');
         if (!email) { window.location.href = '/login.html'; return; }
@@ -151,25 +94,47 @@
         }
     }
 
+    // ── Service Worker registration ───────────────────────────
+    async function registerSW() {
+        if (!navigator.serviceWorker) {
+            console.warn('Service workers not supported');
+            return;
+        }
+        try {
+            await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
+                scope: '/service/'
+            });
+            console.log('Neural relay ready');
+        } catch (err) {
+            console.error('SW registration failed:', err);
+        }
+    }
+
+    // ── Launch via Ultraviolet ────────────────────────────────
     function launch() {
         let val = document.getElementById('target').value.trim();
         if (!val) return;
 
-        let finalUrl = "";
+        let finalUrl;
         const isUrl = val.includes('.') && !val.includes(' ');
-        
+
         if (isUrl) {
             finalUrl = val.startsWith('http') ? val : 'https://' + val;
         } else {
-            finalUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(val)}`;
+            finalUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
         }
+
+        // Use UV to encode and proxy — NOT the old relay
+        const encoded = __uv$config.encodeUrl(finalUrl);
+        const proxiedUrl = __uv$config.prefix + encoded;
 
         document.getElementById('setup').style.display = 'none';
         document.getElementById('viewer').style.display = 'block';
-        document.getElementById('frame').src = `${API}/relay/v3?url=${encodeURIComponent(finalUrl)}`;
+        document.getElementById('frame').src = proxiedUrl;
     }
 
     init();
+    registerSW();
 </script>
 </body>
 </html>
