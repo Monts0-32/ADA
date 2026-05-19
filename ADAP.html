@@ -37,7 +37,6 @@
     </style>
     <script src="/uv/uv.bundle.js"></script>
     <script src="/uv/uv.config.js"></script>
-    <script src="/uv/bare.cjs"></script>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/chat-widget.js"></script>
@@ -97,7 +96,6 @@
     </div>
 </div>
 <script>
-    // Register the Ultraviolet service worker
     async function registerSW() {
         if (!navigator.serviceWorker) {
             console.warn('Service workers not supported');
@@ -108,8 +106,17 @@
                 scope: '/service/'
             });
     
-            const conn = new BareMuxConnection('/uv/bare.cjs');
-            await conn.setTransport('/uv/bare.cjs', [{
+            // Dynamically import bare-mux as a module instead of relying on global
+            const bareMux = await import('/uv/bare.js');
+            const BareMuxConnection = bareMux.BareMuxConnection || bareMux.default?.BareMuxConnection || bareMux.default;
+    
+            if (!BareMuxConnection) {
+                console.error('Could not find BareMuxConnection in bare.js — check the file exports');
+                return;
+            }
+    
+            const conn = new BareMuxConnection('/uv/bare.js');
+            await conn.setTransport('/uv/bare.js', [{
                 http: 'https://ada-relay.andrewdinglearchive.workers.dev/bare/'
             }]);
     
