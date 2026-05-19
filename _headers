@@ -1,2 +1,2 @@
-/uv/service/*
+/service/*
   Service-Worker-Allowed: /
