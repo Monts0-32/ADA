@@ -102,9 +102,19 @@
             return;
         }
         try {
+            // Register service worker
             await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
                 scope: '/service/'
             });
+    
+            // Set up bare-mux SharedWorker pointing at your Railway bare server
+            const worker = new SharedWorker('/uv/bare-mux-worker.js');
+            worker.port.start();
+            worker.port.postMessage({
+                type: 'setBare',
+                bare: 'https://node-web-app-production-xxxx.up.railway.app/bare/'
+            });
+    
             console.log('Neural relay ready');
         } catch (err) {
             console.error('SW registration failed:', err);
