@@ -103,8 +103,9 @@
             return;
         }
         try {
-            await navigator.serviceWorker.register('/uv/uv.sw.js', {
+            await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
                 scope: '/service/'
+            });            
             });
         } catch (err) {
             console.error('SW registration failed:', err);
