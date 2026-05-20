@@ -1,11 +1,21 @@
 <html style="background-color:white; color:white">
   <head>
     <script src="/uplink.js"></script>
+    <script>
+        async function start() {
+            if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
+            // Admins can enter even without 'wiki_access'
+            await runNeuralGuard('beta_access'); 
+        }
+        start();
+    </script>
     <script src="/header-engine.js"></script>
     <script src="/escape-key.js"></script>
   </head>
   <body style="font-family:arial">
-    <h1>Comming soon</h1>
-    <p>Hmm how are you here....</p>
+    <center>
+      <h1>Comming soon</h1>
+      <p>Hmm how are you here....</p>
+    </center>
   </body>
 </html>
