@@ -1,5 +1,7 @@
 importScripts('/uv/uv.bundle.js');
 importScripts('/uv/uv.config.js');
+importScripts('/uv/baremux.js');
+importScripts('/uv/baremux-worker.js');
 importScripts('/uv/uv.sw.js');
 
 const sw = new UVServiceWorker();
