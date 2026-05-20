@@ -5,37 +5,32 @@
     <title>ADA | Neural Relay v4</title>
     <style>
         :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --warn: #d29922; }
-        
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        
-        .user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; text-decoration: none; color: var(--text); font-size: 12px; transition: 0.2s; }
-        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-
         #setup { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; flex-direction: column; }
         .box { max-width: 550px; width: 100%; background: #161b22; border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        
         .beta-alert { background: rgba(210, 153, 34, 0.1); border: 1px solid var(--warn); color: var(--warn); padding: 15px; border-radius: 6px; margin-bottom: 25px; text-align: left; font-size: 12px; line-height: 1.5; }
-
         .input-group { display: flex; gap: 8px; margin-top: 20px; }
         input { flex: 1; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; outline: none; font-family: monospace; font-size: 14px; }
         input:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.1); }
-        
         .btn { background: var(--green); color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn:hover { background: #2ea043; transform: translateY(-1px); }
-
         #viewer { flex: 1; display: none; background: #fff; position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
-        
         .floating-nav { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); background: #161b22; border: 1px solid var(--border); padding: 10px 25px; border-radius: 50px; display: flex; gap: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; }
         .floating-nav a { color: var(--blue); text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        #status { font-size: 11px; color: #8b949e; margin-top: 12px; font-family: monospace; }
     </style>
+
+    <!-- UV bundle and config from your LOCAL /uv/ folder on Cloudflare Pages -->
     <script src="/uv/uv.bundle.js"></script>
     <script src="/uv/uv.config.js"></script>
+
+    <!-- bare-mux and epoxy loaded from your Railway server -->
+    <script src="https://ada-app-production.up.railway.app/baremux/worker.js" type="module"></script>
+
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/chat-widget.js"></script>
@@ -55,7 +50,7 @@
 <div id="setup">
     <div class="box">
         <div class="beta-alert">
-            <strong>BETA_NOTICE_v4:</strong> Neural Relay is in active development. Powered by Ultraviolet. Use search queries for automated Google routing.
+            <strong>BETA_NOTICE_v4:</strong> Neural Relay is in active development. Powered by Ultraviolet + Wisp. Use search queries for automated Google routing.
         </div>
         <h2 style="margin:0; font-size: 24px;">Initialize Neural Link</h2>
         <p style="color:#8b949e; font-size:13px; margin-top:10px;">Establishing unlogged, cloaked uplink to external nodes.</p>
@@ -63,6 +58,7 @@
             <input type="text" id="target" placeholder="Search query or destination URL..." onkeydown="if(event.key==='Enter') launch()">
             <button class="btn" onclick="launch()">Initialize</button>
         </div>
+        <div id="status">Initializing service worker...</div>
     </div>
 </div>
 
@@ -76,56 +72,80 @@
 </div>
 
 <script>
-    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const API       = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const RAILWAY   = "https://ada-app-production.up.railway.app";
+    const WISP_URL  = "wss://ada-app-production.up.railway.app/wisp/";
 
-    // ── Auth check ────────────────────────────────────────────
+    // ── Auth ──────────────────────────────────────────────────
     async function init() {
         const email = localStorage.getItem('ada_user_email');
         if (!email) { window.location.href = '/login.html'; return; }
         try {
             const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
-            const d = await res.json();
+            const d   = await res.json();
             const pillName = document.getElementById('pill-name');
             const pillPic  = document.getElementById('pill-pic');
             if (pillName) pillName.innerText = d.user.display_name || d.user.email;
-            if (pillPic)  pillPic.src = d.user.profile_picture;
-        } catch(e) {
-            console.warn('Init error:', e);
-        }
+            if (pillPic)  pillPic.src        = d.user.profile_picture;
+        } catch(e) { console.warn('Init error:', e); }
     }
 
-    // ── Service Worker registration ───────────────────────────
+    // ── Service Worker + bare-mux + Wisp setup ────────────────
+    let swReady = false;
+
     async function registerSW() {
+        const status = document.getElementById('status');
         if (!navigator.serviceWorker) {
-            console.warn('Service workers not supported');
+            status.textContent = 'Service workers not supported.';
             return;
         }
         try {
+            // 1. Register the service worker
             await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
-                scope: '/service/'
+                scope: '/uv/service/'
             });
+            status.textContent = 'Service worker registered...';
+
+            // 2. Set up bare-mux connection using epoxy + wisp
+            //    BareMux is loaded from the Railway server's /baremux/ path
+            const connection = new BareMux.BareMuxConnection(`${RAILWAY}/baremux/worker.js`);
+
+            // Only set transport if not already set
+            if ((await connection.getTransport()) !== `${RAILWAY}/epoxy/index.mjs`) {
+                await connection.setTransport(`${RAILWAY}/epoxy/index.mjs`, [
+                    { wisp: WISP_URL }
+                ]);
+            }
+
+            swReady = true;
+            status.textContent = 'Neural relay ready.';
             console.log('Neural relay ready');
         } catch (err) {
+            document.getElementById('status').textContent = 'SW failed: ' + err.message;
             console.error('SW registration failed:', err);
         }
     }
 
-    // ── Launch via Ultraviolet ────────────────────────────────
-    function launch() {
+    // ── Launch ────────────────────────────────────────────────
+    async function launch() {
         let val = document.getElementById('target').value.trim();
         if (!val) return;
 
+        // Make sure SW is ready before launching
+        if (!swReady) {
+            document.getElementById('status').textContent = 'Still initializing, please wait...';
+            await registerSW();
+        }
+
         let finalUrl;
         const isUrl = val.includes('.') && !val.includes(' ');
-
         if (isUrl) {
             finalUrl = val.startsWith('http') ? val : 'https://' + val;
         } else {
             finalUrl = `https://www.google.com/search?q=${encodeURIComponent(val)}`;
         }
 
-        // Use UV to encode and proxy — NOT the old relay
-        const encoded = __uv$config.encodeUrl(finalUrl);
+        const encoded    = __uv$config.encodeUrl(finalUrl);
         const proxiedUrl = __uv$config.prefix + encoded;
 
         document.getElementById('setup').style.display = 'none';
@@ -137,4 +157,4 @@
     registerSW();
 </script>
 </body>
-</html>
+</html>   
