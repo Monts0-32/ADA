@@ -3,20 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chan's Page</title>
-<script src="/uplink.js"></script>
-<script src="/header-engine.js"></script>
-<script src="/chat-widget.js"></script>
-<script src="/escape-key.js"></script>
+<title>Goodbye, Chan</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'sans-serif';
-    background: #0c0c10;
-    color: #f0ede8;
+    font-family: 'DM Sans', sans-serif;
+    background: #040d1a;
+    color: #e8f0fe;
     overflow-x: hidden;
   }
 
@@ -33,7 +29,31 @@
   .hero-bg {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 60%, #1a1230 0%, #0c0c10 70%);
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(29, 78, 216, 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 40%, rgba(14, 165, 233, 0.15) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 80%, rgba(37, 99, 235, 0.2) 0%, transparent 50%),
+      linear-gradient(160deg, #040d1a 0%, #071428 50%, #050e1f 100%);
+  }
+
+  /* subtle floating particles */
+  .particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(96, 165, 250, 0.15);
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-20vh) scale(1.2); opacity: 0; }
   }
 
   .title-wrap {
@@ -46,44 +66,53 @@
 
   .eyebrow {
     font-size: 11px;
-    letter-spacing: 0.3em;
+    letter-spacing: 0.35em;
     text-transform: uppercase;
-    color: #8b7eaa;
+    color: #60a5fa;
     margin-bottom: 1.2rem;
+    opacity: 0.8;
   }
 
   .main-title {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(3rem, 7vw, 6rem);
+    font-size: clamp(3.2rem, 8vw, 6.5rem);
     font-weight: 700;
     line-height: 1.05;
-    color: #f0ede8;
+    color: #e8f0fe;
+    text-shadow: 0 0 80px rgba(96, 165, 250, 0.3);
   }
 
   .main-title em {
     font-style: italic;
-    color: #c9b8f0;
+    font-weight: 400;
+    color: #93c5fd;
   }
 
   .subtitle {
-    margin-top: 1.4rem;
-    font-size: 15px;
+    margin-top: 1.6rem;
+    font-size: 14px;
     font-weight: 300;
-    color: #8b8694;
-    letter-spacing: 0.04em;
+    color: #4d7ab5;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .float-img {
     position: absolute;
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(96, 165, 250, 0.1);
     will-change: transform;
     transition: box-shadow 0.3s;
   }
 
   .float-img:hover {
-    box-shadow: 0 28px 80px rgba(0,0,0,0.7);
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, 0.7),
+      0 0 0 1px rgba(96, 165, 250, 0.35),
+      0 0 30px rgba(96, 165, 250, 0.15);
     z-index: 20 !important;
   }
 
@@ -92,28 +121,57 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    filter: brightness(0.88) saturate(1.1);
+    filter: brightness(0.8) saturate(0.85) hue-rotate(10deg);
     transition: filter 0.3s;
   }
 
-  .float-img:hover img { filter: brightness(1) saturate(1.2); }
+  .float-img:hover img {
+    filter: brightness(0.95) saturate(1) hue-rotate(5deg);
+  }
+
+  /* blue tint overlay on each image */
+  .float-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(14, 60, 140, 0.18);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
 
   .content {
-    min-height: 80vh;
+    min-height: 70vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 6rem 2rem;
-    max-width: 640px;
+    max-width: 600px;
     margin: 0 auto;
     text-align: center;
+    gap: 2rem;
+  }
+
+  .content .farewell-line {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-style: italic;
+    color: #93c5fd;
+    line-height: 1.4;
   }
 
   .content p {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 300;
-    line-height: 1.9;
-    color: #8b8694;
+    line-height: 1.95;
+    color: #4d7ab5;
+  }
+
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    margin: 0 auto;
   }
 </style>
 </head>
@@ -121,26 +179,33 @@
 
 <section class="hero" id="hero">
   <div class="hero-bg"></div>
+  <div class="particles" id="particles"></div>
   <div class="title-wrap">
-    <p class="eyebrow"></p>
-    <h1 class="main-title"></h1>
-    <p class="subtitle"></p>
+    <p class="eyebrow">A farewell to</p>
+    <h1 class="main-title">
+      Goodbye,<br><em>Chan</em>
+    </h1>
+    <p class="subtitle">Until we meet again</p>
   </div>
 </section>
 
 <section class="content">
-  <p>Your images float above, drifting at different speeds as you scroll — each layer moving at its own pace, creating depth and motion.</p>
+  <p class="farewell-line">"Not goodbye, but see you later."</p>
+  <div class="divider"></div>
+  <p>
+    You've left your mark on everyone around you, Chan.
+    The laughs, the memories, the moments we shared —
+    they stay with us long after you've gone.
+    Wishing you all the very best on the road ahead.
+  </p>
 </section>
 
 <script>
   /* ============================================================
-     DEVELOPER CONFIG — edit these two sections only
+     DEVELOPER CONFIG
      ============================================================ */
 
-  /* 1. ADD YOUR IMAGE PATHS OR URLs HERE
-     Use relative paths e.g. "images/photo1.jpg"
-     or full URLs e.g. "https://example.com/photo.jpg"
-     You can have fewer images than slots — unused slots are hidden. */
+  /* Add your image paths or URLs here — up to 8 images */
   const IMAGES = [
     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600",
     "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600",
@@ -152,14 +217,8 @@
     "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=600",
   ];
 
-  /* 2. TITLE TEXT */
-  const TITLE_EYEBROW = "Your collection";
-  const TITLE_LINE1   = "Beautiful";
-  const TITLE_LINE2   = "Moments";   // rendered in italic accent colour
-  const SUBTITLE      = "Scroll to explore";
-
   /* ============================================================
-     Layout slots — tweak position, size, parallax speed, tilt
+     Layout slots
      ============================================================ */
   const slots = [
     { top: '8%',  left: '4%',  w: 200, h: 260, speed: 0.12, rot: -4, z: 3 },
@@ -173,19 +232,31 @@
   ];
 
   /* ============================================================
-     Runtime — no need to edit below this line
+     Runtime
      ============================================================ */
 
-  document.querySelector('.eyebrow').textContent  = TITLE_EYEBROW;
-  document.querySelector('.main-title').innerHTML = `${TITLE_LINE1}<br><em>${TITLE_LINE2}</em>`;
-  document.querySelector('.subtitle').textContent = SUBTITLE;
+  // Particles
+  const particleContainer = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 3;
+    p.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${Math.random() * 100}%;
+      animation-duration: ${12 + Math.random() * 16}s;
+      animation-delay: ${Math.random() * 14}s;
+      opacity: ${0.1 + Math.random() * 0.3};
+    `;
+    particleContainer.appendChild(p);
+  }
 
+  // Images
   const hero = document.getElementById('hero');
   const live = [];
 
   slots.forEach((s, i) => {
     if (!IMAGES[i]) return;
-
     const el = document.createElement('div');
     el.className = 'float-img';
     el.style.cssText = `
@@ -194,7 +265,6 @@
       z-index:${s.z};
       transform: rotate(${s.rot}deg) translateY(0px);
     `;
-
     const img = document.createElement('img');
     img.src = IMAGES[i];
     img.alt = '';
@@ -203,6 +273,7 @@
     live.push({ el, speed: s.speed, rot: s.rot });
   });
 
+  // Parallax scroll
   let ticking = false;
   window.addEventListener('scroll', () => {
     if (!ticking) {
