@@ -100,16 +100,13 @@
             return;
         }
         try {
-            // 1. Register the service worker
             await navigator.serviceWorker.register('/uv/uv.sw.entry.js', {
                 scope: '/uv/service/'
             });
             status.textContent = 'Service worker registered...';
     
-            // 2. Set up bare-mux using local copies of baremux and epoxy
             const connection = new BareMux.BareMuxConnection('/uv/baremux-worker.js');
     
-            // Only set transport if not already configured
             if ((await connection.getTransport()) !== '/uv/epoxy.mjs') {
                 await connection.setTransport('/uv/epoxy.mjs', [
                     { wisp: WISP_URL }
