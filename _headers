@@ -2,3 +2,7 @@
   Service-Worker-Allowed: /
 /uv/bare.js
   Content-Type: application/javascript
+/uv/epoxy.mjs
+  Content-Type: application/javascript
+/uv/baremux-worker.js
+  Content-Type: application/javascript
