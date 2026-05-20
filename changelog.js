@@ -6,7 +6,6 @@
     
     const CHANGES = [
         "The proxy has been fixed and now can run almost anything."
-        "Some development on leaving pages for Donnie and Chan."
     ];
     // ---------------------
 
