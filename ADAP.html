@@ -105,23 +105,22 @@
                 scope: '/uv/service/'
             });
             status.textContent = 'Service worker registered...';
-
-            // 2. Set up bare-mux connection using epoxy + wisp
-            //    BareMux is loaded from the Railway server's /baremux/ path
-            const connection = new BareMux.BareMuxConnection(`${RAILWAY}/baremux/worker.js`);
-
-            // Only set transport if not already set
-            if ((await connection.getTransport()) !== `${RAILWAY}/epoxy/index.mjs`) {
-                await connection.setTransport(`${RAILWAY}/epoxy/index.mjs`, [
+    
+            // 2. Set up bare-mux using local copies of baremux and epoxy
+            const connection = new BareMux.BareMuxConnection('/uv/baremux-worker.js');
+    
+            // Only set transport if not already configured
+            if ((await connection.getTransport()) !== '/uv/epoxy.mjs') {
+                await connection.setTransport('/uv/epoxy.mjs', [
                     { wisp: WISP_URL }
                 ]);
             }
-
+    
             swReady = true;
             status.textContent = 'Neural relay ready.';
             console.log('Neural relay ready');
         } catch (err) {
-            document.getElementById('status').textContent = 'SW failed: ' + err.message;
+            status.textContent = 'SW failed: ' + err.message;
             console.error('SW registration failed:', err);
         }
     }
