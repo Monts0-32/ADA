@@ -110,6 +110,26 @@ h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
 
 /* FREE MODE PAN */
 .pan-controls { display: flex; gap: 6px; }
+
+/* LEADERBOARD */
+.menu-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: start; }
+@media (max-width: 700px) { .menu-layout { grid-template-columns: 1fr; } }
+.lb-panel { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.lb-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; }
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { font-size: 12px; font-weight: 700; width: 24px; text-align: center; font-family: 'SFMono-Regular', Consolas, monospace; color: var(--muted); }
+.lb-rank.gold { color: #d29922; }
+.lb-rank.silver { color: #8b949e; }
+.lb-rank.bronze { color: #b08060; }
+.lb-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.lb-name { font-size: 13px; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-score { font-size: 13px; font-weight: 700; color: var(--blue); font-family: 'SFMono-Regular', Consolas, monospace; }
+.lb-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 16px 0; }
+.lb-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 0; }
+.lb-refresh { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 0; }
+.lb-refresh:hover { color: var(--text); }
+.pts-note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.6; border-top: 1px solid #21262d; padding-top: 10px; }
 </style>
 </head>
 <body>
@@ -122,8 +142,23 @@ h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
 
     <!-- MENU -->
     <div id="menu">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Select Level</div>
-        <div class="levels-grid" id="levels-grid"></div>
+        <div class="menu-layout">
+            <div>
+                <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Select Level</div>
+                <div class="levels-grid" id="levels-grid"></div>
+            </div>
+            <div class="lb-panel">
+                <div class="lb-title">
+                    <span>Leaderboard</span>
+                    <button class="lb-refresh" onclick="loadLeaderboard()" title="Refresh">↻</button>
+                </div>
+                <div id="lb-list"><div class="lb-loading">Loading…</div></div>
+                <div class="pts-note">
+                    Points = flags placed × level number when you clear a level.<br>
+                    Level 1 = ×1 &nbsp;·&nbsp; Level 9 = ×9
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- GAME -->
@@ -190,15 +225,15 @@ const API = "https://ada-relay.andrewdinglearchive.workers.dev";
 const myEmail = localStorage.getItem('ada_user_email');
 
 const LEVELS = [
-    {name:"Sector 1",  rows:8,  cols:8,  mines:10,  desc:"8×8 · 10 mines"},
-    {name:"Sector 2",  rows:9,  cols:9,  mines:15,  desc:"9×9 · 15 mines"},
-    {name:"Sector 3",  rows:10, cols:10, mines:20,  desc:"10×10 · 20 mines"},
-    {name:"Sector 4",  rows:12, cols:12, mines:30,  desc:"12×12 · 30 mines"},
-    {name:"Sector 5",  rows:14, cols:14, mines:40,  desc:"14×14 · 40 mines"},
-    {name:"Sector 6",  rows:16, cols:16, mines:55,  desc:"16×16 · 55 mines"},
-    {name:"Sector 7",  rows:18, cols:18, mines:75,  desc:"18×18 · 75 mines"},
-    {name:"Sector 8",  rows:20, cols:20, mines:99,  desc:"20×20 · 99 mines"},
-    {name:"Sector 9",  rows:24, cols:24, mines:150, desc:"24×24 · 150 mines"},
+    {name:"Sector 1",  rows:8,  cols:8,  mines:6,   desc:"8×8 · 6 mines"},
+    {name:"Sector 2",  rows:9,  cols:9,  mines:10,  desc:"9×9 · 10 mines"},
+    {name:"Sector 3",  rows:10, cols:10, mines:15,  desc:"10×10 · 15 mines"},
+    {name:"Sector 4",  rows:12, cols:12, mines:20,  desc:"12×12 · 20 mines"},
+    {name:"Sector 5",  rows:14, cols:14, mines:28,  desc:"14×14 · 28 mines"},
+    {name:"Sector 6",  rows:16, cols:16, mines:38,  desc:"16×16 · 38 mines"},
+    {name:"Sector 7",  rows:18, cols:18, mines:50,  desc:"18×18 · 50 mines"},
+    {name:"Sector 8",  rows:20, cols:20, mines:65,  desc:"20×20 · 65 mines"},
+    {name:"Sector 9",  rows:24, cols:24, mines:90,  desc:"24×24 · 90 mines"},
 ];
 const FREE_LEVEL = {name:"Freemode", free:true};
 
@@ -253,10 +288,11 @@ function startGame(idx) {
         rows: free ? CHUNK : lvl.rows,
         cols: free ? CHUNK : lvl.cols,
         totalMines: free ? 0 : lvl.mines,
-        cells: {},        // key -> cell obj
+        cells: {},
         mineSet: new Set(),
         revealed: new Set(),
         flagged: new Set(),
+        flagCount: 0,
         started: false,
         dead: false,
         won: false,
@@ -465,8 +501,8 @@ function flag(r, c) {
     const k = ck(r, c);
     const cell = getCell(r, c);
     if (cell.revealed) return;
-    if (G.flagged.has(k)) { G.flagged.delete(k); cell.flagged = false; }
-    else { G.flagged.add(k); cell.flagged = true; }
+    if (G.flagged.has(k)) { G.flagged.delete(k); cell.flagged = false; G.flagCount--; }
+    else { G.flagged.add(k); cell.flagged = true; G.flagCount++; }
     renderBoard();
     updateHUD();
 }
@@ -592,10 +628,13 @@ function showModal(type) {
                 <button class="modal-btn" onclick="goMenu()">Menu</button>
             </div>`;
     } else {
+        const levelNum = G.idx + 1;
+        const pts = G.flagCount * levelNum;
         m.innerHTML = `
             <div class="modal-icon">✓</div>
             <h2>Sector Cleared</h2>
-            <p>Completed in <strong>${G.elapsed}s</strong> with <strong>${G.flagged.size}</strong> flags placed.</p>
+            <p>Completed in <strong>${G.elapsed}s</strong> with <strong>${G.flagCount}</strong> flags placed.<br>
+            <strong style="color:var(--blue)">+${pts} points</strong> (${G.flagCount} flags × Level ${levelNum})</p>
             <div class="modal-btns">
                 <button class="modal-btn primary" onclick="goMenu()">Next Level</button>
                 <button class="modal-btn" onclick="restart()">Play Again</button>
@@ -612,14 +651,40 @@ function removeModal() {
 
 /* ── SCORE SAVE ── */
 async function saveScore() {
-    if (!myEmail || G.free) return;
-    const score = G.won ? Math.max(1, 10000 - G.elapsed * 10) : G.elapsed;
+    if (!myEmail || G.free || !G.won) return;
+    // Score = flags placed × level number (level 1 = ×1, level 9 = ×9)
+    const levelNum = G.idx + 1;
+    const score = G.flagCount * levelNum;
     try {
         await fetch(API + '/game/save-score', {
             method: 'POST',
-            body: JSON.stringify({ email: myEmail, gameId: 'minesweeper_' + (G.idx + 1), score })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email: myEmail, gameId: 'minesweeper', score })
         });
+        loadLeaderboard();
     } catch(e) {}
+}
+
+/* ── LEADERBOARD ── */
+const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+async function loadLeaderboard() {
+    const lb = document.getElementById('lb-list');
+    lb.innerHTML = '<div class="lb-loading">Loading…</div>';
+    try {
+        const res = await fetch(`${API}/game/leaderboard?content=minesweeper`);
+        const data = await res.json();
+        if (!data.length) { lb.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>'; return; }
+        const rankClasses = ['gold','silver','bronze'];
+        const rankSymbols = ['🥇','🥈','🥉'];
+        lb.innerHTML = data.map((row, i) => `
+            <div class="lb-row">
+                <div class="lb-rank ${rankClasses[i]||''}">${i < 3 ? rankSymbols[i] : i+1}</div>
+                <img class="lb-avatar" src="${row.profile_picture || DEFAULT_ICON}" onerror="this.src='${DEFAULT_ICON}'">
+                <div class="lb-name">${row.display_name || row.email}</div>
+                <div class="lb-score">${row.score} pts</div>
+            </div>`).join('');
+    } catch(e) { lb.innerHTML = '<div class="lb-empty">Could not load scores.</div>'; }
 }
 
 /* ── INIT ── */
@@ -627,6 +692,7 @@ async function init() {
     if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
     await runNeuralGuard();
     buildMenu();
+    loadLeaderboard();
 }
 
 init();
