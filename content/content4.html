@@ -547,7 +547,8 @@ function buildBoard() {
 
       if (board[idx]) {
         const span = document.createElement('span');
-        span.className = 'piece';
+        const pieceColor = board[idx][0] === 'w' ? 'white-piece' : 'black-piece';
+        span.className = 'piece ' + pieceColor;
         span.textContent = PIECES[board[idx]];
         div.appendChild(span);
       }
