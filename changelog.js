@@ -5,7 +5,8 @@
     const LOG_TITLE = "PROXY UPDATE";
     
     const CHANGES = [
-        "The proxy has been fixed and now can run almost anything."
+        "Proxy is experiencing issues it will be locked for now"
+        "New and cool games are comming next term :)"
     ];
     // ---------------------
 
