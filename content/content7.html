@@ -84,7 +84,7 @@
             <div class="medal">🐦</div>
             <h2>FLAPPY PROTOCOL</h2>
             <p>Navigate the data stream</p>
-            <button id="start-btn" onclick="startGame()">INITIALISE</button>
+            <button id="start-btn">INITIALISE</button>
             <p style="margin-top:4px;">Space / Click / Tap to flap</p>
         </div>
     </div>
@@ -255,6 +255,7 @@ function resetState() {
 }
 
 // ── START ──────────────────────────────────────────────────────
+window.startGame = startGame;
 function startGame() {
     document.getElementById('overlay').style.display = 'none';
     resetState();
@@ -560,8 +561,13 @@ document.addEventListener('keydown', e => {
 canvas.addEventListener('click', flap);
 canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, {passive: false});
 
+
+// ── OVERLAY BUTTON DELEGATION ────────────────────────────────
+document.getElementById('overlay').addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'start-btn') startGame();
+});
+
 // ── BOOT ──────────────────────────────────────────────────────
-let sessionBest = 0;
 isRunning = false;
 init();
 </script>
