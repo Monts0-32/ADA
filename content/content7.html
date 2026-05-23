@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Flappy Protocol</title>
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/escape-key.js"></script>
+    <script src="/chat-widget.js"></script>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --red: #f85149; --gold: #d29922; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; user-select: none; }
+        header { width: 100%; z-index: 1100; }
+
+        #game-layout { display: flex; gap: 30px; margin-top: 30px; align-items: flex-start; }
+
+        .leaderboard-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 15px; width: 220px; }
+        .lb-entry { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; }
+        .lb-entry:last-child { border-bottom: none; }
+        .lb-entry img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .lb-rank { font-size: 10px; font-weight: bold; color: var(--gold); min-width: 15px; }
+        .lb-info { flex: 1; min-width: 0; }
+        .lb-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .lb-score { font-size: 11px; font-family: monospace; color: var(--blue); }
+
+        .personal-best-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 15px; width: 220px; margin-top: 15px; box-sizing: border-box; }
+
+        #game-wrap { position: relative; border: 4px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.6); }
+        canvas { display: block; }
+
+        .panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 180px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; }
+        .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 26px; font-family: monospace; color: var(--blue); }
+        .key-hint { font-size: 10px; color: #8b949e; line-height: 1.8; }
+        .key-cap { background: #21262d; border: 1px solid var(--border); padding: 1px 4px; border-radius: 3px; color: #f0f6fc; }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13,17,23,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; gap: 12px;
+        }
+        #overlay h2 { margin: 0; font-size: 22px; color: #f0f6fc; letter-spacing: 1px; }
+        #overlay p { margin: 0; font-size: 12px; color: #8b949e; }
+        #overlay .score-display { font-size: 36px; font-family: monospace; color: var(--blue); }
+        #start-btn {
+            background: var(--green); color: white; border: none;
+            padding: 10px 28px; border-radius: 6px; cursor: pointer;
+            font-weight: bold; font-size: 13px; margin-top: 6px;
+            transition: opacity 0.15s;
+        }
+        #start-btn:hover { opacity: 0.85; }
+        .medal { font-size: 28px; }
+    </style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<div id="game-layout">
+    <!-- LEFT: LEADERBOARD -->
+    <div style="display: flex; flex-direction: column;">
+        <div class="leaderboard-panel">
+            <div class="stat-label" style="margin-bottom:10px;">Rankings</div>
+            <div id="leaderboard-list">
+                <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
+            </div>
+        </div>
+        <div class="personal-best-panel">
+            <div class="stat-label">Your Archive Best</div>
+            <div id="personal-high-score" class="stat-value" style="font-size: 22px; margin-top: 10px;">0</div>
+        </div>
+    </div>
+
+    <!-- CENTER: GAME CANVAS -->
+    <div id="game-wrap">
+        <canvas id="game" width="340" height="560"></canvas>
+        <div id="overlay">
+            <div class="medal">🐦</div>
+            <h2>FLAPPY PROTOCOL</h2>
+            <p>Navigate the data stream</p>
+            <button id="start-btn" onclick="startGame()">INITIALISE</button>
+            <p style="margin-top:4px;">Space / Click / Tap to flap</p>
+        </div>
+    </div>
+
+    <!-- RIGHT: STATS -->
+    <div class="panel">
+        <div>
+            <div class="stat-label">Score</div>
+            <div id="score" class="stat-value">0</div>
+        </div>
+        <div>
+            <div class="stat-label">Session Best</div>
+            <div id="session-best" class="stat-value" style="font-size:18px; color: var(--gold);">0</div>
+        </div>
+        <div>
+            <div class="stat-label">Pipes Passed</div>
+            <div id="pipes-passed" class="stat-value" style="font-size:18px;">0</div>
+        </div>
+        <div class="key-hint">
+            <span class="key-cap">Space</span> Flap<br>
+            <span class="key-cap">Click</span> Flap<br>
+            <span class="key-cap">P</span> Pause Link<br>
+            <span class="key-cap">R</span> Reboot<br><br>
+            Every pipe adds <span style="color:var(--blue);">+1</span>.<br>
+            Score is multiplied<br>by pipe gap difficulty.
+        </div>
+        <button onclick="window.resetGame()" style="background:var(--green); color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px;">Reboot System</button>
+    </div>
+</div>
+
+<script>
+const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+const GAME_ID = "content2";
+const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ── GAME STATE ──────────────────────────────────────────────────
+let bird, pipes, score, sessionBest, pipesPassed, frame, isPaused, isRunning, animId;
+let highScore = 0;
+let profileImg = null;
+let userEmail = '';
+let lastTime = 0;
+
+// ── CONSTANTS ───────────────────────────────────────────────────
+const GRAVITY      = 0.38;
+const FLAP_POWER   = -7.2;
+const PIPE_WIDTH   = 52;
+const PIPE_GAP     = 160;       // vertical gap
+const PIPE_SPEED   = 2.6;
+const PIPE_SPACING = 230;       // horizontal spacing
+const BIRD_R       = 18;        // bird radius
+const GROUND_H     = 60;
+
+// ── COLOURS ─────────────────────────────────────────────────────
+const COL = {
+    sky1:   '#0d1117',
+    sky2:   '#161b22',
+    pipe:   '#238636',
+    pipeDk: '#155724',
+    pipeBrd:'#2ea043',
+    ground: '#161b22',
+    gndLine:'#30363d',
+    scoreC: '#58a6ff',
+    star:   '#30363d',
+};
+
+// ── STARS (static bg) ──────────────────────────────────────────
+const STARS = Array.from({length: 55}, () => ({
+    x: Math.random() * W,
+    y: Math.random() * (H - GROUND_H),
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random() * 0.6 + 0.2,
+}));
+
+// ── LOAD PROFILE IMAGE ─────────────────────────────────────────
+function loadProfileImage(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload  = () => resolve(img);
+        img.onerror = () => {
+            // fallback: draw a generic silhouette onto an offscreen canvas
+            const oc = document.createElement('canvas');
+            oc.width = oc.height = 64;
+            const ox = oc.getContext('2d');
+            ox.fillStyle = '#21262d';
+            ox.beginPath(); ox.arc(32,32,32,0,Math.PI*2); ox.fill();
+            ox.fillStyle = '#8b949e';
+            ox.beginPath(); ox.arc(32,22,12,0,Math.PI*2); ox.fill();
+            ox.beginPath(); ox.ellipse(32,50,18,16,0,0,Math.PI*2); ox.fill();
+            const fi = new Image();
+            fi.onload = () => resolve(fi);
+            fi.src = oc.toDataURL();
+        };
+        img.src = src || DEFAULT_ICON;
+    });
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+async function init() {
+    if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+    const data = await runNeuralGuard('');
+    if (!data) return;
+
+    userEmail = localStorage.getItem('ada_user_email') || '';
+    const picSrc = localStorage.getItem('ada_profile_picture') || DEFAULT_ICON;
+    profileImg = await loadProfileImage(picSrc);
+
+    loadLeaderboard();
+    loadPersonalBest();
+    drawIdle();
+}
+
+// ── LEADERBOARD ────────────────────────────────────────────────
+async function loadLeaderboard() {
+    try {
+        const res = await fetch(`${API}/game/leaderboard?content=${GAME_ID}`);
+        const top = await res.json();
+        const list = document.getElementById('leaderboard-list');
+        const medals = ['🥇','🥈','🥉'];
+        list.innerHTML = top.map((u, i) => `
+            <div class="lb-entry">
+                <span class="lb-rank">${medals[i] || '#'+(i+1)}</span>
+                <img src="${u.profile_picture || DEFAULT_ICON}" onerror="this.src='${DEFAULT_ICON}'">
+                <div class="lb-info">
+                    <span class="lb-name">${u.display_name || u.email.split('@')[0]}</span>
+                    <span class="lb-score">${u.score.toLocaleString()}</span>
+                </div>
+            </div>
+        `).join('') || '<div style="font-size:11px;opacity:0.5;">No records found.</div>';
+    } catch(e) { console.error("Leaderboard Sync Error", e); }
+}
+
+async function loadPersonalBest() {
+    try {
+        const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(userEmail)}&content=${GAME_ID}`);
+        const data = await res.json();
+        highScore = data.score || 0;
+        document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+    } catch(e) { console.error("Personal Best Sync Error", e); }
+}
+
+async function saveScore(s) {
+    try {
+        await fetch(`${API}/game/save-score`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: userEmail, gameId: GAME_ID, score: s })
+        });
+        loadLeaderboard();
+        loadPersonalBest();
+    } catch(e) {}
+}
+
+// ── RESET STATE ────────────────────────────────────────────────
+function resetState() {
+    bird = { x: 90, y: H / 2 - 20, vy: 0, angle: 0, dead: false, deathTimer: 0 };
+    pipes = [];
+    score = 0;
+    pipesPassed = 0;
+    frame = 0;
+    sessionBest = sessionBest || 0;
+    isPaused = false;
+    updateHUD();
+}
+
+// ── START ──────────────────────────────────────────────────────
+function startGame() {
+    document.getElementById('overlay').style.display = 'none';
+    resetState();
+    isRunning = true;
+    if (animId) cancelAnimationFrame(animId);
+    lastTime = performance.now();
+    animId = requestAnimationFrame(loop);
+}
+
+window.resetGame = () => {
+    if (isRunning) { cancelAnimationFrame(animId); }
+    document.getElementById('overlay').style.display = 'none';
+    resetState();
+    isRunning = true;
+    lastTime = performance.now();
+    animId = requestAnimationFrame(loop);
+};
+
+// ── FLAP ───────────────────────────────────────────────────────
+function flap() {
+    if (!isRunning || bird.dead || isPaused) return;
+    bird.vy = FLAP_POWER;
+}
+
+// ── PIPE GENERATION ────────────────────────────────────────────
+function spawnPipe() {
+    const minTop = 60, maxTop = H - GROUND_H - PIPE_GAP - 60;
+    const topH = Math.floor(Math.random() * (maxTop - minTop) + minTop);
+    pipes.push({ x: W, topH, scored: false });
+}
+
+// ── COLLISION ──────────────────────────────────────────────────
+function checkCollision() {
+    const bx = bird.x, by = bird.y, br = BIRD_R - 4; // slight forgiveness
+
+    // Ground / ceiling
+    if (by + br >= H - GROUND_H || by - br <= 0) return true;
+
+    // Pipes
+    for (const p of pipes) {
+        const px = p.x, pw = PIPE_WIDTH;
+        if (bx + br > px && bx - br < px + pw) {
+            if (by - br < p.topH || by + br > p.topH + PIPE_GAP) return true;
+        }
+    }
+    return false;
+}
+
+// ── GAME LOOP ──────────────────────────────────────────────────
+function loop(now) {
+    const dt = Math.min((now - lastTime) / 16.67, 3); // cap delta
+    lastTime = now;
+
+    if (!isPaused && !bird.dead) {
+        // Physics
+        bird.vy += GRAVITY * dt;
+        bird.y  += bird.vy * dt;
+        bird.angle = Math.max(-30, Math.min(85, bird.vy * 4.5));
+
+        // Spawn pipes
+        if (frame % Math.round(PIPE_SPACING / PIPE_SPEED) === 0) spawnPipe();
+        frame++;
+
+        // Move & score pipes
+        for (const p of pipes) {
+            p.x -= PIPE_SPEED * dt;
+            if (!p.scored && p.x + PIPE_WIDTH < bird.x) {
+                p.scored = true;
+                score++;
+                pipesPassed++;
+                updateHUD();
+            }
+        }
+
+        // Cull off-screen pipes
+        pipes = pipes.filter(p => p.x + PIPE_WIDTH > -10);
+
+        // Collision
+        if (checkCollision()) {
+            bird.dead = true;
+            bird.vy = -5;
+        }
+    }
+
+    // Death animation
+    if (bird.dead) {
+        bird.vy += GRAVITY * dt;
+        bird.y  += bird.vy * dt;
+        bird.deathTimer++;
+        if (bird.deathTimer > 55) {
+            showGameOver();
+            return; // stop loop
+        }
+    }
+
+    render();
+    animId = requestAnimationFrame(loop);
+}
+
+// ── RENDER ─────────────────────────────────────────────────────
+function render() {
+    // Sky gradient (flat, two-tone)
+    ctx.fillStyle = COL.sky1;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    STARS.forEach(s => {
+        ctx.globalAlpha = s.a;
+        ctx.fillStyle = '#8b949e';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Scrolling grid lines (subtle)
+    ctx.strokeStyle = '#1c2128';
+    ctx.lineWidth = 0.5;
+    const gridOff = (frame * 0.4) % 40;
+    for (let gx = -gridOff; gx < W; gx += 40) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H - GROUND_H); ctx.stroke();
+    }
+
+    // Pipes
+    for (const p of pipes) {
+        drawPipe(p.x, 0, p.topH, true);              // top pipe (flipped)
+        drawPipe(p.x, p.topH + PIPE_GAP, H - GROUND_H - (p.topH + PIPE_GAP), false); // bottom
+    }
+
+    // Ground
+    ctx.fillStyle = COL.ground;
+    ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+    ctx.fillStyle = COL.gndLine;
+    ctx.fillRect(0, H - GROUND_H, W, 2);
+
+    // Ground detail dots
+    ctx.fillStyle = '#21262d';
+    for (let gx = ((frame * 1.2) % 20) - 20; gx < W; gx += 20) {
+        ctx.fillRect(gx, H - GROUND_H + 10, 4, 4);
+    }
+
+    // Score HUD on canvas
+    ctx.fillStyle = 'rgba(22,27,34,0.7)';
+    ctx.beginPath();
+    roundRect(ctx, W/2 - 38, 14, 76, 32, 8);
+    ctx.fill();
+    ctx.fillStyle = COL.scoreC;
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(score, W/2, 36);
+    ctx.textAlign = 'left';
+
+    // Bird
+    drawBird();
+}
+
+function drawPipe(x, y, h, flipped) {
+    if (h <= 0) return;
+    const capH = 20, capW = PIPE_WIDTH + 8;
+    const capX = x - 4;
+
+    // Body
+    ctx.fillStyle = COL.pipe;
+    ctx.fillRect(x, y, PIPE_WIDTH, h);
+
+    // Highlight stripe
+    ctx.fillStyle = COL.pipeBrd;
+    ctx.fillRect(x + 4, y, 6, h);
+
+    // Dark edge
+    ctx.fillStyle = COL.pipeDk;
+    ctx.fillRect(x + PIPE_WIDTH - 5, y, 5, h);
+
+    // Cap
+    ctx.fillStyle = COL.pipe;
+    if (flipped) {
+        ctx.fillRect(capX, h - capH, capW, capH);
+        ctx.fillStyle = COL.pipeBrd;
+        ctx.fillRect(capX + 4, h - capH, 8, capH);
+        ctx.fillStyle = COL.pipeDk;
+        ctx.fillRect(capX + capW - 6, h - capH, 6, capH);
+        // Border bottom of cap
+        ctx.fillStyle = '#2ea043';
+        ctx.fillRect(capX, h, capW, 2);
+    } else {
+        ctx.fillStyle = COL.pipe;
+        ctx.fillRect(capX, y, capW, capH);
+        ctx.fillStyle = COL.pipeBrd;
+        ctx.fillRect(capX + 4, y, 8, capH);
+        ctx.fillStyle = COL.pipeDk;
+        ctx.fillRect(capX + capW - 6, y, 6, capH);
+        ctx.fillStyle = '#2ea043';
+        ctx.fillRect(capX, y - 2, capW, 2);
+    }
+
+    // Scanline overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    for (let sy = y; sy < y + h; sy += 4) ctx.fillRect(x, sy, PIPE_WIDTH, 2);
+}
+
+function drawBird() {
+    const {x, y, angle} = bird;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle * Math.PI / 180);
+
+    // Glow ring when alive
+    if (!bird.dead) {
+        ctx.shadowColor = '#58a6ff';
+        ctx.shadowBlur = 10;
+    }
+
+    // Clip to circle
+    ctx.beginPath();
+    ctx.arc(0, 0, BIRD_R, 0, Math.PI * 2);
+    ctx.clip();
+
+    if (profileImg) {
+        ctx.drawImage(profileImg, -BIRD_R, -BIRD_R, BIRD_R * 2, BIRD_R * 2);
+    } else {
+        ctx.fillStyle = '#58a6ff';
+        ctx.fill();
+    }
+
+    ctx.shadowBlur = 0;
+
+    // Circle border
+    ctx.restore();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle * Math.PI / 180);
+    ctx.strokeStyle = bird.dead ? '#f85149' : '#58a6ff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, BIRD_R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+    ctx.lineTo(x + r, y + h); ctx.arcTo(x,y+h,x,y+h-r,r);
+    ctx.lineTo(x, y + r); ctx.arcTo(x,y,x+r,y,r);
+    ctx.closePath();
+}
+
+// ── IDLE DRAW ──────────────────────────────────────────────────
+function drawIdle() {
+    ctx.fillStyle = COL.sky1; ctx.fillRect(0, 0, W, H);
+    STARS.forEach(s => {
+        ctx.globalAlpha = s.a; ctx.fillStyle = '#8b949e';
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = COL.ground; ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+    ctx.fillStyle = COL.gndLine; ctx.fillRect(0, H - GROUND_H, W, 2);
+}
+
+// ── HUD ────────────────────────────────────────────────────────
+function updateHUD() {
+    document.getElementById('score').innerText = score;
+    document.getElementById('pipes-passed').innerText = pipesPassed;
+    if (score > sessionBest) {
+        sessionBest = score;
+        document.getElementById('session-best').innerText = sessionBest;
+    }
+}
+
+// ── GAME OVER ─────────────────────────────────────────────────
+async function showGameOver() {
+    isRunning = false;
+    render(); // final frame
+
+    const isNewRecord = score > highScore;
+    if (isNewRecord || score > 0) {
+        if (score > highScore) highScore = score;
+        await saveScore(highScore);
+    }
+
+    const overlay = document.getElementById('overlay');
+    overlay.innerHTML = `
+        <div class="medal">${score >= 20 ? '🏆' : score >= 10 ? '🥈' : score >= 5 ? '🥉' : '💀'}</div>
+        <h2>SIGNAL LOST</h2>
+        <div class="score-display">${score}</div>
+        ${isNewRecord ? '<p style="color:#d29922;font-weight:bold;">⭐ New Archive Record!</p>' : `<p>Archive Best: ${highScore}</p>`}
+        <p>Pipes cleared: ${pipesPassed}</p>
+        <button id="start-btn" onclick="startGame()">TRY AGAIN</button>
+        <p style="margin-top:4px;">Space / Click / Tap to flap</p>
+    `;
+    overlay.style.display = 'flex';
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); flap(); }
+    if (e.code === 'KeyP') { if (isRunning && !bird.dead) isPaused = !isPaused; }
+    if (e.code === 'KeyR') { window.resetGame(); }
+});
+
+canvas.addEventListener('click', flap);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, {passive: false});
+
+// ── BOOT ──────────────────────────────────────────────────────
+let sessionBest = 0;
+isRunning = false;
+init();
+</script>
+</body>
+</html>
