@@ -81,10 +81,10 @@
     <div id="game-wrap">
         <canvas id="game" width="340" height="560"></canvas>
         <div id="overlay">
-            <div class="medal">🐦</div>
-            <h2>FLAPPY PROTOCOL</h2>
+            <div class="medal">🤕</div>
+            <h2>Dingle Bird</h2>
             <p>Navigate the data stream</p>
-            <button id="start-btn">INITIALISE</button>
+            <button id="start-btn">Start</button>
             <p style="margin-top:4px;">Space / Click / Tap to flap</p>
         </div>
     </div>
@@ -555,7 +555,7 @@ async function showGameOver() {
     const overlay = document.getElementById('overlay');
     overlay.innerHTML = `
         <div class="medal">${score >= 20 ? '🏆' : score >= 10 ? '🥈' : score >= 5 ? '🥉' : '💀'}</div>
-        <h2>SIGNAL LOST</h2>
+        <h2>You dead bud</h2>
         <div class="score-display">${score}</div>
         ${isNewRecord ? '<p style="color:#d29922;font-weight:bold;">⭐ New Archive Record!</p>' : `<p>Archive Best: ${highScore}</p>`}
         <p>Pipes cleared: ${pipesPassed}</p>
