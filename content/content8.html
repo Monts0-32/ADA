@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Ascent Protocol</title>
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/escape-key.js"></script>
+    <script src="/chat-widget.js"></script>
+    <style>
+        :root {
+            --bg: #0d1117; --header: #161b22; --border: #30363d;
+            --text: #c9d1d9; --blue: #58a6ff; --green: #238636;
+            --red: #f85149; --gold: #d29922; --purple: #bc8cff;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: -apple-system, sans-serif;
+            margin: 0; display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh;
+            overflow: hidden; user-select: none;
+        }
+        header { width: 100%; z-index: 1100; }
+
+        #game-layout { display: flex; gap: 24px; margin-top: 24px; align-items: flex-start; }
+
+        /* PANELS */
+        .side-panel { display: flex; flex-direction: column; gap: 14px; width: 210px; }
+        .box { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+        .stat-label { font-size: 10px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .stat-value { font-size: 24px; font-family: monospace; color: var(--blue); }
+        .key-hint { font-size: 10px; color: #8b949e; line-height: 2; }
+        .key-cap { background: #21262d; border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; color: #f0f6fc; font-size: 9px; }
+
+        /* LEADERBOARD */
+        .lb-entry { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #21262d; }
+        .lb-entry:last-child { border-bottom: none; }
+        .lb-entry img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .lb-rank { font-size: 10px; font-weight: bold; color: var(--gold); min-width: 18px; }
+        .lb-info { flex: 1; min-width: 0; }
+        .lb-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .lb-score { font-size: 10px; font-family: monospace; color: var(--blue); }
+
+        /* CANVAS WRAP */
+        #game-wrap {
+            position: relative;
+            border: 3px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
+            background: #060a0f;
+        }
+        canvas { display: block; cursor: none; }
+
+        /* OVERLAY */
+        #overlay {
+            position: absolute; inset: 0;
+            background: rgba(6,10,15,0.92);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 20; gap: 10px;
+        }
+        #overlay h2 { margin: 0; font-size: 20px; color: #f0f6fc; letter-spacing: 2px; text-transform: uppercase; }
+        #overlay p  { margin: 0; font-size: 11px; color: #8b949e; text-align: center; max-width: 240px; line-height: 1.6; }
+        .big-score  { font-size: 42px; font-family: monospace; color: var(--blue); line-height: 1; }
+        .new-record { font-size: 12px; font-weight: bold; color: var(--gold); }
+        #start-btn  {
+            background: var(--green); color: #fff; border: none;
+            padding: 10px 30px; border-radius: 6px; cursor: pointer;
+            font-weight: bold; font-size: 13px; margin-top: 4px;
+            transition: opacity .15s;
+        }
+        #start-btn:hover { opacity: .8; }
+
+        /* HEIGHT METER */
+        #height-bar-wrap {
+            position: absolute; right: 10px; top: 10px; bottom: 10px;
+            width: 10px; background: rgba(22,27,34,0.7);
+            border-radius: 5px; border: 1px solid var(--border);
+            z-index: 5;
+        }
+        #height-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, var(--blue), var(--purple));
+            border-radius: 5px; transition: height 0.1s;
+        }
+
+        #btn-row { display: flex; gap: 8px; }
+        .ctrl-btn {
+            flex: 1; background: #21262d; color: var(--text);
+            border: 1px solid var(--border); padding: 7px 0;
+            border-radius: 5px; cursor: pointer; font-size: 11px;
+            font-weight: bold; transition: background .15s;
+        }
+        .ctrl-btn:hover { background: #30363d; }
+        .ctrl-btn.danger { border-color: var(--red); color: var(--red); }
+    </style>
+</head>
+<body>
+<div id="ada-header-anchor"></div>
+
+<div id="game-layout">
+    <!-- LEFT -->
+    <div class="side-panel">
+        <div class="box">
+            <div class="stat-label">Rankings</div>
+            <div id="leaderboard-list"><div style="font-size:11px;opacity:.5">Loading...</div></div>
+        </div>
+        <div class="box">
+            <div class="stat-label">Your Archive Best</div>
+            <div id="personal-best" class="stat-value" style="font-size:20px;">0m</div>
+        </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="game-wrap">
+        <canvas id="game" width="400" height="580"></canvas>
+        <div id="height-bar-wrap"><div id="height-bar" style="height:0%"></div></div>
+        <div id="overlay">
+            <div style="font-size:32px">⛏️</div>
+            <h2>ASCENT PROTOCOL</h2>
+            <p>Swing your hammer to climb.<br>Fall and you lose height.<br>How far can you rise?</p>
+            <button id="start-btn">INITIALISE</button>
+            <p style="margin-top:2px;">Move mouse to swing • Click to grip</p>
+        </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="side-panel">
+        <div class="box">
+            <div class="stat-label">Height</div>
+            <div id="hud-height" class="stat-value">0m</div>
+        </div>
+        <div class="box">
+            <div class="stat-label">Session Best</div>
+            <div id="hud-session" class="stat-value" style="font-size:18px;color:var(--gold)">0m</div>
+        </div>
+        <div class="box">
+            <div class="stat-label">Danger Zone</div>
+            <div id="hud-zone" class="stat-value" style="font-size:14px;color:var(--red)">NONE</div>
+        </div>
+        <div class="box key-hint">
+            <div class="stat-label" style="margin-bottom:8px">Controls</div>
+            <span class="key-cap">Mouse</span> Aim hammer<br>
+            <span class="key-cap">Hold LMB</span> Grip surface<br>
+            <span class="key-cap">Release</span> Let go &amp; swing<br>
+            <span class="key-cap">R</span> Restart<br><br>
+            <span style="color:var(--red);">Fall = lose height!</span><br>
+            <span style="color:var(--gold);">Height = score (metres)</span>
+        </div>
+        <div id="btn-row">
+            <button class="ctrl-btn danger" onclick="window.resetGame()">↺ Restart</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  ASCENT PROTOCOL — Getting Over It clone
+// ════════════════════════════════════════════════════════════════
+const API     = "https://ada-relay.andrewdinglearchive.workers.dev";
+const GAME_ID = "content8";
+const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ── STATE ────────────────────────────────────────────────────────
+let profileImg = null;
+let userEmail  = '';
+let highScore  = 0;
+let sessionBest = 0;
+let isRunning  = false;
+let animId     = null;
+
+// Physics
+let player, hammer, camera, world, mouse, gripping, particles;
+let maxHeight = 0;   // world units (pixels up from start)
+let frameCount = 0;
+
+// ── CONSTANTS ────────────────────────────────────────────────────
+const GRAVITY    = 0.45;
+const HAMMER_LEN = 70;
+const POT_W      = 28;
+const POT_H      = 22;
+const PLAYER_H   = 26;  // body above pot
+const FRICTION   = 0.82;
+const BOUNCE     = 0.25;
+const WORLD_SEED = 42;
+
+// ── PROCEDURAL WORLD ────────────────────────────────────────────
+// Terrain is chunked: each chunk covers 400px of world height
+// Higher chunks = smaller platforms, bigger gaps, more angles
+
+const CHUNK_H    = 500;   // world-px per chunk
+const chunks     = {};    // chunk_index -> array of platforms
+
+function seededRand(seed) {
+    let s = seed;
+    return function() {
+        s = (s * 16807 + 0) % 2147483647;
+        return (s - 1) / 2147483646;
+    };
+}
+
+function generateChunk(ci) {
+    if (chunks[ci]) return;
+    const rng = seededRand(WORLD_SEED * 1000 + ci * 37);
+    const plats = [];
+    const difficulty = Math.min(ci * 0.15, 1.2); // 0 → 1.2 over ~8 chunks
+
+    // Base y for this chunk (world coords, y increases downward from top)
+    // We work in inverted y: worldY=0 is start, positive = UP
+    const chunkBase = ci * CHUNK_H;
+
+    // Number of platforms per chunk decreases, gaps increase
+    const count = Math.max(4, Math.round(12 - difficulty * 5));
+
+    for (let i = 0; i < count; i++) {
+        const wy  = chunkBase + rng() * CHUNK_H;
+        const wx  = 40 + rng() * (W - 100);
+        const len = 40 + rng() * Math.max(20, 120 - difficulty * 60);
+        const ang = (rng() - 0.5) * (0.4 + difficulty * 0.9); // steeper at height
+        plats.push({ wx, wy, len, ang, ci });
+    }
+
+    // Always add at least one "reachable" platform near left/centre
+    for (let i = 0; i < 2; i++) {
+        const wy  = chunkBase + (i + 0.4) * (CHUNK_H / 2);
+        const wx  = 60 + rng() * (W - 140);
+        const len = 60 + rng() * 60;
+        const ang = (rng() - 0.5) * 0.5;
+        plats.push({ wx, wy, len, ang, ci, safe: true });
+    }
+
+    chunks[ci] = plats;
+}
+
+function getAllPlatforms() {
+    const out = [];
+    Object.values(chunks).forEach(arr => arr.forEach(p => out.push(p)));
+    return out;
+}
+
+// ── CAMERA & COORDS ─────────────────────────────────────────────
+// World: y=0 at bottom, y increases upward
+// Screen: standard canvas (0 at top)
+// camera.y = world y at screen centre
+
+function worldToScreen(wx, wy) {
+    return {
+        sx: wx,
+        sy: H/2 - (wy - camera.y)
+    };
+}
+
+function screenToWorld(sx, sy) {
+    return {
+        wx: sx,
+        wy: camera.y + (H/2 - sy)
+    };
+}
+
+// ── INIT ────────────────────────────────────────────────────────
+async function init() {
+    if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+    const data = await runNeuralGuard('');
+    if (!data) return;
+
+    userEmail = localStorage.getItem('ada_user_email') || '';
+    let picSrc = DEFAULT_ICON;
+    if (data?.user?.profile_picture) {
+        picSrc = data.user.profile_picture;
+    } else {
+        try {
+            const r = await fetch(`${API}/profile/get?email=${encodeURIComponent(userEmail)}&by=${encodeURIComponent(userEmail)}`);
+            const d = await r.json();
+            if (d?.user?.profile_picture) picSrc = d.user.profile_picture;
+        } catch(e) {}
+    }
+    profileImg = await loadImg(picSrc);
+
+    loadLeaderboard();
+    loadPersonalBest();
+    drawIdle();
+}
+
+function loadImg(src) {
+    return new Promise(res => {
+        const i = new Image();
+        i.crossOrigin = 'anonymous';
+        i.onload  = () => res(i);
+        i.onerror = () => res(null);
+        i.src = src;
+    });
+}
+
+// ── LEADERBOARD ─────────────────────────────────────────────────
+async function loadLeaderboard() {
+    try {
+        const r   = await fetch(`${API}/game/leaderboard?content=${GAME_ID}`);
+        const top = await r.json();
+        const medals = ['🥇','🥈','🥉'];
+        document.getElementById('leaderboard-list').innerHTML =
+            (Array.isArray(top) && top.length)
+            ? top.map((u,i) => `
+                <div class="lb-entry">
+                    <span class="lb-rank">${medals[i]||'#'+(i+1)}</span>
+                    <img src="${u.profile_picture||DEFAULT_ICON}" onerror="this.src='${DEFAULT_ICON}'">
+                    <div class="lb-info">
+                        <span class="lb-name">${u.display_name||u.email.split('@')[0]}</span>
+                        <span class="lb-score">${u.score}m</span>
+                    </div>
+                </div>`).join('')
+            : '<div style="font-size:11px;opacity:.5">No records yet.</div>';
+    } catch(e) {}
+}
+
+async function loadPersonalBest() {
+    try {
+        const r = await fetch(`${API}/game/get-score?email=${encodeURIComponent(userEmail)}&content=${GAME_ID}`);
+        const d = await r.json();
+        highScore = d.score || 0;
+        document.getElementById('personal-best').innerText = highScore + 'm';
+    } catch(e) {}
+}
+
+async function saveScore(s) {
+    try {
+        await fetch(`${API}/game/save-score`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ email: userEmail, gameId: GAME_ID, score: s })
+        });
+        loadLeaderboard(); loadPersonalBest();
+    } catch(e) {}
+}
+
+// ── RESET ────────────────────────────────────────────────────────
+function resetState() {
+    // Clear chunks (re-generate world)
+    for (const k in chunks) delete chunks[k];
+
+    // Generate first few chunks
+    for (let ci = 0; ci < 4; ci++) generateChunk(ci);
+
+    // Add a solid ground platform
+    chunks[-1] = [
+        { wx: 0, wy: 0, len: W, ang: 0, ci: -1, ground: true }
+    ];
+
+    // Player state (world coords)
+    player = {
+        x:  W / 2,       // world x (same as screen x — no horizontal scroll)
+        y:  80,           // world y (above ground)
+        vx: 0,
+        vy: 0,
+        onGround: false,
+    };
+
+    hammer = {
+        angle:   -Math.PI / 4,   // current angle (radians from player body)
+        angleV:  0,               // angular velocity
+        headX:   0,               // world pos of hammer head
+        headY:   0,
+        pivotX:  0,               // shoulder pivot in world
+        pivotY:  0,
+        locked:  false,           // true = hammer is hooked on surface
+        lockX:   0,
+        lockY:   0,
+    };
+
+    camera   = { y: H / 2 };     // camera tracks player
+    mouse    = { x: W/2, y: H/2, down: false };
+    gripping = false;
+    particles = [];
+    maxHeight = 0;
+    frameCount = 0;
+}
+
+// ── START ─────────────────────────────────────────────────────────
+window.startGame = startGame;
+function startGame() {
+    document.getElementById('overlay').style.display = 'none';
+    resetState();
+    isRunning = true;
+    if (animId) cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+}
+
+window.resetGame = () => {
+    if (animId) cancelAnimationFrame(animId);
+    document.getElementById('overlay').style.display = 'none';
+    resetState();
+    isRunning = true;
+    animId = requestAnimationFrame(loop);
+};
+
+// ── PHYSICS HELPERS ──────────────────────────────────────────────
+function getHammerPivot() {
+    // Pivot is player's shoulder (top-centre of body)
+    return { px: player.x, py: player.y + PLAYER_H * 0.6 };
+}
+
+function hammerHeadPos(angle) {
+    const {px, py} = getHammerPivot();
+    return {
+        hx: px + Math.cos(angle) * HAMMER_LEN,
+        hy: py + Math.sin(angle) * HAMMER_LEN,
+    };
+}
+
+// Segment collision: returns {hit, nx, ny, depth} for circle vs line segment
+function circleVsSegment(cx, cy, r, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx*dx + dy*dy;
+    if (len2 < 1) return null;
+    let t = ((cx-ax)*dx + (cy-ay)*dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const nx = ax + t*dx - cx;
+    const ny = ay + t*dy - cy;
+    const d = Math.sqrt(nx*nx + ny*ny);
+    if (d < r) {
+        return { hit: true, nx: -nx/d, ny: -ny/d, depth: r - d };
+    }
+    return null;
+}
+
+function getPlatformSegment(p) {
+    const cx = Math.cos(p.ang), sy = Math.sin(p.ang);
+    // World coords: wx, wy is centre
+    const ax = p.wx - cx * p.len/2;
+    const ay = p.wy - sy * p.len/2;
+    const bx = p.wx + cx * p.len/2;
+    const by = p.wy + sy * p.len/2;
+    return {ax, ay, bx, by};
+}
+
+// ── GAME LOOP ─────────────────────────────────────────────────────
+function loop() {
+    if (!isRunning) return;
+    update();
+    render();
+    animId = requestAnimationFrame(loop);
+}
+
+function update() {
+    frameCount++;
+
+    // Generate chunks ahead of player
+    const playerChunk = Math.floor(player.y / CHUNK_H);
+    for (let ci = Math.max(0, playerChunk - 1); ci <= playerChunk + 3; ci++) {
+        generateChunk(ci);
+    }
+
+    // ── HAMMER CONTROL ──────────────────────────────────────────
+    const {px: pivX, py: pivY} = getHammerPivot();
+    hammer.pivotX = pivX;
+    hammer.pivotY = pivY;
+
+    // Mouse world position
+    const mw = screenToWorld(mouse.x, mouse.y);
+
+    if (mouse.down && !gripping) {
+        // Try to hook hammer head onto a surface
+        const {hx, hy} = hammerHeadPos(hammer.angle);
+        const platforms = getAllPlatforms();
+        for (const p of platforms) {
+            const {ax,ay,bx,by} = getPlatformSegment(p);
+            const col = circleVsSegment(hx, hy, 12, ax, ay, bx, by);
+            if (col) {
+                gripping      = true;
+                hammer.locked  = true;
+                hammer.lockX   = hx;
+                hammer.lockY   = hy;
+                // Spawn grip particles
+                for (let i = 0; i < 6; i++) {
+                    particles.push({
+                        x: hx, y: hy, vx: (Math.random()-0.5)*3,
+                        vy: Math.random()*3, life: 30, col: '#58a6ff'
+                    });
+                }
+                break;
+            }
+        }
+    }
+
+    if (!mouse.down) {
+        gripping = false;
+        hammer.locked = false;
+    }
+
+    if (gripping && hammer.locked) {
+        // Player swings around the locked hammer head
+        const lx = hammer.lockX, ly = hammer.lockY;
+        const dx = player.x - lx;
+        const dy = player.y - ly;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        // Apply gravity to player velocity
+        player.vy -= GRAVITY;
+
+        // Constrain player to circle around lock point
+        player.x += player.vx;
+        player.y += player.vy;
+
+        const dx2 = player.x - lx;
+        const dy2 = player.y - ly;
+        const d2   = Math.sqrt(dx2*dx2 + dy2*dy2);
+        if (d2 > 0) {
+            // Pull back to rope length
+            const stretch = d2;
+            player.x = lx + (dx2/d2) * stretch;
+            player.y = ly + (dy2/d2) * stretch;
+
+            // Remove radial velocity component (rope constraint)
+            const radX = dx2/d2, radY = dy2/d2;
+            const radV = player.vx * radX + player.vy * radY;
+            player.vx -= radV * radX * 0.95;
+            player.vy -= radV * radY * 0.95;
+        }
+
+        // Aim hammer toward mouse when gripping
+        const mx2 = mw.wx - hammer.lockX;
+        const my2 = mw.wy - hammer.lockY;
+        hammer.angle = Math.atan2(-(my2), mx2) * 0.2 + hammer.angle * 0.8;
+
+    } else {
+        // Free fall + swing hammer toward mouse
+        player.vy -= GRAVITY;
+        player.x  += player.vx;
+        player.y  += player.vy;
+        player.vx *= 0.98;
+
+        // Aim hammer toward mouse
+        const targetAngle = Math.atan2(-(mw.wy - pivY), mw.wx - pivX);
+        let diff = targetAngle - hammer.angle;
+        while (diff > Math.PI)  diff -= Math.PI*2;
+        while (diff < -Math.PI) diff += Math.PI*2;
+        hammer.angleV += diff * 0.15;
+        hammer.angleV *= 0.75;
+        hammer.angle  += hammer.angleV;
+    }
+
+    // ── POT vs PLATFORMS ────────────────────────────────────────
+    const platforms = getAllPlatforms();
+    player.onGround = false;
+
+    for (const p of platforms) {
+        const {ax,ay,bx,by} = getPlatformSegment(p);
+        // Check bottom of player (pot bottom)
+        const potR = POT_W / 2 + 2;
+        const col  = circleVsSegment(player.x, player.y - POT_H/2, potR, ax, ay, bx, by);
+        if (col) {
+            // Push player out
+            player.x += col.nx * col.depth;
+            player.y += col.ny * col.depth;
+
+            // Velocity response
+            const dot = player.vx * col.nx + player.vy * col.ny;
+            if (dot < 0) {
+                player.vx -= (1 + BOUNCE) * dot * col.nx;
+                player.vy -= (1 + BOUNCE) * dot * col.ny;
+                player.vx *= FRICTION;
+                player.vy *= FRICTION;
+            }
+
+            if (col.ny > 0.5) {
+                player.onGround = true;
+            }
+        }
+    }
+
+    // ── WORLD BOUNDS ────────────────────────────────────────────
+    if (player.x < POT_W/2)    { player.x = POT_W/2;    player.vx = Math.abs(player.vx)*0.4; }
+    if (player.x > W-POT_W/2)  { player.x = W-POT_W/2;  player.vx = -Math.abs(player.vx)*0.4; }
+
+    // ── FALL BELOW START ─────────────────────────────────────────
+    if (player.y < -200) {
+        // Big fall — punish but don't kill
+        player.y  = 60;
+        player.vy = 0;
+        player.vx = 0;
+        player.x  = W / 2;
+        // Lose a chunk of progress
+        maxHeight = Math.max(0, maxHeight - 200);
+        gripping  = false;
+        hammer.locked = false;
+        for (let i = 0; i < 15; i++) {
+            particles.push({
+                x: player.x, y: player.y,
+                vx: (Math.random()-0.5)*6,
+                vy: Math.random()*5,
+                life: 45, col: '#f85149'
+            });
+        }
+    }
+
+    // ── TRACK HEIGHT ─────────────────────────────────────────────
+    const heightM = Math.round(player.y / 30);  // 30px = 1 metre
+    if (heightM > maxHeight) {
+        maxHeight = heightM;
+        if (maxHeight > sessionBest) {
+            sessionBest = maxHeight;
+            document.getElementById('hud-session').innerText = sessionBest + 'm';
+        }
+    }
+
+    // ── CAMERA ───────────────────────────────────────────────────
+    const targetCam = player.y;
+    camera.y += (targetCam - camera.y) * 0.08;
+
+    // ── PARTICLES ────────────────────────────────────────────────
+    for (const pt of particles) {
+        pt.x += pt.vx; pt.y += pt.vy; pt.vy -= 0.15; pt.life--;
+    }
+    particles = particles.filter(pt => pt.life > 0);
+
+    // ── HUD ──────────────────────────────────────────────────────
+    document.getElementById('hud-height').innerText = Math.max(0, heightM) + 'm';
+
+    const playerChunk2 = Math.floor(player.y / CHUNK_H);
+    const zones = ['NONE','LOW','MEDIUM','HIGH','EXTREME','CRITICAL'];
+    document.getElementById('hud-zone').innerText = zones[Math.min(playerChunk2, zones.length-1)];
+
+    // Height bar (max ~3000m)
+    const pct = Math.min(100, (heightM / 300) * 100);
+    document.getElementById('height-bar').style.height = pct + '%';
+
+    // Auto-save if new record
+    if (maxHeight > 0 && maxHeight > highScore) {
+        highScore = maxHeight;
+        saveScore(highScore);
+    }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Sky gradient based on height
+    const hFrac = Math.min(1, maxHeight / 300);
+    const skyTop = lerpColor('#060a0f', '#0a0718', hFrac);
+    const grd = ctx.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, skyTop);
+    grd.addColorStop(1, '#0d1117');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    ctx.save();
+    for (let i = 0; i < 60; i++) {
+        const sx = ((i * 137.5 + camera.y * 0.02) % W + W) % W;
+        const sy = ((i * 79.3  + camera.y * 0.01) % H + H) % H;
+        const sa = 0.2 + (i % 5) * 0.12;
+        ctx.globalAlpha = sa;
+        ctx.fillStyle = '#8b949e';
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Platforms
+    const platforms = getAllPlatforms();
+    for (const p of platforms) {
+        const {ax,ay,bx,by} = getPlatformSegment(p);
+        const sa = worldToScreen(ax, ay);
+        const sb = worldToScreen(bx, by);
+
+        // Skip offscreen
+        if (sa.sy < -60 && sb.sy < -60) continue;
+        if (sa.sy > H+60 && sb.sy > H+60) continue;
+
+        // Colour by difficulty
+        const ci = p.ci;
+        let col = '#30363d';
+        if (ci >= 5)      col = '#5a1e1e';
+        else if (ci >= 3) col = '#2a1e3a';
+        else if (ci >= 1) col = '#1e2a2e';
+
+        ctx.strokeStyle = col;
+        ctx.lineWidth   = p.ground ? 4 : Math.max(4, 10 - ci * 0.8);
+        ctx.lineCap     = 'round';
+        ctx.shadowColor = p.safe ? '#238636' : col;
+        ctx.shadowBlur  = 3;
+        ctx.beginPath();
+        ctx.moveTo(sa.sx, sa.sy);
+        ctx.lineTo(sb.sx, sb.sy);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Top surface highlight
+        ctx.strokeStyle = '#ffffff08';
+        ctx.lineWidth   = 1;
+        ctx.beginPath();
+        ctx.moveTo(sa.sx, sa.sy - 2);
+        ctx.lineTo(sb.sx, sb.sy - 2);
+        ctx.stroke();
+    }
+
+    // Particles
+    for (const pt of particles) {
+        const s = worldToScreen(pt.x, pt.y);
+        ctx.globalAlpha = pt.life / 45;
+        ctx.fillStyle   = pt.col;
+        ctx.beginPath();
+        ctx.arc(s.sx, s.sy, 3, 0, Math.PI*2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── DRAW PLAYER ─────────────────────────────────────────────
+    const ps = worldToScreen(player.x, player.y);
+    const {px, py} = getHammerPivot();
+    const pivS = worldToScreen(px, py);
+
+    // Hammer
+    const {hx: hwx, hy: hwy} = hammerHeadPos(hammer.angle);
+    const headS = worldToScreen(hwx, hwy);
+
+    // Hammer shaft
+    ctx.strokeStyle = '#8b949e';
+    ctx.lineWidth   = 3;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pivS.sx, pivS.sy);
+    ctx.lineTo(headS.sx, headS.sy);
+    ctx.stroke();
+
+    // Hammer head
+    ctx.save();
+    ctx.translate(headS.sx, headS.sy);
+    ctx.rotate(-hammer.angle);
+    ctx.fillStyle = gripping ? '#58a6ff' : '#c9d1d9';
+    ctx.shadowColor = gripping ? '#58a6ff' : 'transparent';
+    ctx.shadowBlur  = gripping ? 12 : 0;
+    ctx.fillRect(-14, -7, 28, 14);
+    ctx.fillStyle = '#8b949e';
+    ctx.fillRect(-14, -7, 7, 14);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Grip indicator (line from head to lock point)
+    if (gripping && hammer.locked) {
+        const lockS = worldToScreen(hammer.lockX, hammer.lockY);
+        ctx.strokeStyle = 'rgba(88,166,255,0.4)';
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath();
+        ctx.moveTo(headS.sx, headS.sy);
+        ctx.lineTo(lockS.sx, lockS.sy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Lock point pulse
+        ctx.fillStyle   = '#58a6ff';
+        ctx.shadowColor = '#58a6ff';
+        ctx.shadowBlur  = 10;
+        ctx.beginPath();
+        ctx.arc(lockS.sx, lockS.sy, 5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // Pot body
+    ctx.save();
+    ctx.translate(ps.sx, ps.sy);
+
+    // Pot
+    ctx.fillStyle = '#8b6914';
+    ctx.beginPath();
+    ctx.moveTo(-POT_W/2, 0);
+    ctx.lineTo(-POT_W/2 + 4, -POT_H);
+    ctx.lineTo( POT_W/2 - 4, -POT_H);
+    ctx.lineTo( POT_W/2, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#a07820';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Pot rim
+    ctx.fillStyle   = '#a07820';
+    ctx.fillRect(-POT_W/2, -POT_H, POT_W, 5);
+
+    // Profile picture (head)
+    const headY = -POT_H - PLAYER_H;
+    ctx.beginPath();
+    ctx.arc(0, headY + PLAYER_H/2, PLAYER_H/2, 0, Math.PI*2);
+    ctx.clip();
+    if (profileImg) {
+        ctx.drawImage(profileImg, -PLAYER_H/2, headY, PLAYER_H, PLAYER_H);
+    } else {
+        ctx.fillStyle = '#8b949e';
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // Head border ring
+    ctx.save();
+    ctx.translate(ps.sx, ps.sy);
+    ctx.strokeStyle = '#58a6ff';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.arc(0, -POT_H - PLAYER_H/2, PLAYER_H/2, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── CURSOR ──────────────────────────────────────────────────
+    ctx.strokeStyle = gripping ? '#58a6ff' : '#8b949e';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 6, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mouse.x - 9, mouse.y);
+    ctx.lineTo(mouse.x + 9, mouse.y);
+    ctx.moveTo(mouse.x, mouse.y - 9);
+    ctx.lineTo(mouse.x, mouse.y + 9);
+    ctx.stroke();
+}
+
+// ── IDLE SCREEN ───────────────────────────────────────────────────
+function drawIdle() {
+    ctx.fillStyle = '#060a0f';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#8b949e';
+    ctx.font      = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ASCENT PROTOCOL', W/2, H/2);
+    ctx.textAlign = 'left';
+}
+
+// ── COLOUR LERP ──────────────────────────────────────────────────
+function lerpColor(a, b, t) {
+    const ah = parseInt(a.slice(1),16), bh = parseInt(b.slice(1),16);
+    const ar = ah>>16, ag = (ah>>8)&0xff, ab = ah&0xff;
+    const br = bh>>16, bg = (bh>>8)&0xff, bb = bh&0xff;
+    const rr = Math.round(ar + (br-ar)*t);
+    const rg = Math.round(ag + (bg-ag)*t);
+    const rb = Math.round(ab + (bb-ab)*t);
+    return `#${((1<<24)|(rr<<16)|(rg<<8)|rb).toString(16).slice(1)}`;
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - r.left;
+    mouse.y = e.clientY - r.top;
+});
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 0) mouse.down = true;
+});
+canvas.addEventListener('mouseup', e => {
+    if (e.button === 0) { mouse.down = false; gripping = false; if(hammer) hammer.locked = false; }
+});
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.touches[0].clientX - r.left;
+    mouse.y = e.touches[0].clientY - r.top;
+}, {passive:false});
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    mouse.down = true;
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.touches[0].clientX - r.left;
+    mouse.y = e.touches[0].clientY - r.top;
+}, {passive:false});
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    mouse.down = false;
+    gripping = false;
+    if (hammer) hammer.locked = false;
+}, {passive:false});
+
+document.addEventListener('keydown', e => {
+    if (e.code === 'KeyR') window.resetGame();
+    if (e.code === 'Space') {
+        e.preventDefault();
+        const ov = document.getElementById('overlay');
+        if (ov.style.display !== 'none') startGame();
+    }
+});
+
+// Overlay delegation
+document.getElementById('overlay').addEventListener('click', e => {
+    if (e.target && e.target.id === 'start-btn') startGame();
+});
+
+// ── BOOT ──────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
