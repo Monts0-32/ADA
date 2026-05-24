@@ -117,7 +117,7 @@
 
 <script>
 const API = "https://ada-relay.andrewdinglearchive.workers.dev";
-const GAME_ID = "content2";
+const GAME_ID = "content7";
 const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
 const canvas = document.getElementById('game');
@@ -132,8 +132,8 @@ let userEmail = '';
 let lastTime = 0;
 
 // ── CONSTANTS ───────────────────────────────────────────────────
-const GRAVITY      = 0.38;
-const FLAP_POWER   = -7.2;
+const GRAVITY      = 0.22;
+const FLAP_POWER   = -6.0;
 const PIPE_WIDTH   = 52;
 const PIPE_GAP     = 160;       // vertical gap
 const PIPE_SPEED   = 2.6;
@@ -193,7 +193,21 @@ async function init() {
     if (!data) return;
 
     userEmail = localStorage.getItem('ada_user_email') || '';
-    const picSrc = localStorage.getItem('ada_profile_picture') || DEFAULT_ICON;
+    // Try to get fresh profile picture from the sync response first,
+    // fall back to localStorage, then fetch directly from the API
+    let picSrc = DEFAULT_ICON;
+    if (data && data.user && data.user.profile_picture) {
+        picSrc = data.user.profile_picture;
+    } else {
+        // Fetch profile directly from API to get current picture
+        try {
+            const profRes = await fetch(`${API}/profile/get?email=${encodeURIComponent(userEmail)}&by=${encodeURIComponent(userEmail)}`);
+            const profData = await profRes.json();
+            if (profData && profData.user && profData.user.profile_picture) {
+                picSrc = profData.user.profile_picture;
+            }
+        } catch(e) {}
+    }
     profileImg = await loadProfileImage(picSrc);
 
     loadLeaderboard();
@@ -313,7 +327,7 @@ function loop(now) {
         // Physics
         bird.vy += GRAVITY * dt;
         bird.y  += bird.vy * dt;
-        bird.angle = Math.max(-30, Math.min(85, bird.vy * 4.5));
+        bird.angle = Math.max(-25, Math.min(70, bird.vy * 3.5));
 
         // Spawn pipes
         if (frame % Math.round(PIPE_SPACING / PIPE_SPEED) === 0) spawnPipe();
@@ -553,7 +567,16 @@ async function showGameOver() {
 
 // ── CONTROLS ──────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-    if (e.code === 'Space') { e.preventDefault(); flap(); }
+    if (e.code === 'Space') {
+        e.preventDefault();
+        // If overlay is visible (start screen or game over), start/restart
+        const overlay = document.getElementById('overlay');
+        if (overlay.style.display !== 'none') {
+            startGame();
+        } else {
+            flap();
+        }
+    }
     if (e.code === 'KeyP') { if (isRunning && !bird.dead) isPaused = !isPaused; }
     if (e.code === 'KeyR') { window.resetGame(); }
 });
