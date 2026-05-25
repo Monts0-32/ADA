@@ -100,6 +100,18 @@
         .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
 
+        /* --- ADMIN PAGE SETTINGS BUTTON --- */
+        #page-settings-btn {
+            position: fixed; top: 70px; left: 12px; z-index: 1050;
+            background: #161b22; border: 1px solid var(--border);
+            color: #8b949e; border-radius: 8px; padding: 7px 11px;
+            cursor: pointer; font-size: 12px; font-weight: 600;
+            display: none; align-items: center; gap: 6px;
+            transition: background .15s, color .15s, border-color .15s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+        }
+        #page-settings-btn:hover { background: #21262d; color: var(--text); border-color: #58a6ff; }
+
         /* --- LEADERBOARD BADGE MODAL --- */
         #lb-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:2000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         #lb-modal-box { background:#161b22; border:1px solid var(--border); border-radius:12px; width:480px; max-width:95vw; max-height:80vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
@@ -107,12 +119,31 @@
         #lb-modal-box .modal-close { background:none; border:none; color:#8b949e; font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; }
         #lb-modal-box .modal-close:hover { color:var(--text); background:#30363d; }
         .lb-game-block { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:6px; }
-        .lb-game-title { font-size:12px; font-weight:700; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; display:flex; align-items:center; justify-content:space-between; }
+        .lb-game-title { font-size:12px; font-weight:700; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; display:flex; align-items:center; gap:8px; }
+        .lb-game-img { width:28px; height:28px; border-radius:4px; object-fit:cover; border:1px solid var(--border); flex-shrink:0; }
         .lb-game-rank  { font-size:22px; font-family:monospace; color:var(--blue); }
         .lb-game-score { font-size:11px; color:#8b949e; }
-        .lb-game-medal { font-size:18px; }
+        .lb-game-medal { font-size:18px; margin-left:auto; }
         .badge-lb { cursor:pointer; transition:opacity .15s; }
         .badge-lb:hover { opacity:.75; }
+
+        /* --- LB MANAGER MODAL --- */
+        #lbmgr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2100; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+        #lbmgr-box { background:#161b22; border:1px solid var(--border); border-radius:12px; width:520px; max-width:95vw; max-height:85vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:18px; }
+        .lbmgr-entry { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:12px 14px; display:flex; align-items:center; gap:12px; }
+        .lbmgr-entry img { width:36px; height:36px; border-radius:6px; object-fit:cover; border:1px solid var(--border); flex-shrink:0; }
+        .lbmgr-entry-info { flex:1; min-width:0; }
+        .lbmgr-entry-name { font-size:13px; font-weight:600; color:var(--text); }
+        .lbmgr-entry-id   { font-size:11px; color:#8b949e; font-family:monospace; }
+        .lbmgr-del { background:none; border:none; color:#8b949e; cursor:pointer; font-size:16px; padding:4px 6px; border-radius:4px; }
+        .lbmgr-del:hover { background:rgba(248,81,73,.15); color:var(--red); }
+        .lbmgr-add-form { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+        .lbmgr-row { display:flex; gap:10px; align-items:center; }
+        .lbmgr-inp { flex:1; background:#161b22; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:7px 10px; font-size:12px; outline:none; }
+        .lbmgr-inp:focus { border-color:var(--blue); }
+        .lbmgr-status { font-size:11px; min-height:16px; }
+        .lbmgr-status.ok  { color:#3fb950; }
+        .lbmgr-status.err { color:var(--red); }
 
         /* --- REACTION BUTTONS --- */
         .reaction-bar { display: flex; gap: 10px; margin-top: 0; position: relative; min-height: 48px; align-items: flex-start; }
@@ -208,6 +239,9 @@
     </style>
 </head>
 <body id="p-body">
+
+<!-- ADMIN PAGE SETTINGS BUTTON (top-left, admin only) -->
+<button id="page-settings-btn" onclick="openLbManager()">⚙ Page Settings</button>
 
 <div id="ada-header-anchor"></div>
 
@@ -397,6 +431,45 @@
         </div>
         <div id="lb-modal-body">
             <div style="font-size:13px;color:#8b949e;text-align:center;padding:20px 0;">Loading standings...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ADMIN: LEADERBOARD MANAGER MODAL -->
+<div id="lbmgr-overlay" style="display:none;" onclick="if(event.target===this)closeLbManager()">
+    <div id="lbmgr-box">
+        <div class="modal-title" style="font-size:15px;font-weight:bold;color:var(--text);display:flex;align-items:center;justify-content:space-between;">
+            <span>⚙ Page Settings — Leaderboard Registry</span>
+            <button class="modal-close" onclick="closeLbManager()">×</button>
+        </div>
+        <div style="font-size:11px;color:#8b949e;margin-top:-10px;">
+            Registered games appear in all users' Leaderboard badges. The Game ID must exist in the database (<code style="background:#0d1117;padding:1px 5px;border-radius:3px;">game_scores</code> table).
+        </div>
+
+        <!-- Existing entries -->
+        <div>
+            <div style="font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Registered Games</div>
+            <div id="lbmgr-list"><div style="font-size:12px;color:#8b949e;">Loading...</div></div>
+        </div>
+
+        <!-- Add new entry -->
+        <div class="lbmgr-add-form">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px;">Add New Entry</div>
+            <div class="lbmgr-row">
+                <input id="lbmgr-in-name" class="lbmgr-inp" placeholder="Game name (e.g. Tetris Module)">
+            </div>
+            <div class="lbmgr-row">
+                <input id="lbmgr-in-id" class="lbmgr-inp" placeholder="Game ID (e.g. content1)" oninput="lbmgrCheckId()">
+                <div id="lbmgr-id-status" class="lbmgr-status" style="min-width:80px;text-align:right;"></div>
+            </div>
+            <div class="lbmgr-row">
+                <input id="lbmgr-in-img" class="lbmgr-inp" placeholder="Image URL (optional)">
+            </div>
+            <div class="lbmgr-row">
+                <input id="lbmgr-in-icon" class="lbmgr-inp" placeholder="Emoji icon (e.g. 🎮)">
+            </div>
+            <div id="lbmgr-add-status" class="lbmgr-status"></div>
+            <button class="btn-gh btn-primary" style="padding:9px;" onclick="lbmgrAdd()">Add to Registry</button>
         </div>
     </div>
 </div>
@@ -707,8 +780,7 @@
         document.getElementById('bio-display').innerHTML = u.bio_html || '<span style="color:#8b949e">Entity record is empty.</span>';
         document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color};color:${b.color}">${b.icon} ${escHtml(b.name)}</div>`).join('');
         if (u.is_admin) document.getElementById('badges-view').innerHTML += `<div class="badge" style="border-color:#d29922;color:#d29922">🛡️ ADMIN</div>`;
-        // Always show leaderboard badge — clickable to show standings popup
-        document.getElementById('badges-view').innerHTML += `<div class="badge badge-lb" style="border-color:#58a6ff;color:#58a6ff;" onclick="openLbModal()">🏆 Leaderboards</div>`;
+        // Leaderboard badge injected conditionally after registry loads (see maybeShowLbBadge)
 
         if (localStorage.getItem('ada_admin') === '1') {
             document.getElementById('admin-actions').style.display = 'block';
@@ -746,6 +818,14 @@
 
         fetchReactions();
         loadComments();
+
+        // Load leaderboard registry and conditionally show badge + admin button
+        await loadLbRegistry();
+        await maybeShowLbBadge();
+        if (localStorage.getItem('ada_admin') === '1') {
+            const btn = document.getElementById('page-settings-btn');
+            btn.style.display = 'flex';
+        }
     }
 
     // ── Reactions ─────────────────────────────────────────────────────────────
@@ -1119,31 +1199,63 @@
         location.reload();
     }
 
-    // ── Leaderboard Badge Modal ───────────────────────────────────────────────
-    // Maps game IDs to human-readable names. Add new games here as you build them.
-    const GAME_REGISTRY = [
-        { id: 'content1', name: 'Tetris Module',     icon: '🧩' },
-        { id: 'content7', name: 'Flappy Protocol',   icon: '🐦' },
-        { id: 'content8', name: 'Ascent Protocol',   icon: '⛏️' },
-    ];
+    // ── Leaderboard Registry (stored in system_data as 'lb_registry') ─────────
+    // Registry format: [ { id, name, icon, image_url }, ... ]
+    const LB_REGISTRY_KEY = 'lb_registry';
+    let lbRegistry = []; // populated at load time
 
+    async function loadLbRegistry() {
+        try {
+            const r  = await fetch(`${API}/sync?email=${encodeURIComponent(myEmail || 'guest')}`);
+            const sd = await r.json();
+            const raw = sd.widgets?.[LB_REGISTRY_KEY];
+            lbRegistry = raw ? JSON.parse(raw) : [];
+        } catch(e) { lbRegistry = []; }
+    }
+
+    async function saveLbRegistry() {
+        await postJSON(`${API}/admin/system/save`, { id: LB_REGISTRY_KEY, content: JSON.stringify(lbRegistry) });
+    }
+
+    // Call this after profile loads to conditionally show/hide the badge
+    async function maybeShowLbBadge() {
+        if (!lbRegistry.length) return; // no games registered yet
+
+        // Check if this user has any score on any registered game
+        const checks = await Promise.all(lbRegistry.map(async g => {
+            try {
+                const r = await fetch(`${API}/game/get-score?email=${encodeURIComponent(target)}&content=${g.id}`);
+                const d = await r.json();
+                return (d.score || 0) > 0;
+            } catch(e) { return false; }
+        }));
+
+        if (checks.some(Boolean)) {
+            document.getElementById('badges-view').innerHTML +=
+                `<div class="badge badge-lb" style="border-color:#58a6ff;color:#58a6ff;" onclick="openLbModal()">🏆 Leaderboards</div>`;
+        }
+    }
+
+    // ── Leaderboard Badge Modal ───────────────────────────────────────────────
     async function openLbModal() {
         document.getElementById('lb-modal-name').innerText = currentProfile?.display_name || target;
         document.getElementById('lb-modal-body').innerHTML = '<div style="font-size:13px;color:#8b949e;text-align:center;padding:20px 0;">Loading standings...</div>';
         document.getElementById('lb-modal-overlay').style.display = 'flex';
 
-        const results = await Promise.all(GAME_REGISTRY.map(async game => {
-            try {
-                // Get this game's full leaderboard to find the user's rank
-                const r = await fetch(`${API}/game/leaderboard?content=${game.id}`);
-                const top = await r.json();
-                // Find target user's rank in top-5 leaderboard
-                const idx = Array.isArray(top) ? top.findIndex(u => u.email === target) : -1;
-                const entry = idx > -1 ? top[idx] : null;
+        if (!lbRegistry.length) {
+            document.getElementById('lb-modal-body').innerHTML =
+                '<div style="font-size:13px;color:#8b949e;text-align:center;padding:30px 0;">No games registered yet.</div>';
+            return;
+        }
 
-                // Also fetch their personal score in case they're outside top 5
-                const sr = await fetch(`${API}/game/get-score?email=${encodeURIComponent(target)}&content=${game.id}`);
-                const sd = await sr.json();
+        const results = await Promise.all(lbRegistry.map(async game => {
+            try {
+                const r   = await fetch(`${API}/game/leaderboard?content=${game.id}`);
+                const top = await r.json();
+                const idx = Array.isArray(top) ? top.findIndex(u => u.email === target) : -1;
+
+                const sr  = await fetch(`${API}/game/get-score?email=${encodeURIComponent(target)}&content=${game.id}`);
+                const sd  = await sr.json();
                 const score = sd.score || 0;
 
                 return { game, rank: idx > -1 ? idx + 1 : null, score, inTop: idx > -1 };
@@ -1152,37 +1264,151 @@
             }
         }));
 
+        // Only show games where user has a score
+        const scored = results.filter(r => r.score > 0);
         const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-        const hasAny = results.some(r => r.score > 0);
 
-        if (!hasAny) {
-            document.getElementById('lb-modal-body').innerHTML = `
-                <div style="font-size:13px;color:#8b949e;text-align:center;padding:30px 0;">
-                    No leaderboard entries yet.
-                </div>`;
+        if (!scored.length) {
+            document.getElementById('lb-modal-body').innerHTML =
+                '<div style="font-size:13px;color:#8b949e;text-align:center;padding:30px 0;">No leaderboard entries yet.</div>';
             return;
         }
 
-        document.getElementById('lb-modal-body').innerHTML = results
-            .filter(r => r.score > 0)
-            .map(r => `
+        document.getElementById('lb-modal-body').innerHTML = scored.map(r => {
+            const imgHtml = r.game.image_url
+                ? `<img class="lb-game-img" src="${escHtml(r.game.image_url)}" onerror="this.style.display='none'">`
+                : `<span style="font-size:20px;">${r.game.icon || '🎮'}</span>`;
+            return `
                 <div class="lb-game-block">
                     <div class="lb-game-title">
-                        <span>${r.game.icon} ${r.game.name}</span>
+                        ${imgHtml}
+                        <span>${escHtml(r.game.name)}</span>
                         ${r.inTop ? `<span class="lb-game-medal">${medals[r.rank - 1] || ''}</span>` : ''}
                     </div>
-                    <div class="lb-game-rank">${r.score.toLocaleString()}<span style="font-size:13px;color:#8b949e;margin-left:4px;">${r.game.id === 'content8' ? 'm' : 'pts'}</span></div>
+                    <div class="lb-game-rank">${r.score.toLocaleString()}<span style="font-size:13px;color:#8b949e;margin-left:4px;">pts</span></div>
                     <div class="lb-game-score">
                         ${r.inTop
                             ? `Ranked <strong style="color:var(--gold)">#${r.rank}</strong> on the leaderboard`
-                            : `Not currently in top 5`}
+                            : `Outside top 5 — personal best only`}
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+        }).join('');
     }
 
     function closeLbModal() {
         document.getElementById('lb-modal-overlay').style.display = 'none';
+    }
+
+    // ── Admin: Leaderboard Manager ────────────────────────────────────────────
+    function openLbManager() {
+        document.getElementById('lbmgr-overlay').style.display = 'flex';
+        renderLbManagerList();
+        // Clear add form
+        ['lbmgr-in-name','lbmgr-in-id','lbmgr-in-img','lbmgr-in-icon'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('lbmgr-id-status').textContent = '';
+        document.getElementById('lbmgr-add-status').textContent = '';
+    }
+
+    function closeLbManager() {
+        document.getElementById('lbmgr-overlay').style.display = 'none';
+    }
+
+    function renderLbManagerList() {
+        const el = document.getElementById('lbmgr-list');
+        if (!lbRegistry.length) {
+            el.innerHTML = '<div style="font-size:12px;color:#8b949e;padding:8px 0;">No games registered yet.</div>';
+            return;
+        }
+        el.innerHTML = lbRegistry.map((g, i) => {
+            const imgEl = g.image_url
+                ? `<img src="${escHtml(g.image_url)}" onerror="this.style.display='none'">`
+                : `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border);border-radius:6px;background:#161b22;">${g.icon || '🎮'}</div>`;
+            return `
+                <div class="lbmgr-entry">
+                    ${imgEl}
+                    <div class="lbmgr-entry-info">
+                        <div class="lbmgr-entry-name">${escHtml(g.name)}</div>
+                        <div class="lbmgr-entry-id">ID: ${escHtml(g.id)}</div>
+                    </div>
+                    <button class="lbmgr-del" title="Remove" onclick="lbmgrRemove(${i})">🗑</button>
+                </div>`;
+        }).join('');
+    }
+
+    window.lbmgrRemove = async function(idx) {
+        if (!confirm(`Remove "${lbRegistry[idx]?.name}" from the registry?`)) return;
+        lbRegistry.splice(idx, 1);
+        await saveLbRegistry();
+        renderLbManagerList();
+    };
+
+    // Check if game ID exists in DB by trying to fetch a leaderboard for it
+    let lbmgrCheckTimer = null;
+    async function lbmgrCheckId() {
+        const id = document.getElementById('lbmgr-in-id').value.trim();
+        const statusEl = document.getElementById('lbmgr-id-status');
+        clearTimeout(lbmgrCheckTimer);
+        if (!id) { statusEl.textContent = ''; statusEl.className = 'lbmgr-status'; return; }
+
+        statusEl.textContent = 'Checking…';
+        statusEl.className = 'lbmgr-status';
+
+        lbmgrCheckTimer = setTimeout(async () => {
+            try {
+                // Use get-score with a dummy email — if the endpoint responds without a 404/error
+                // the game_id column exists in game_scores. We validate by checking leaderboard endpoint.
+                const r = await fetch(`${API}/game/leaderboard?content=${encodeURIComponent(id)}`);
+                if (!r.ok) throw new Error('bad response');
+                const data = await r.json();
+                // The endpoint returns an array (empty or with scores). Both mean the id is valid.
+                if (Array.isArray(data)) {
+                    statusEl.textContent = data.length ? `✓ ${data.length} score(s) found` : '✓ Valid (no scores yet)';
+                    statusEl.className = 'lbmgr-status ok';
+                } else {
+                    throw new Error('unexpected');
+                }
+            } catch(e) {
+                statusEl.textContent = '✗ Not found in DB';
+                statusEl.className = 'lbmgr-status err';
+            }
+        }, 500);
+    }
+
+    async function lbmgrAdd() {
+        const name    = document.getElementById('lbmgr-in-name').value.trim();
+        const id      = document.getElementById('lbmgr-in-id').value.trim();
+        const img     = document.getElementById('lbmgr-in-img').value.trim();
+        const icon    = document.getElementById('lbmgr-in-icon').value.trim();
+        const statusEl = document.getElementById('lbmgr-add-status');
+
+        statusEl.textContent = '';
+        statusEl.className   = 'lbmgr-status';
+
+        if (!name || !id) { statusEl.textContent = '⚠ Name and Game ID are required.'; statusEl.className = 'lbmgr-status err'; return; }
+        if (lbRegistry.find(g => g.id === id)) { statusEl.textContent = '⚠ That Game ID is already registered.'; statusEl.className = 'lbmgr-status err'; return; }
+
+        // Validate ID exists in DB
+        statusEl.textContent = 'Validating Game ID…';
+        try {
+            const r = await fetch(`${API}/game/leaderboard?content=${encodeURIComponent(id)}`);
+            if (!r.ok) throw new Error();
+            const data = await r.json();
+            if (!Array.isArray(data)) throw new Error();
+        } catch(e) {
+            statusEl.textContent = '✗ Game ID not found in database. Scores must exist or have been saved for this ID first.';
+            statusEl.className = 'lbmgr-status err';
+            return;
+        }
+
+        lbRegistry.push({ id, name, icon: icon || '🎮', image_url: img || '' });
+        await saveLbRegistry();
+        renderLbManagerList();
+        // Clear form
+        ['lbmgr-in-name','lbmgr-in-id','lbmgr-in-img','lbmgr-in-icon'].forEach(el => document.getElementById(el).value = '');
+        document.getElementById('lbmgr-id-status').textContent = '';
+        statusEl.textContent = '✓ Added successfully!';
+        statusEl.className   = 'lbmgr-status ok';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
     }
 
     load();
