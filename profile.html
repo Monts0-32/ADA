@@ -100,6 +100,20 @@
         .badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; background: #161b22; border: 1px solid var(--border); }
 
+        /* --- LEADERBOARD BADGE MODAL --- */
+        #lb-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:2000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+        #lb-modal-box { background:#161b22; border:1px solid var(--border); border-radius:12px; width:480px; max-width:95vw; max-height:80vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
+        #lb-modal-box .modal-title { font-size:15px; font-weight:bold; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
+        #lb-modal-box .modal-close { background:none; border:none; color:#8b949e; font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; }
+        #lb-modal-box .modal-close:hover { color:var(--text); background:#30363d; }
+        .lb-game-block { background:#0d1117; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:6px; }
+        .lb-game-title { font-size:12px; font-weight:700; color:#8b949e; text-transform:uppercase; letter-spacing:.05em; display:flex; align-items:center; justify-content:space-between; }
+        .lb-game-rank  { font-size:22px; font-family:monospace; color:var(--blue); }
+        .lb-game-score { font-size:11px; color:#8b949e; }
+        .lb-game-medal { font-size:18px; }
+        .badge-lb { cursor:pointer; transition:opacity .15s; }
+        .badge-lb:hover { opacity:.75; }
+
         /* --- REACTION BUTTONS --- */
         .reaction-bar { display: flex; gap: 10px; margin-top: 0; position: relative; min-height: 48px; align-items: flex-start; }
         .reaction-bar .like-placeholder { width: 72px; height: 33px; flex-shrink: 0; pointer-events: none; }
@@ -370,6 +384,19 @@
             <textarea id="bio-raw"></textarea>
 
             <button class="btn-gh btn-primary" style="margin-top:20px; padding:15px;" onclick="save()">Save Identity Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- LEADERBOARD BADGE MODAL -->
+<div id="lb-modal-overlay" style="display:none;" onclick="if(event.target===this)closeLbModal()">
+    <div id="lb-modal-box">
+        <div class="modal-title">
+            <span>🏆 Leaderboard Standings — <span id="lb-modal-name" style="color:var(--blue)"></span></span>
+            <button class="modal-close" onclick="closeLbModal()">×</button>
+        </div>
+        <div id="lb-modal-body">
+            <div style="font-size:13px;color:#8b949e;text-align:center;padding:20px 0;">Loading standings...</div>
         </div>
     </div>
 </div>
@@ -680,6 +707,8 @@
         document.getElementById('bio-display').innerHTML = u.bio_html || '<span style="color:#8b949e">Entity record is empty.</span>';
         document.getElementById('badges-view').innerHTML = d.badges.map(b => `<div class="badge" style="border-color:${b.color};color:${b.color}">${b.icon} ${escHtml(b.name)}</div>`).join('');
         if (u.is_admin) document.getElementById('badges-view').innerHTML += `<div class="badge" style="border-color:#d29922;color:#d29922">🛡️ ADMIN</div>`;
+        // Always show leaderboard badge — clickable to show standings popup
+        document.getElementById('badges-view').innerHTML += `<div class="badge badge-lb" style="border-color:#58a6ff;color:#58a6ff;" onclick="openLbModal()">🏆 Leaderboards</div>`;
 
         if (localStorage.getItem('ada_admin') === '1') {
             document.getElementById('admin-actions').style.display = 'block';
@@ -1088,6 +1117,72 @@
         };
         await postJSON(`${API}/profile/save`, payload);
         location.reload();
+    }
+
+    // ── Leaderboard Badge Modal ───────────────────────────────────────────────
+    // Maps game IDs to human-readable names. Add new games here as you build them.
+    const GAME_REGISTRY = [
+        { id: 'content1', name: 'Tetris Module',     icon: '🧩' },
+        { id: 'content7', name: 'Flappy Protocol',   icon: '🐦' },
+        { id: 'content8', name: 'Ascent Protocol',   icon: '⛏️' },
+    ];
+
+    async function openLbModal() {
+        document.getElementById('lb-modal-name').innerText = currentProfile?.display_name || target;
+        document.getElementById('lb-modal-body').innerHTML = '<div style="font-size:13px;color:#8b949e;text-align:center;padding:20px 0;">Loading standings...</div>';
+        document.getElementById('lb-modal-overlay').style.display = 'flex';
+
+        const results = await Promise.all(GAME_REGISTRY.map(async game => {
+            try {
+                // Get this game's full leaderboard to find the user's rank
+                const r = await fetch(`${API}/game/leaderboard?content=${game.id}`);
+                const top = await r.json();
+                // Find target user's rank in top-5 leaderboard
+                const idx = Array.isArray(top) ? top.findIndex(u => u.email === target) : -1;
+                const entry = idx > -1 ? top[idx] : null;
+
+                // Also fetch their personal score in case they're outside top 5
+                const sr = await fetch(`${API}/game/get-score?email=${encodeURIComponent(target)}&content=${game.id}`);
+                const sd = await sr.json();
+                const score = sd.score || 0;
+
+                return { game, rank: idx > -1 ? idx + 1 : null, score, inTop: idx > -1 };
+            } catch(e) {
+                return { game, rank: null, score: 0, inTop: false };
+            }
+        }));
+
+        const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+        const hasAny = results.some(r => r.score > 0);
+
+        if (!hasAny) {
+            document.getElementById('lb-modal-body').innerHTML = `
+                <div style="font-size:13px;color:#8b949e;text-align:center;padding:30px 0;">
+                    No leaderboard entries yet.
+                </div>`;
+            return;
+        }
+
+        document.getElementById('lb-modal-body').innerHTML = results
+            .filter(r => r.score > 0)
+            .map(r => `
+                <div class="lb-game-block">
+                    <div class="lb-game-title">
+                        <span>${r.game.icon} ${r.game.name}</span>
+                        ${r.inTop ? `<span class="lb-game-medal">${medals[r.rank - 1] || ''}</span>` : ''}
+                    </div>
+                    <div class="lb-game-rank">${r.score.toLocaleString()}<span style="font-size:13px;color:#8b949e;margin-left:4px;">${r.game.id === 'content8' ? 'm' : 'pts'}</span></div>
+                    <div class="lb-game-score">
+                        ${r.inTop
+                            ? `Ranked <strong style="color:var(--gold)">#${r.rank}</strong> on the leaderboard`
+                            : `Not currently in top 5`}
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    function closeLbModal() {
+        document.getElementById('lb-modal-overlay').style.display = 'none';
     }
 
     load();
