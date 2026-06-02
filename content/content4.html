@@ -72,8 +72,8 @@ h1{font-size:20px;font-weight:700;letter-spacing:1px;margin-bottom:4px}
 .lb-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
 
 /* ── GAME LAYOUT ── */
-.game-wrap{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start}
-@media(max-width:850px){.game-wrap{grid-template-columns:1fr}}
+.game-wrap{display:flex;justify-content:center;gap:30px;align-items:start}
+@media(max-width:850px){.game-wrap{flex-direction:column;align-items:center}}
 
 /* ── CHESS BOARD ── */
 .board-section{display:flex;flex-direction:column;gap:10px;align-items:center}
@@ -257,13 +257,6 @@ h1{font-size:20px;font-weight:700;letter-spacing:1px;margin-bottom:4px}
         <div class="rooms-list" id="roomsList"><div class="rooms-empty">Loading rooms…</div></div>
       </div>
     </div>
-    <div class="card" style="margin-top:20px;max-width:500px;margin-left:auto;margin-right:auto">
-      <h3>Spectate Game</h3>
-      <div style="display:flex;gap:8px">
-        <input class="input" id="spectateCode" placeholder="Enter Room ID…" style="margin-bottom:0">
-        <button class="btn btn-b" onclick="joinAsSpectator()">Join as Spectator</button>
-      </div>
-    </div>
   </div>
   </div>
 
@@ -411,18 +404,18 @@ let isAiMode    = false;
 // Piece encoding: 'wP','wN','wB','wR','wQ','wK','bP','bN','bB','bR','bQ','bK', null=empty
 
 const PIECES = {
-  wK:'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_K.svg',
-  wQ:'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_Q.svg',
-  wR:'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_R.svg',
-  wB:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_B.svg',
-  wN:'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_N.svg',
-  wP:'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_P.svg',
-  bK:'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_K_black.svg',
-  bQ:'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_Q_black.svg',
-  bR:'https://upload.wikimedia.org/wikipedia/commons/b/b6/Chess_R_black.svg',
-  bB:'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_B_black.svg',
-  bN:'https://upload.wikimedia.org/wikipedia/commons/b/b2/Chess_N_black.svg',
-  bP:'https://upload.wikimedia.org/wikipedia/commons/c/c2/Chess_P_black.svg'
+  wK:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wK.svg',
+  wQ:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wQ.svg',
+  wR:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wR.svg',
+  wB:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wB.svg',
+  wN:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wN.svg',
+  wP:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/wP.svg',
+  bK:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bK.svg',
+  bQ:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bQ.svg',
+  bR:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bR.svg',
+  bB:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bB.svg',
+  bN:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bN.svg',
+  bP:'https://raw.githubusercontent.com/lichess-org/lila/master/public/assets/piece/wikipedia/bP.svg'
 };
 
 function initBoard() {
