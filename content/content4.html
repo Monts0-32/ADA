@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ADA | Chess (Fixed)</title>
+<title>ADA | Chess</title>
 <script src="/uplink.js"></script>
 <script src="/escape-key.js"></script>
 <script src="/header-engine.js"></script>
@@ -884,20 +884,26 @@ async function startAiGame() {
     makeAiMove();
   }
 }
+
+async function loadRooms() {
   const list = document.getElementById('roomsList');
   list.innerHTML = '<div class="rooms-empty">Loading…</div>';
-  const data = await api('/chess/rooms');
-  if (!data.rooms||!data.rooms.length) {
-    list.innerHTML='<div class="rooms-empty">No open rooms — create one!</div>'; return;
+  try {
+    const data = await api('/chess/rooms');
+    if (!data.rooms||!data.rooms.length) {
+      list.innerHTML='<div class="rooms-empty">No open rooms — create one!</div>'; return;
+    }
+    list.innerHTML = data.rooms.map(r=>`
+      <div class="room-row">
+        <div class="room-row-info">
+          <div class="room-name">${esc(r.name)}</div>
+          <div class="room-host">Host: ${esc(r.host_email)}</div>
+        </div>
+        <button class="btn btn-b" onclick="joinRoom('${r.id}')">Join →</button>
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML='<div class="rooms-empty">Error loading rooms.</div>';
   }
-  list.innerHTML = data.rooms.map(r=>`
-    <div class="room-row">
-      <div class="room-row-info">
-        <div class="room-name">${esc(r.name)}</div>
-        <div class="room-host">Host: ${esc(r.host_email)}</div>
-      </div>
-      <button class="btn btn-b" onclick="joinRoom('${r.id}')">Join →</button>
-    </div>`).join('');
 }
 
 async function createRoom() {
