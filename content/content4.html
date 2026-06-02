@@ -886,16 +886,22 @@ async function loadRooms() {
     if (!data.rooms||!data.rooms.length) {
       list.innerHTML='<div class="rooms-empty">No open rooms — create one!</div>'; return;
     }
-    list.innerHTML = data.rooms.map(r=>`
+    list.innerHTML = data.rooms.map(r=> {
+      const players = r.player_count;
+      const specs = r.spectator_count || 0;
+      const btnText = players === 2 ? 'Spectate →' : 'Join →';
+      const btnFunc = players === 2 ? `spectateRoom('${r.id}')` : `joinRoom('${r.id}')`;
+      return `
       <div class="room-row">
         <div class="room-row-info">
           <div class="room-name">${esc(r.name)}</div>
-          <div class="room-host">Host: ${esc(r.host_email)}</div>
+          <div class="room-host">Host: ${esc(r.host_email)} | ${players}/2 players | ${specs} viewers</div>
         </div>
-        <button class="btn btn-b" onclick="joinRoom('${r.id}')">Join →</button>
-      </div>`).join('');
+        <button class="btn btn-b" onclick="${btnFunc}">${btnText}</button>
+      </div>`;
+    }).join('');
   } catch(e) {
-    list.innerHTML='<div class="rooms-empty">Error loading rooms.</div>';
+    list.innerHTML='<div class="rooms-empty">Error loading laoding rooms.</div>';
   }
 }
 
@@ -930,9 +936,9 @@ async function joinRoom(id) {
   initDragListeners();
 }
 
-async function joinAsSpectator() {
-  const id = document.getElementById('spectateCode').value.trim();
-  if (!id) { toast('Please enter a room ID','e'); return; }
+async function spectateRoom(id) {
+  const data = await api('/chess/spectate','POST',{room_id:id,email:EMAIL});
+  if (!data.success) { toast(data.error||'Could not spectate','e'); return; }
   roomId = id;
   isSpectator = true;
   board = initBoard();
