@@ -1375,8 +1375,33 @@ window.addEventListener('beforeunload', e => {
   e.preventDefault(); e.returnValue='';
 });
 
+// ── UTILS ──
+function show(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(viewId);
+  if (el) el.classList.add('active');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[m]));
+}
+
+function toast(msg, type='i') {
+  const container = document.getElementById('toasts');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
 // ── BOOT ──
 async function start() {
+
   if (typeof runNeuralGuard !== 'function') { setTimeout(start,100); return; }
   const data = await runNeuralGuard();
   if (!data) return;
