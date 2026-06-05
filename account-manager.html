@@ -6,7 +6,6 @@
     
     <!-- MASTER BOOTSTRAP -->
     <script src="/uplink.js"></script>
-    <script src="/announcement-engine.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/escape-key.js"></script>
 
@@ -244,7 +243,7 @@
                 const pollData = a.pollData || {};
                 const totalVotes = Object.values(pollData).reduce((a, b) => a + b, 0);
                 detail = `<div style="font-size:11px; color:#8b949e; margin-top:5px;">
-                    <strong>Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
+                    <strong style="color:var(--gold)">Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
                     (Total: ${totalVotes})
                 </div>`;
             } else if (a.type === 'media') {
@@ -253,11 +252,17 @@
                 detail = `<div style="font-size:11px; color:#8b949e;">Text broadcast</div>`;
             }
 
+            const isInfinite = !a.settings.broadcast_until;
+            const endBtn = isInfinite ? `<button class="btn" style="background:var(--btn-red); border:none; font-size:9px; padding:2px 5px; color:white;" onclick="window.endAnnouncement('${a.id}')">End Broadcast</button>` : '';
+
             return `
-                <div style="background:#21262d; padding:10px; border-radius:6px; border:1px solid var(--border);">
+                <div style="background:#21262d; padding:10px; border-radius:6px; border:1px solid var(--border); display:flex; flex-direction:column; gap:5px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:12px; font-weight:bold;">${a.type.toUpperCase()}</span>
-                        <span style="font-size:10px; color:#8b949e;">${new Date(a.created_at * 1000).toLocaleString()}</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:10px; color:#8b949e;">${new Date(a.created_at * 1000).toLocaleString()}</span>
+                            ${endBtn}
+                        </div>
                     </div>
                     <div style="font-size:13px; margin:5px 0;">${a.type === 'poll' ? content.question : (content.text || content.caption || 'No content')}</div>
                     ${detail}
@@ -265,6 +270,13 @@
             `;
         }).join('') || '<p style="opacity:0.4; font-size:12px;">No announcements archived.</p>';
     };
+
+    window.endAnnouncement = (id) => {
+        if (confirm("End this broadcast immediately?")) {
+            window.postAction('/admin/announcement/end', { id, adminEmail: myEmail });
+        }
+    };
+
 
     // --- REFRESH ENGINE ---
     window.refreshAll = async function() {
