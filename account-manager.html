@@ -57,6 +57,20 @@
         .btn-add { background: transparent; color: #58a6ff; border: none; padding: 0; margin-top: 5px; text-decoration: underline; display: block; cursor: pointer; font-size: 10px; }
         .refresh-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; transition: transform 0.3s; }
         .refresh-btn:active { transform: rotate(180deg); }
+
+        /* Announcement Styles */
+        .ann-card { background:#21262d; padding:12px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:8px; transition: 0.2s; }
+        .ann-card:hover { border-color: #58a6ff; }
+        .ann-header { display:flex; justify-content:space-between; align-items:center; }
+        .ann-type { font-size:11px; font-weight:bold; color: #8b949e; text-transform: uppercase; }
+        .ann-date { font-size:10px; color:#58a6ff; }
+        .ann-main { font-size:13px; color: #f0f6fc; }
+        .ann-detail { font-size:11px; color:#8b949e; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
+        .ann-footer { display:flex; justify-content:space-between; align-items:center; margin-top:5px; }
+        .poll-results-box { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; display:none; }
+        .poll-respondent { display:flex; align-items:center; gap:8px; font-size:11px; padding:4px; border-bottom:1px solid #30363d; }
+        .resp-pic { width:18px; height:18px; border-radius:50%; object-fit:cover; }
+        .expanded { display:block !important; }
     </style>
 </head>
 <body>
@@ -168,7 +182,12 @@
                     <option value="image">Image</option>
                     <option value="video">Video</option>
                 </select>
-                <input type="text" id="ann-url" class="inp" placeholder="Media URL">
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <label style="font-size:10px; color:#8b949e;">Upload File (Recommended):</label>
+                    <input type="file" id="ann-file" class="inp" accept="image/*,video/*">
+                    <div style="text-align:center; font-size:10px; color:#484f58;">OR</div>
+                    <input type="text" id="ann-url" class="inp" placeholder="External Media URL">
+                </div>
                 <input type="text" id="ann-caption" class="inp" placeholder="Caption">
             `;
         } else if (type === 'poll') {
@@ -203,11 +222,30 @@
         if (type === 'text') {
             content = { text: document.getElementById('ann-text').value };
         } else if (type === 'media') {
-            content = {
-                type: document.getElementById('ann-media-type').value,
-                url: document.getElementById('ann-url').value,
-                caption: document.getElementById('ann-caption').value
-            };
+            const fileInput = document.getElementById('ann-file');
+            const urlInput = document.getElementById('ann-url').value;
+            const caption = document.getElementById('ann-caption').value;
+            const mediaType = document.getElementById('ann-media-type').value;
+            let finalUrl = urlInput;
+
+            if (fileInput && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(file);
+                });
+                const data = base64.split(',')[1];
+                const uploadRes = await fetch(`${API}/admin/announcement/upload`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ adminEmail: myEmail, data, mime_type: file.type })
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData.success) finalUrl = uploadData.url;
+            }
+
+            content = { type: mediaType, url: finalUrl, caption };
         } else if (type === 'poll') {
             const options = Array.from(document.querySelectorAll('.poll-opt')).map(i => i.value).filter(v => v);
             if (options.length < 2) return alert("Polls require at least 2 options!");
@@ -242,10 +280,24 @@
             if (a.type === 'poll') {
                 const pollData = a.pollData || {};
                 const totalVotes = Object.values(pollData).reduce((a, b) => a + b, 0);
-                detail = `<div style="font-size:11px; color:#8b949e; margin-top:5px;">
-                    <strong style="color:var(--gold)">Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
-                    (Total: ${totalVotes})
-                </div>`;
+
+                const respondentsHtml = (a.detailedVotes || []).map(v => `
+                    <div class="poll-respondent">
+                        <img src="${v.profile_picture || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=')" class="resp-pic">
+                        <span><strong>${v.display_name || v.user_email}</strong>: ${JSON.parse(v.votes).join(', ')}</span>
+                    </div>
+                `).join('');
+
+                detail = `
+                    <div style="font-size:11px; color:#8b949e; margin-top:5px;">
+                        <strong style="color:var(--gold)">Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
+                        (Total: ${totalVotes})
+                    </div>
+                    <div class="poll-results-box" id="results-${a.id}">
+                        <div style="font-size:10px; font-weight:bold; margin-bottom:5px; color:#f0f6fc;">Respondents:</div>
+                        ${respondentsHtml || '<div style="font-size:10px; opacity:0.5;">No votes yet.</div>'}
+                    </div>
+                `;
             } else if (a.type === 'media') {
                 detail = `<div style="font-size:11px; color:#8b949e;">Media: ${content.url.slice(0, 50)}...</div>`;
             } else {
@@ -256,19 +308,27 @@
             const endBtn = isInfinite ? `<button class="btn" style="background:var(--btn-red); border:none; font-size:9px; padding:2px 5px; color:white;" onclick="window.endAnnouncement('${a.id}')">End Broadcast</button>` : '';
 
             return `
-                <div style="background:#21262d; padding:10px; border-radius:6px; border:1px solid var(--border); display:flex; flex-direction:column; gap:5px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:12px; font-weight:bold;">${a.type.toUpperCase()}</span>
+                <div class="ann-card">
+                    <div class="ann-header">
+                        <span class="ann-type">${a.type}</span>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:10px; color:#8b949e;">${new Date(a.created_at * 1000).toLocaleString()}</span>
+                            <span class="ann-date">${new Date(a.created_at * 1000).toLocaleString()}</span>
                             ${endBtn}
+                            <span style="cursor:pointer; color:var(--btn-red); font-weight:bold;" onclick="window.deleteAnnouncement('${a.id}')">✕</span>
                         </div>
                     </div>
-                    <div style="font-size:13px; margin:5px 0;">${a.type === 'poll' ? content.question : (content.text || content.caption || 'No content')}</div>
+                    <div class="ann-main">${a.type === 'poll' ? content.question : (content.text || content.caption || 'No content')}</div>
                     ${detail}
+                    ${a.type === 'poll' ? `<button class="btn" style="background:transparent; border:1px solid #30363d; font-size:10px; margin-top:5px;" onclick="document.getElementById('results-${a.id}').classList.toggle('expanded')">Toggle Detailed Results</button>` : ''}
                 </div>
             `;
         }).join('') || '<p style="opacity:0.4; font-size:12px;">No announcements archived.</p>';
+    };
+
+    window.deleteAnnouncement = (id) => {
+        if (confirm("Permanently delete this announcement and all its votes?")) {
+            window.postAction('/admin/announcement/delete', { id, adminEmail: myEmail });
+        }
     };
 
     window.endAnnouncement = (id) => {
