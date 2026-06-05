@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>ADA | System Management</title>
-    
+
     <!-- MASTER BOOTSTRAP -->
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/escape-key.js"></script>
 
     <style>
-        :root { 
-            --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; 
-            --btn-red: #da3633; --btn-blue: #1f6feb; --btn-green: #238636; --gold: #d29922; 
+        :root {
+            --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9;
+            --btn-red: #da3633; --btn-blue: #1f6feb; --btn-green: #238636; --gold: #d29922;
         }
 
         /* THEMED SCROLLBAR */
@@ -22,7 +22,7 @@
 
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 40px; }
         .container { max-width: 1600px; margin: 0 auto; }
-        
+
         header { margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-link { color: #58a6ff; text-decoration: none; font-size: 14px; }
 
@@ -36,7 +36,7 @@
         /* Identity */
         .user-cell { display: flex; align-items: center; gap: 10px; }
         .user-cell img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #0d1117; border: 1px solid var(--border); }
-        
+
         /* Online Status */
         .status-wrapper { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: bold; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -84,7 +84,7 @@
             <div style="display:flex; align-items:center; gap:15px; margin-top:10px;">
                 <h1 style="margin:0; font-size: 24px;">Archive Identity Manager</h1>
                 <button class="refresh-btn" onclick="window.refreshAll()">↻</button>
-                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="createAccount()">Add Account</button>
+                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="window.createAccount()">Add Account</button>
             </div>
         </div>
         <div id="stats" style="font-size: 12px; color: #8b949e;">Connecting to D1 Relay...</div>
@@ -175,7 +175,7 @@
         let html = '';
 
         if (type === 'text') {
-            html = `<textarea id="ann-text" class="inp" style="height:100px;" placeholder="Announcement text..."></textarea>`;
+            html = '<textarea id="ann-text" class="inp" style="height:100px;" placeholder="Announcement text..."></textarea>';
         } else if (type === 'media') {
             html = `
                 <select id="ann-media-type" class="inp" onchange="window.toggleMediaInputs()">
@@ -210,7 +210,7 @@
         const opt = document.createElement('input');
         opt.type = 'text';
         opt.className = 'inp poll-opt';
-        opt.placeholder = `Option ${document.querySelectorAll('.poll-opt').length + 1}`;
+        opt.placeholder = "Option " + (document.querySelectorAll('.poll-opt').length + 1);
         document.getElementById('poll-options-list').appendChild(opt);
     };
 
@@ -236,7 +236,7 @@
                     reader.readAsDataURL(file);
                 });
                 const data = base64.split(',')[1];
-                const uploadRes = await fetch(`${API}/admin/announcement/upload`, {
+                const uploadRes = await fetch(API + "/admin/announcement/upload", {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({ adminEmail: myEmail, data, mime_type: file.type })
@@ -244,7 +244,6 @@
                 const uploadData = await uploadRes.json();
                 if (uploadData.success) finalUrl = uploadData.url;
             }
-
             content = { type: mediaType, url: finalUrl, caption };
         } else if (type === 'poll') {
             const options = Array.from(document.querySelectorAll('.poll-opt')).map(i => i.value).filter(v => v);
@@ -266,11 +265,11 @@
             content,
             settings
         });
-        window.toggleAnnInputs(); // Reset
+        window.toggleAnnInputs();
     };
 
     window.renderAnnouncements = async function() {
-        const res = await fetch(`${API}/admin/announcements/list`);
+        const res = await fetch(API + "/admin/announcements/list");
         const data = await res.json();
         const container = document.getElementById('ann-archive');
 
@@ -290,7 +289,7 @@
 
                 detail = `
                     <div style="font-size:11px; color:#8b949e; margin-top:5px;">
-                        <strong style="color:var(--gold)">Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
+                        <strong style="color:var(--gold)">Results:</strong> ${Object.entries(pollData).map(([opt, count]) => opt + ': ' + count).join(', ') || 'No votes'}
                         (Total: ${totalVotes})
                     </div>
                     <div class="poll-results-box" id="results-${a.id}">
@@ -299,13 +298,13 @@
                     </div>
                 `;
             } else if (a.type === 'media') {
-                detail = `<div style="font-size:11px; color:#8b949e;">Media: ${content.url.slice(0, 50)}...</div>`;
+                detail = '<div style="font-size:11px; color:#8b949e;">Media: ' + content.url.slice(0, 50) + '...</div>';
             } else {
-                detail = `<div style="font-size:11px; color:#8b949e;">Text broadcast</div>`;
+                detail = '<div style="font-size:11px; color:#8b949e;">Text broadcast</div>';
             }
 
             const isInfinite = !a.settings.broadcast_until;
-            const endBtn = isInfinite ? `<button class="btn" style="background:var(--btn-red); border:none; font-size:9px; padding:2px 5px; color:white;" onclick="window.endAnnouncement('${a.id}')">End Broadcast</button>` : '';
+            const endBtn = isInfinite ? '<button class="btn" style="background:var(--btn-red); border:none; font-size:9px; padding:2px 5px; color:white;" onclick="window.endAnnouncement(\'' + a.id + '\')">End Broadcast</button>' : '';
 
             return `
                 <div class="ann-card">
@@ -319,7 +318,7 @@
                     </div>
                     <div class="ann-main">${a.type === 'poll' ? content.question : (content.text || content.caption || 'No content')}</div>
                     ${detail}
-                    ${a.type === 'poll' ? `<button class="btn" style="background:transparent; border:1px solid #30363d; font-size:10px; margin-top:5px;" onclick="document.getElementById('results-${a.id}').classList.toggle('expanded')">Toggle Detailed Results</button>` : ''}
+                    ${a.type === 'poll' ? '<button class="btn" style="background:transparent; border:1px solid #30363d; font-size:10px; margin-top:5px;" onclick="document.getElementById(\'results-' + a.id + '\').classList.toggle(\'expanded\')">Toggle Detailed Results</button>' : ''}
                 </div>
             `;
         }).join('') || '<p style="opacity:0.4; font-size:12px;">No announcements archived.</p>';
@@ -337,25 +336,26 @@
         }
     };
 
-
-    // --- REFRESH ENGINE ---
     window.refreshAll = async function() {
         document.getElementById('stats').innerText = "Synchronizing...";
-        const [uRes, bRes] = await Promise.all([
-            fetch(`${API}/admin/list-users`),
-            fetch(`${API}/admin/badges/list`)
-        ]);
-        const users = await uRes.json();
-        const bData = await bRes.json();
+        try {
+            const [uRes, bRes] = await Promise.all([
+                fetch(API + "/admin/list-users"),
+                fetch(API + "/admin/badges/list")
+            ]);
+            const users = await uRes.json();
+            const bData = await bRes.json();
 
-        window.renderUsers(users);
-        window.renderBadgeLab(bData.master);
-        window.renderAnnouncements();
-        document.getElementById('stats').innerText = `${users.length} Active Neural Links Registered`;
+            window.renderUsers(users);
+            window.renderBadgeLab(bData.master);
+            window.renderAnnouncements();
+            document.getElementById('stats').innerText = users.length + " Active Neural Links Registered";
+        } catch (e) {
+            console.error(e);
+            document.getElementById('stats').innerText = "Sync Error";
+        }
     };
 
-
-    // --- UI RENDERING ---
     window.renderUsers = function(users) {
         const list = document.getElementById('user-list');
         list.innerHTML = users.map(u => {
@@ -425,19 +425,22 @@
         `).join('') || '<p style="opacity:0.4; font-size:12px;">No badge templates registered.</p>';
     };
 
-    // --- ACTION LOGIC ---
     window.postAction = async function(route, body) {
-        await fetch(`${API}${route}`, { 
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(body) 
-        });
+        try {
+            await fetch(API + route, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+        } catch (e) {
+            console.error("Action failed:", e);
+        }
         window.refreshAll();
     };
 
     window.addPerm = (e) => { const t = prompt("Tag Name:"); if(t) window.postAction('/admin/add-perm', {email:e, tag:t}); };
     window.addBlock = (e) => { const p = prompt("Path to block (e.g. visuals.html) or ALL:"); if(p) window.postAction('/admin/block-user', {email:e, path:p}); };
-    
+
     window.createBadgeTemplate = () => {
         const name = document.getElementById('b-name').value;
         const icon = document.getElementById('b-icon').value;
@@ -456,28 +459,33 @@
 
     window.deleteUser = (id, email) => {
         if (email === myEmail) return alert("Self-wipe restricted.");
-        if (confirm(`CRITICAL: Permanently wipe account ${email}?`)) {
+        if (confirm("CRITICAL: Permanently wipe account " + email + "?")) {
             window.postAction('/admin/delete-user', {id});
         }
     };
 
-    // --- BOOTSTRAP ---
     async function start() {
-        if (typeof runNeuralGuard !== 'function') { setTimeout(start, 100); return; }
-        const d = await runNeuralGuard();
-        if (d && d.user.is_admin === 1) {
-            window.refreshAll();
-            window.toggleAnnInputs();
+        if (typeof runNeuralGuard !== 'function') {
+            setTimeout(start, 100);
+            return;
+        }
+        try {
+            const d = await runNeuralGuard();
+            if (d && d.user.is_admin === 1) {
+                window.refreshAll();
+                window.toggleAnnInputs();
 
-            // ✅ Heartbeat — keeps your session alive while on this page
-            setInterval(() => {
-                fetch(`${API}/sync?email=${encodeURIComponent(myEmail)}`).catch(() => {});
-            }, 20000);
-    
-        } else {
-            window.location.href = '/blocked.html';
+                setInterval(() => {
+                    fetch(API + "/sync?email=" + encodeURIComponent(myEmail)).catch(() => {});
+                }, 20000);
+            } else {
+                window.location.href = '/blocked.html';
+            }
+        } catch (e) {
+            console.error("Startup failed:", e);
         }
     }
+
     window.createAccount = function() {
         window.location.href = "account-creator.html";
     };
