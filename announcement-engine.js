@@ -1,10 +1,11 @@
 (function() {
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCO NDRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
     const style = document.createElement('style');
     style.innerHTML = `
         #ada-announcement-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000000; display:flex; align-items:center; justify-content:center; font-family:-apple-system,sans-serif; }
-        .ada-announcement-card { background:#161b22; border:1px solid #30363d; padding:30px; border-radius:12px; max-width:500px; width:90%; color:#c9d1d9; box-shadow:0 10px 30px rgba(0,0,0,0.5); position:relative; }
+        .ada-announcement-card { background:#161b22; border:1px solid #30363d; padding:30px; border-radius:12px; max-width:500px; width:90%; color:#c9d1d9; box-shadow:0 10px 30px rgba(0,0,0,0.5); position:relative; display:flex; flex-direction:column; }
         .ada-announcement-content { margin-bottom:20px; }
         .ada-announcement-media { width:100%; border-radius:8px; margin-bottom:10px; max-height:300px; object-fit:contain; }
         .ada-announcement-caption { font-size:13px; color:#8b949e; text-align:center; margin-bottom:15px; }
@@ -12,6 +13,9 @@
         .ada-poll-option:hover { border-color:#58a6ff; background:#1c2128; }
         .ada-poll-option.selected { border-color:#58a6ff; background:rgba(88,166,255,0.1); }
         .ada-announcement-btn { background:#58a6ff; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; width:100%; }
+        .ada-announcement-footer { display:flex; align-items:center; justify-content:space-between; margin-top:20px; padding-top:15px; border-top:1px solid #30363d; font-size:11px; color:#8b949e; }
+        .ada-admin-info { display:flex; align-items:center; gap:8px; }
+        .ada-admin-pic { width:24px; height:24px; border-radius:50%; object-fit:cover; background:#0d1117; border:1px solid #30363d; }
     `;
     document.head.appendChild(style);
 
@@ -41,10 +45,30 @@
             contentHtml = `<div class="ada-announcement-content" style="text-align:center; font-size:15px;">${ann.content.text || ''}</div>`;
         }
 
+        const broadcastUntil = ann.settings.broadcast_until;
+        let timeText = "Infinite Broadcast";
+        if (broadcastUntil) {
+            const diff = broadcastUntil - Math.floor(Date.now()/1000);
+            if (diff <= 0) timeText = "Ending soon...";
+            else {
+                const hours = Math.floor(diff / 3600);
+                const mins = Math.floor((diff % 3600) / 60);
+                const secs = diff % 60;
+                timeText = `Expires in: ${hours}h ${mins}m ${secs}s`;
+            }
+        }
+
         overlay.innerHTML = `
             <div class="ada-announcement-card">
                 ${contentHtml}
                 <button id="ann-submit" class="ada-announcement-btn">Dismiss</button>
+                <div class="ada-announcement-footer">
+                    <div class="ada-admin-info">
+                        <img src="${ann.profile_picture || DEFAULT_ICON}" class="ada-admin-pic">
+                        <span>Issued by ${ann.display_name || 'Administrator'}</span>
+                    </div>
+                    <div class="ada-time-left">${timeText}</div>
+                </div>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -99,10 +123,8 @@
         } catch (e) {}
     }
 
-    // Poll every 1 second as requested
     setInterval(checkAnnouncements, 1000);
 
-    // Immediate check on load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', checkAnnouncements);
     } else {
