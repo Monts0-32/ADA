@@ -65,7 +65,7 @@
                 <div class="ada-announcement-footer">
                     <div class="ada-admin-info">
                         <img src="${ann.profile_picture || DEFAULT_ICON}" class="ada-admin-pic">
-                        <span>Issued by ${ann.display_name || 'Administrator'}</span>
+                        <span>Issued by ${ann.display_name || 'Administrator'} on ${new Date(ann.created_at * 1000).toLocaleString()}</span>
                     </div>
                     <div class="ada-time-left">${timeText}</div>
                 </div>
