@@ -41,6 +41,7 @@
         .status-wrapper { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: bold; }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; }
         .online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .idle { background: #d29922; box-shadow: 0 0 8px #d29922; }
         .offline { background: #8b949e; }
 
         /* Pills */
@@ -94,7 +95,39 @@
         </table>
     </section>
 
-    <!-- SECTION 2: BADGE LAB -->
+    <!-- SECTION 2: ANNOUNCEMENT CONSOLE -->
+    <section>
+        <h2>Announcement Console</h2>
+        <div style="display: grid; grid-template-columns: 400px 1fr; gap: 30px;">
+            <div style="background:#0d1117; padding:20px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:12px;">
+                <h3 style="margin-top:0">Broadcast New Message</h3>
+
+                <label style="font-size:11px; color:#8b949e;">Announcement Type</label>
+                <select id="ann-type" class="inp" onchange="window.toggleAnnInputs()">
+                    <option value="text">Text Only</option>
+                    <option value="media">Media (Image/Video)</option>
+                    <option value="poll">User Poll</option>
+                </select>
+
+                <div id="ann-inputs-container" style="display:flex; flex-direction:column; gap:12px;">
+                    <!-- Dynamic Inputs -->
+                </div>
+
+                <div style="margin-top:10px;">
+                    <label style="font-size:11px; color:#8b949e;">Broadcast Duration (Seconds, 0 = Infinite)</label>
+                    <input type="number" id="ann-duration" class="inp" value="0">
+                </div>
+
+                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="window.createAnnouncement()">Broadcast Now</button>
+            </div>
+            <div style="overflow-y:auto; max-height:600px;">
+                <h3 style="margin-top:0">Broadcast Archive & Results</h3>
+                <div id="ann-archive" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: BADGE LAB -->
     <section>
         <h2>Badge Lab</h2>
         <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
@@ -121,6 +154,117 @@
     const API = "https://ada-relay.andrewdinglearchive.workers.dev";
     const myEmail = localStorage.getItem('ada_user_email');
 
+    // --- ANNOUNCEMENT LOGIC ---
+    window.toggleAnnInputs = function() {
+        const type = document.getElementById('ann-type').value;
+        const container = document.getElementById('ann-inputs-container');
+        let html = '';
+
+        if (type === 'text') {
+            html = `<textarea id="ann-text" class="inp" style="height:100px;" placeholder="Announcement text..."></textarea>`;
+        } else if (type === 'media') {
+            html = `
+                <select id="ann-media-type" class="inp" onchange="window.toggleMediaInputs()">
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                </select>
+                <input type="text" id="ann-url" class="inp" placeholder="Media URL">
+                <input type="text" id="ann-caption" class="inp" placeholder="Caption">
+            `;
+        } else if (type === 'poll') {
+            html = `
+                <input type="text" id="poll-question" class="inp" placeholder="Poll Question">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="poll-multi"> <span style="font-size:12px;">Allow Multivote</span>
+                </div>
+                <div id="poll-options-list" style="display:flex; flex-direction:column; gap:5px;">
+                    <input type="text" class="inp poll-opt" placeholder="Option 1">
+                    <input type="text" class="inp poll-opt" placeholder="Option 2">
+                </div>
+                <button class="btn-add" onclick="window.addPollOption()">+ Add Option</button>
+            `;
+        }
+        container.innerHTML = html;
+    };
+
+    window.addPollOption = () => {
+        const opt = document.createElement('input');
+        opt.type = 'text';
+        opt.className = 'inp poll-opt';
+        opt.placeholder = `Option ${document.querySelectorAll('.poll-opt').length + 1}`;
+        document.getElementById('poll-options-list').appendChild(opt);
+    };
+
+    window.createAnnouncement = async function() {
+        const type = document.getElementById('ann-type').value;
+        const duration = parseInt(document.getElementById('ann-duration').value) || 0;
+        let content = {};
+
+        if (type === 'text') {
+            content = { text: document.getElementById('ann-text').value };
+        } else if (type === 'media') {
+            content = {
+                type: document.getElementById('ann-media-type').value,
+                url: document.getElementById('ann-url').value,
+                caption: document.getElementById('ann-caption').value
+            };
+        } else if (type === 'poll') {
+            const options = Array.from(document.querySelectorAll('.poll-opt')).map(i => i.value).filter(v => v);
+            if (options.length < 2) return alert("Polls require at least 2 options!");
+            content = {
+                question: document.getElementById('poll-question').value,
+                options: options
+            };
+        }
+
+        const settings = {
+            is_multivote: type === 'poll' ? document.getElementById('poll-multi').checked : false,
+            broadcast_until: duration > 0 ? Math.floor(Date.now()/1000) + duration : null
+        };
+
+        await window.postAction('/admin/announcement/create', {
+            adminEmail: myEmail,
+            type,
+            content,
+            settings
+        });
+        window.toggleAnnInputs(); // Reset
+    };
+
+    window.renderAnnouncements = async function() {
+        const res = await fetch(`${API}/admin/announcements/list`);
+        const data = await res.json();
+        const container = document.getElementById('ann-archive');
+
+        container.innerHTML = data.map(a => {
+            const content = a.content;
+            let detail = '';
+            if (a.type === 'poll') {
+                const pollData = a.pollData || {};
+                const totalVotes = Object.values(pollData).reduce((a, b) => a + b, 0);
+                detail = `<div style="font-size:11px; color:#8b949e; margin-top:5px;">
+                    <strong>Results:</strong> ${Object.entries(pollData).map(([opt, count]) => `${opt}: ${count}`).join(', ') || 'No votes'}
+                    (Total: ${totalVotes})
+                </div>`;
+            } else if (a.type === 'media') {
+                detail = `<div style="font-size:11px; color:#8b949e;">Media: ${content.url.slice(0, 50)}...</div>`;
+            } else {
+                detail = `<div style="font-size:11px; color:#8b949e;">Text broadcast</div>`;
+            }
+
+            return `
+                <div style="background:#21262d; padding:10px; border-radius:6px; border:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:12px; font-weight:bold;">${a.type.toUpperCase()}</span>
+                        <span style="font-size:10px; color:#8b949e;">${new Date(a.created_at * 1000).toLocaleString()}</span>
+                    </div>
+                    <div style="font-size:13px; margin:5px 0;">${a.type === 'poll' ? content.question : (content.text || content.caption || 'No content')}</div>
+                    ${detail}
+                </div>
+            `;
+        }).join('') || '<p style="opacity:0.4; font-size:12px;">No announcements archived.</p>';
+    };
+
     // --- REFRESH ENGINE ---
     window.refreshAll = async function() {
         document.getElementById('stats').innerText = "Synchronizing...";
@@ -130,16 +274,24 @@
         ]);
         const users = await uRes.json();
         const bData = await bRes.json();
-        
+
         window.renderUsers(users);
         window.renderBadgeLab(bData.master);
+        window.renderAnnouncements();
         document.getElementById('stats').innerText = `${users.length} Active Neural Links Registered`;
     };
+
 
     // --- UI RENDERING ---
     window.renderUsers = function(users) {
         const list = document.getElementById('user-list');
         list.innerHTML = users.map(u => {
+            let statusClass = 'offline';
+            let statusText = 'OFFLINE';
+            if (u.is_online) {
+                statusClass = u.is_idle ? 'idle' : 'online';
+                statusText = u.is_idle ? 'IDLE' : 'ONLINE';
+            }
             return `
                 <tr>
                     <td>
@@ -153,14 +305,14 @@
                     </td>
                     <td>
                         <div class="status-wrapper">
-                            <div class="status-dot ${u.is_online ? 'online' : 'offline'}"></div>
-                            <span>${u.is_online ? 'ONLINE' : 'OFFLINE'}</span>
+                            <div class="status-dot ${statusClass}"></div>
+                            <span>${statusText}</span>
                         </div>
                     </td>
                     <td>
                         <span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}; color:${u.is_admin ? 'var(--gold)' : 'inherit'}">
                             ${u.is_admin ? 'ADMIN' : 'USER'}
-                        </span>
+                        </span
                     </td>
                     <td>
                         ${(u.perm_tags || []).map(t => `<div class="pill pill-perm">${t} <span class="remove-x" onclick="window.postAction('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></div>`).join('')}
@@ -242,7 +394,8 @@
         const d = await runNeuralGuard();
         if (d && d.user.is_admin === 1) {
             window.refreshAll();
-    
+            window.toggleAnnInputs();
+
             // ✅ Heartbeat — keeps your session alive while on this page
             const myEmail = localStorage.getItem('ada_user_email');
             setInterval(() => {
