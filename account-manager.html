@@ -386,7 +386,7 @@
                         <span class="pill" style="border-color:${u.is_admin ? 'var(--gold)' : '#30363d'}; color:${u.is_admin ? 'var(--gold)' : 'inherit'}">
                             ${u.is_admin ? 'ADMIN' : 'USER'}
                         </span>
-                    </td>>
+                    </td>
                     <td>
                         ${(u.perm_tags || []).map(t => `<div class="pill pill-perm">${t} <span class="remove-x" onclick="window.postAction('/admin/remove-perm', {email:'${u.email}', tag:'${t}'})">×</span></div>`).join('')}
                         <button class="btn-add" onclick="window.addPerm('${u.email}')">+ Add Tag</button>
