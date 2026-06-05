@@ -470,7 +470,6 @@
             window.toggleAnnInputs();
 
             // ✅ Heartbeat — keeps your session alive while on this page
-            const myEmail = localStorage.getItem('ada_user_email');
             setInterval(() => {
                 fetch(`${API}/sync?email=${encodeURIComponent(myEmail)}`).catch(() => {});
             }, 20000);
@@ -479,9 +478,9 @@
             window.location.href = '/blocked.html';
         }
     }
-    function createAccount() {
-        window.location.href = "account-creator.html"
-    }
+    window.createAccount = function() {
+        window.location.href = "account-creator.html";
+    };
 
     start();
 </script>
