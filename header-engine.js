@@ -62,15 +62,36 @@
     function startHeartbeat() {
         const email = localStorage.getItem('ada_user_email');
         if (!email) return;
-        setInterval(async () => {
+        // Backoff-aware heartbeat. Polls /sync every 20s in the steady state, but
+        // backs off (20s -> 40s -> 80s -> ... capped at 5 min) when the relay
+        // returns errors or CORS/network failures. Resets on any user interaction.
+        // This is what stops the 502/503 + CORS death-spiral when the worker is
+        // stressed — and a sync storm of unauthenticated retries can itself push
+        // the worker into 502/503, so throttling matters.
+        const MIN_MS = 20000, MAX_MS = 300000;
+        let delay = MIN_MS, failures = 0, timer = null;
+        const tick = async () => {
             try {
                 const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+                if (!res.ok) throw new Error("HTTP " + res.status);
                 const data = await res.json();
-                if (data.command === 'reload') {
+                delay = MIN_MS;
+                failures = 0;
+                if (data && data.command === 'reload') {
                     location.reload();
+                    return;
                 }
-            } catch(e) {}
-        }, 20000);
+            } catch(e) {
+                failures++;
+                delay = Math.min(MAX_MS, MIN_MS * Math.pow(2, Math.min(failures, 4)));
+            }
+            timer = setTimeout(tick, delay);
+        };
+        const arm = () => { delay = MIN_MS; failures = 0; };
+        ['mousedown', 'keydown', 'scroll'].forEach(ev =>
+            window.addEventListener(ev, arm, { passive: true })
+        );
+        timer = setTimeout(tick, delay);
     }
 
     function startInteractionTracker() {
