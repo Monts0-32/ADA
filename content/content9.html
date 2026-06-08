@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Content 9</title>
+    <title>ADA | Ninja Fruits Module</title>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/announcement-engine.js"></script>
@@ -79,7 +79,7 @@
 
         <!-- Start / Game Over overlay -->
         <div id="overlay" class="overlay">
-            <h1 id="overlay-title">Slice dem fruits</h1>
+            <h1 id="overlay-title">NINJA FRUITS</h1>
             <p id="overlay-subtitle">Drag your cursor across fruits to slice them. Avoid the bombs.</p>
             <div id="overlay-score" class="score-flash" style="display:none;"></div>
             <button id="play-btn" class="play-btn">START</button>
@@ -164,6 +164,24 @@
 
         document.getElementById('play-btn').addEventListener('click', startGame);
         document.addEventListener('keydown', e => { if (e.code === 'KeyP' && isPlaying) isPaused = !isPaused; });
+
+        // ── ANNOUNCEMENT PAUSE / RESUME ──
+        // The announcement engine broadcasts window events before/after it
+        // shows a modal. Soft-pause by setting isPaused = true; the existing
+        // P-key indicator still works on resume. Preserve prior state so an
+        // announcement during a manual pause doesn't accidentally unpause.
+        let _adaPrevPaused = false;
+        window.addEventListener('ada:announcement:pause', () => {
+            if (!isPlaying) return;
+            _adaPrevPaused = isPaused;
+            isPaused = true;
+            if (typeof window.ADA_PauseGame === 'function') window.ADA_PauseGame(GAME_ID);
+        });
+        window.addEventListener('ada:announcement:resume', () => {
+            if (!isPlaying) return;
+            isPaused = _adaPrevPaused;
+            if (typeof window.ADA_ResumeGame === 'function') window.ADA_ResumeGame(GAME_ID);
+        });
 
         // Mouse tracking — dragging slices on movement, no need to click
         canvas.addEventListener('mouseenter', () => { isDragging = true; });
