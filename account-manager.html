@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | System Management</title>
+
+    <!-- MASTER BOOTSTRAP -->
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/announcement-engine.js"></script>
+    <script src="/escape-key.js"></script>
+
+    <style>
+        :root {
+            --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9;
+            --btn-red: #da3633; --btn-blue: #1f6feb; --btn-green: #238636; --gold: #d29922;
+        }
+
+        /* THEMED SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 40px; }
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        header { margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-link { color: #58a6ff; text-decoration: none; font-size: 14px; }
+
+        section { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 40px; }
+        h2 { margin-top: 0; font-weight: 400; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+
+        table { width: 100%; border-collapse: collapse; border-radius: 6px; overflow: hidden; table-layout: fixed; }
+        th, td { padding: 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 12px; word-wrap: break-word; }
+        th { background: #21262d; color: #f0f6fc; }
+
+        /* Identity */
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-cell img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #0d1117; border: 1px solid var(--border); }
+
+        /* Online Status */
+        .status-wrapper { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: bold; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .idle { background: #d29922; box-shadow: 0 0 8px #d29922; }
+        .offline { background: #8b949e; }
+
+        /* Pills */
+        .pill { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 12px; font-size: 10px; margin: 2px; border: 1px solid var(--border); font-weight: 600; }
+        .pill-perm { background: rgba(35, 134, 54, 0.1); color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
+        .pill-block { background: rgba(248, 81, 73, 0.1); color: #f85149; border-color: rgba(248, 81, 73, 0.4); }
+        .remove-x { margin-left: 6px; cursor: pointer; opacity: 0.6; font-size: 12px; font-weight: bold; }
+        .remove-x:hover { opacity: 1; color: white; }
+
+        /* Controls */
+        .inp { background: #0d1117; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; outline: none; font-size: 12px; width: 100%; box-sizing: border-box; }
+        .btn { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: white; margin: 2px; transition: 0.2s; white-space: nowrap; }
+        .btn-add { background: transparent; color: #58a6ff; border: none; padding: 0; margin-top: 5px; text-decoration: underline; display: block; cursor: pointer; font-size: 10px; }
+        .refresh-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 18px; transition: transform 0.3s; }
+        .refresh-btn:active { transform: rotate(180deg); }
+
+        /* Announcement Styles */
+        .ann-card { background:#21262d; padding:12px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:8px; transition: 0.2s; }
+        .ann-card:hover { border-color: #58a6ff; }
+        .ann-header { display:flex; justify-content:space-between; align-items:center; }
+        .ann-type { font-size:11px; font-weight:bold; color: #8b949e; text-transform: uppercase; }
+        .ann-date { font-size:10px; color:#58a6ff; }
+        .ann-main { font-size:13px; color: #f0f6fc; }
+        .ann-detail { font-size:11px; color:#8b949e; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
+        .ann-footer { display:flex; justify-content:space-between; align-items:center; margin-top:5px; }
+        .poll-results-box { margin-top:10px; border-top:1px solid var(--border); padding-top:10px; display:none; }
+        .poll-respondent { display:flex; align-items:center; gap:8px; font-size:11px; padding:4px; border-bottom:1px solid #30363d; }
+        .resp-pic { width:18px; height:18px; border-radius:50%; object-fit:cover; }
+        .expanded { display:block !important; }
+    </style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<div class="container">
+    <header>
+        <div>
+            <a href="/dash.html" class="nav-link">← Return to Dashboard</a>
+            <div style="display:flex; align-items:center; gap:15px; margin-top:10px;">
+                <h1 style="margin:0; font-size: 24px;">Archive Identity Manager</h1>
+                <button class="refresh-btn" onclick="window.refreshAll()">↻</button>
+                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="window.createAccount()">Add Account</button>
+            </div>
+        </div>
+        <div id="stats" style="font-size: 12px; color: #8b949e;">Connecting to D1 Relay...</div>
+    </header>
+
+    <!-- SECTION 1: USER LIST -->
+    <section>
+        <h2>Identity Directory</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th width="16%">Identity</th>
+                    <th width="8%">Status</th>
+                    <th width="8%">Role</th>
+                    <th width="15%">Clearance Tags</th>
+                    <th width="15%">Badges</th>
+                    <th width="15%">Restrictions</th>
+                    <th width="23%">System Controls</th>
+                </tr>
+            </thead>
+            <tbody id="user-list"></tbody>
+        </table>
+    </section>
+
+    <!-- SECTION 2: ANNOUNCEMENT CONSOLE -->
+    <section>
+        <h2>Announcement Console</h2>
+        <div style="display: grid; grid-template-columns: 400px 1fr; gap: 30px;">
+            <div style="background:#0d1117; padding:20px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:12px;">
+                <h3 style="margin-top:0">Broadcast New Message</h3>
+
+                <label style="font-size:11px; color:#8b949e;">Announcement Type</label>
+                <select id="ann-type" class="inp" onchange="window.toggleAnnInputs()">
+                    <option value="text">Text Only</option>
+                    <option value="media">Media (Image/Video)</option>
+                    <option value="poll">User Poll</option>
+                </select>
+
+                <div id="ann-inputs-container" style="display:flex; flex-direction:column; gap:12px;">
+                    <!-- Dynamic Inputs -->
+                </div>
+
+                <div style="margin-top:10px;">
+                    <label style="font-size:11px; color:#8b949e;">Broadcast Duration (Seconds, 0 = Infinite)</label>
+                    <input type="number" id="ann-duration" class="inp" value="0">
+                </div>
+
+                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="window.createAnnouncement()">Broadcast Now</button>
+            </div>
+            <div style="overflow-y:auto; max-height:600px;">
+                <h3 style="margin-top:0">Broadcast Archive & Results</h3>
+                <div id="ann-archive" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: BADGE LAB -->
+    <section>
+        <h2>Badge Lab</h2>
+        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+            <div style="background:#0d1117; padding:20px; border-radius:8px; border:1px solid var(--border); display:flex; flex-direction:column; gap:10px;">
+                <h3 style="margin-top:0">New Template</h3>
+                <input type="text" id="b-name" class="inp" placeholder="Badge Name">
+                <input type="text" id="b-icon" class="inp" placeholder="Emoji Icon">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="text" id="b-color" class="inp" placeholder="Hex Color (#58a6ff)" style="flex:1">
+                    <input type="color" onchange="document.getElementById('b-color').value=this.value">
+                </div>
+                <button class="btn" style="background:var(--btn-green); border:none; margin-top:10px;" onclick="window.createBadgeTemplate()">Register Badge</button>
+            </div>
+            <div id="master-badge-list" style="display:flex; flex-wrap:wrap; gap:15px; align-content: flex-start;"></div>
+        </div>
+    </section>
+</div>
+<h4>Info:</h4>
+<p>wiki_access - Perms to get into the wiki selector</p>
+<p>ADAP_access - Perms to get into the proxy</p>
+<p>Make sure to refresh the list before using!</p>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const myEmail = localStorage.getItem('ada_user_email');
+
+    // --- ESCAPE HELPER ---
+    // User-controlled fields (display_name, email, badge_name, profile_picture, etc.) get
+    // interpolated directly into template literals. A literal backtick, backslash, or
+    // "${" in any of those values would otherwise close the template literal early and
+    // throw "Missing } in template expression", which in turn kills the rest of the
+    // script (e.g. window.refreshAll never gets defined) and triggers the CORS/502
+    // death-spiral from the heartbeat in header-engine.js.
+    // Keep this synchronous and allocation-light — it runs inside .map() per record.
+    const SAFE_DEFAULT_PIC = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=';
+    function safe(s, fallback) {
+        if (s === null || s === undefined) return fallback || '';
+        const t = String(s);
+        // Escape characters that would break a JS template literal first, THEN HTML-escape
+        // so the rendered output can't inject markup either.
+        return t
+            .replace(/\\/g, '\\\\')
+            .replace(/`/g, '\\`')
+            .replace(/\$\{/g, '\\${')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    // For attributes that need a real JS string (e.g. inline onclick="...'{u.email}'..."),
+    // we need single-quote-safe form *without* HTML-encoding. Use rawSafe for those.
+    function rawSafe(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/\\/g, '\\\\')
+            .replace(/`/g, '\\`')
+            .replace(/\$\{/g, '\\${');
+    }
+    // Escape only for use inside single-quoted JS string literals in inline handlers.
+    // A backslash or single quote in the value would break out of '...'.
+    function jsSingle(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // --- ANNOUNCEMENT LOGIC ---
+    window.toggleAnnInputs = function() {
+        const type = document.getElementById('ann-type').value;
+        const container = document.getElementById('ann-inputs-container');
+        let html = '';
+
+        if (type === 'text') {
+            html = '<textarea id="ann-text" class="inp" style="height:100px;" placeholder="Announcement text..."></textarea>';
+        } else if (type === 'media') {
+            html = `
+                <select id="ann-media-type" class="inp" onchange="window.toggleMediaInputs()">
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                </select>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <label style="font-size:10px; color:#8b949e;">Upload File (Recommended):</label>
+                    <input type="file" id="ann-file" class="inp" accept="image/*,video/*">
+                    <div style="text-align:center; font-size:10px; color:#484f58;">OR</div>
+                    <input type="text" id="ann-url" class="inp" placeholder="External Media URL">
+                </div>
+                <input type="text" id="ann-caption" class="inp" placeholder="Caption">
+            `;
+        } else if (type === 'poll') {
+            html = `
+                <input type="text" id="poll-question" class="inp" placeholder="Poll Question">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="poll-multi"> <span style="font-size:12px;">Allow Multivote</span>
+                </div>
+                <div id="poll-options-list" style="display:flex; flex-direction:column; gap:5px;">
+                    <input type="text" class="inp poll-opt" placeholder="Option 1">
+                    <input type="text" class="inp poll-opt" placeholder="Option 2">
+                </div>
+                <button class="btn-add" onclick="window.addPollOption()">+ Add Option</button>
+            `;
+        }
+        container.innerHTML = html;
+    };
+
+    window.addPollOption = () => {
+        const opt = document.createElement('input');
+        opt.type = 'text';
+        opt.className = 'inp poll-opt';
+        opt.placeholder = "Option " + (document.querySelectorAll('.poll-opt').length + 1);
+        document.getElementById('poll-options-list').appendChild(opt);
+    };
+
+    window.createAnnouncement = async function() {
+        const type = document.getElementById('ann-type').value;
+        const duration = parseInt(document.getElementById('ann-duration').value) || 0;
+        let content = {};
+
+        if (type === 'text') {
+            content = { text: document.getElementById('ann-text').value };
+        } else if (type === 'media') {
+            const fileInput = document.getElementById('ann-file');
+            const urlInput = document.getElementById('ann-url').value.trim();
+            const caption = document.getElementById('ann-caption').value;
+            const mediaType = document.getElementById('ann-media-type').value;
+            let finalUrl = urlInput;
+
+            if (fileInput && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(file);
+                });
+                const data = base64.split(',')[1];
+                const uploadRes = await fetch(API + "/admin/announcement/upload", {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ adminEmail: myEmail, data, mime_type: file.type })
+                });
+                const uploadData = await uploadRes.json();
+                if (uploadData && uploadData.success && uploadData.url) {
+                    finalUrl = uploadData.url;
+                } else {
+                    // Upload endpoint isn't implemented in the relay, or it
+                    // failed. Fall back to an inline data URL so the user
+                    // still sees their image/video. This grows the DB row
+                    // but at least the announcement isn't broken.
+                    finalUrl = 'data:' + file.type + ';base64,' + data;
+                }
+            }
+
+            if (!finalUrl) {
+                return alert("Media announcements need either an uploaded file or a URL.");
+            }
+
+            content = { type: mediaType, url: finalUrl, caption };
+        } else if (type === 'poll') {
+            const options = Array.from(document.querySelectorAll('.poll-opt')).map(i => i.value).filter(v => v);
+            if (options.length < 2) return alert("Polls require at least 2 options!");
+            content = {
+                question: document.getElementById('poll-question').value,
+                options: options
+            };
+        }
+
+        const settings = {
+            is_multivote: type === 'poll' ? document.getElementById('poll-multi').checked : false,
+            broadcast_until: duration > 0 ? Math.floor(Date.now()/1000) + duration : null
+        };
+
+        await window.postAction('/admin/announcement/create', {
+            adminEmail: myEmail,
+            type,
+            content,
+            settings
+        });
+        window.toggleAnnInputs();
+    };
+
+    window.renderAnnouncements = async function() {
+        const container = document.getElementById('ann-archive');
+        if (!container) return;
+        let data = [];
+        try {
+            const res = await fetch(API + "/admin/announcements/list");
+            data = await res.json();
+            if (!Array.isArray(data)) data = [];
+        } catch (e) {
+            container.innerHTML = '<p style="opacity:0.4; font-size:12px;">Sync Error: relay unreachable.</p>';
+            return;
+        }
+
+        // Render each card inside its own try/catch so one bad record doesn't
+        // crash the rest of the page (which would prevent window.refreshAll from
+        // being defined and trigger the sync death-spiral in header-engine.js).
+        const cards = [];
+        for (let i = 0; i < data.length; i++) {
+            try {
+                const a = data[i];
+                if (!a || typeof a !== 'object') continue;
+                const content = (a.content && typeof a.content === 'object') ? a.content : {};
+                let detail = '';
+                if (a.type === 'poll') {
+                    const pollData = (a.pollData && typeof a.pollData === 'object') ? a.pollData : {};
+                    const totalVotes = Object.values(pollData).reduce(function(acc, v) { return acc + (Number(v) || 0); }, 0);
+
+                    const detailedVotes = Array.isArray(a.detailedVotes) ? a.detailedVotes : [];
+                    const respondentsHtml = detailedVotes.map(function(v) {
+                        if (!v || typeof v !== 'object') return '';
+                        const pic = v.profile_picture || SAFE_DEFAULT_PIC;
+                        const name = v.display_name || v.user_email || 'Anonymous';
+                        let votes = [];
+                        try {
+                            votes = typeof v.votes === 'string' ? JSON.parse(v.votes) : (v.votes || []);
+                        } catch (e2) { votes = ['Error parsing votes']; }
+                        if (!Array.isArray(votes)) votes = [String(votes)];
+
+                        // Build via string concat (no template literal) so a backtick or
+                        // ${} in name/votes/pic can never close anything.
+                        return '<div class="poll-respondent"><img src="' + pic + '" class="resp-pic"><span><strong>' + safe(name) + '</strong>: ' +
+                            votes.map(function(x) { return safe(x); }).join(', ') + '</span></div>';
+                    }).join('');
+
+                    const resultsLine = Object.entries(pollData).map(function(e) {
+                        return safe(String(e[0])) + ': ' + safe(String(e[1]));
+                    }).join(', ') || 'No votes';
+
+                    detail = '<div style="font-size:11px; color:#8b949e; margin-top:5px;">' +
+                            '<strong style="color:var(--gold)">Results:</strong> ' + resultsLine +
+                            ' (Total: ' + totalVotes + ')</div>' +
+                            '<div class="poll-results-box" id="results-' + a.id + '">' +
+                            '<div style="font-size:10px; font-weight:bold; margin-bottom:5px; color:#f0f6fc;">Respondents:</div>' +
+                            (respondentsHtml || '<div style="font-size:10px; opacity:0.5;">No votes yet.</div>') +
+                            '</div>';
+                } else if (a.type === 'media') {
+                    const url = content.url ? String(content.url) : '';
+                    detail = '<div style="font-size:11px; color:#8b949e;">Media: ' + safe(url.slice(0, 50)) + '...</div>';
+                } else {
+                    detail = '<div style="font-size:11px; color:#8b949e;">Text broadcast</div>';
+                }
+
+                const isInfinite = !a.settings || !a.settings.broadcast_until;
+                const safeId = jsSingle(a.id);
+                const endBtn = isInfinite ? '<button class="btn" style="background:var(--btn-red); border:none; font-size:9px; padding:2px 5px; color:white;" onclick="window.endAnnouncement(\'' + safeId + '\')">End Broadcast</button>' : '';
+
+                // Build with string concatenation only — no template literal at all.
+                let card = '<div class="ann-card">';
+                card += '<div class="ann-header"><span class="ann-type">' + safe(a.type) + '</span>';
+                card += '<div style="display:flex; align-items:center; gap:8px;">';
+                card += '<span class="ann-date">' + safe(new Date(a.created_at * 1000).toLocaleString()) + '</span>';
+                card += endBtn;
+                card += '<span style="cursor:pointer; color:var(--btn-red); font-weight:bold;" onclick="window.deleteAnnouncement(\'' + safeId + '\')">✕</span>';
+                card += '</div></div>';
+
+                const mainText = a.type === 'poll'
+                    ? (content.question || '')
+                    : (content.text || content.caption || 'No content');
+                card += '<div class="ann-main">' + safe(mainText) + '</div>';
+                card += detail;
+                if (a.type === 'poll') {
+                    card += '<button class="btn" style="background:transparent; border:1px solid #30363d; font-size:10px; margin-top:5px;" onclick="document.getElementById(\'results-' + safeId + '\').classList.toggle(\'expanded\')">Toggle Detailed Results</button>';
+                }
+                card += '</div>';
+                cards.push(card);
+            } catch (cardErr) {
+                // One bad record, skip it — don't let it kill the rest of the page.
+                console.error("Skipping malformed announcement:", cardErr);
+            }
+        }
+        container.innerHTML = cards.join('') || '<p style="opacity:0.4; font-size:12px;">No announcements archived.</p>';
+    };
+
+    window.deleteAnnouncement = (id) => {
+        if (confirm("Permanently delete this announcement and all its votes?")) {
+            window.postAction('/admin/announcement/delete', { id, adminEmail: myEmail });
+        }
+    };
+
+    window.endAnnouncement = (id) => {
+        if (confirm("End this broadcast immediately?")) {
+            window.postAction('/admin/announcement/end', { id, adminEmail: myEmail });
+        }
+    };
+
+    window.refreshAll = async function() {
+        document.getElementById('stats').innerText = "Synchronizing...";
+        try {
+            const [uRes, bRes] = await Promise.all([
+                fetch(API + "/admin/list-users"),
+                fetch(API + "/admin/badges/list")
+            ]);
+            const users = await uRes.json();
+            const bData = await bRes.json();
+
+            window.renderUsers(users);
+            window.renderBadgeLab(bData.master);
+            window.renderAnnouncements();
+            document.getElementById('stats').innerText = users.length + " Active Neural Links Registered";
+        } catch (e) {
+            console.error(e);
+            document.getElementById('stats').innerText = "Sync Error";
+        }
+    };
+
+    window.renderUsers = function(users) {
+        const list = document.getElementById('user-list');
+        if (!list) return;
+        if (!Array.isArray(users)) users = [];
+
+        // Per-record try/catch so a single bad row can't kill window.refreshAll or
+        // the rest of the page. Builds each row with string concatenation only,
+        // avoiding template literals entirely for any user-controlled data.
+        const rows = [];
+        for (let i = 0; i < users.length; i++) {
+            try {
+                const u = users[i] || {};
+                let statusClass = 'offline';
+                let statusText = 'OFFLINE';
+                if (u.is_online) {
+                    statusClass = u.is_idle ? 'idle' : 'online';
+                    statusText = u.is_idle ? 'IDLE' : 'ONLINE';
+                }
+                const pic = u.profile_picture || SAFE_DEFAULT_PIC;
+                const emailJs = jsSingle(u.email);
+                const idNum = Number(u.id) || 0;
+                const isAdminNext = (u.is_admin === 1) ? 0 : 1;
+                const profileDisabledNext = u.profile_disabled ? 0 : 1;
+                const emailDisplay = safe(u.email);
+                const displayName = safe(u.display_name || 'Anonymous');
+
+                const permTags = Array.isArray(u.perm_tags) ? u.perm_tags : [];
+                const badges = Array.isArray(u.badges) ? u.badges : [];
+                const blockedPaths = Array.isArray(u.blocked_paths) ? u.blocked_paths : [];
+
+                const permPills = permTags.map(function(t) {
+                    const tJs = jsSingle(t);
+                    const tSafe = safe(t);
+                    return '<div class="pill pill-perm">' + tSafe + ' <span class="remove-x" onclick="window.postAction(\'/admin/remove-perm\', {email:\'' + emailJs + '\', tag:\'' + tJs + '\'})">×</span></div>';
+                }).join('');
+                const badgePills = badges.map(function(b) {
+                    const bNameJs = jsSingle(b.badge_name);
+                    const bNameSafe = safe(b.badge_name);
+                    const bColorSafe = safe(b.color || '#30363d');
+                    return '<div class="pill" style="border-color:' + bColorSafe + '; color:' + bColorSafe + '">' + bNameSafe + ' <span class="remove-x" onclick="window.postAction(\'/admin/badges/unassign\', {email:\'' + emailJs + '\', name:\'' + bNameJs + '\'})">×</span></div>';
+                }).join('');
+                const blockPills = blockedPaths.map(function(p) {
+                    const pJs = jsSingle(p);
+                    const pSafe = safe(p);
+                    return '<div class="pill pill-block">' + pSafe + ' <span class="remove-x" onclick="window.postAction(\'/admin/remove-block\', {email:\'' + emailJs + '\', path:\'' + pJs + '\'})">×</span></div>';
+                }).join('');
+
+                const roleBorder = u.is_admin ? 'var(--gold)' : '#30363d';
+                const roleColor = u.is_admin ? 'var(--gold)' : 'inherit';
+                const roleLabel = u.is_admin ? 'ADMIN' : 'USER';
+                const profileBtnLabel = u.profile_disabled ? 'Enable Profile' : 'Disable Profile';
+
+                let row = '<tr>';
+                row += '<td><div class="user-cell">';
+                row += '<img src="' + pic + '">';
+                row += '<div><span style="font-weight:bold; color:#f0f6fc;">' + displayName + '</span><br>';
+                row += '<span style="font-size:10px; color:#8b949e;">' + emailDisplay + '</span></div>';
+                row += '</div></td>';
+                row += '<td><div class="status-wrapper"><div class="status-dot ' + statusClass + '"></div><span>' + statusText + '</span></div></td>';
+                row += '<td><span class="pill" style="border-color:' + roleBorder + '; color:' + roleColor + '">' + roleLabel + '</span></td>';
+                row += '<td>' + permPills + '<button class="btn-add" onclick="window.addPerm(\'' + emailJs + '\')">+ Add Tag</button></td>';
+                row += '<td>' + badgePills + '<button class="btn-add" onclick="window.assignBadgeToUser(\'' + emailJs + '\')">+ Grant Badge</button></td>';
+                row += '<td>' + blockPills + '<button class="btn-add" style="color:var(--red)" onclick="window.addBlock(\'' + emailJs + '\')">+ Block Path</button></td>';
+                row += '<td><div style="display:flex; flex-wrap:wrap; gap:4px;">';
+                row += '<button class="btn" style="background:#21262d" onclick="window.postAction(\'/admin/toggle-admin\', {id:' + idNum + ', isAdmin:' + isAdminNext + '})">Toggle Role</button>';
+                row += '<button class="btn" style="background:#21262d" onclick="window.postAction(\'/admin/profile/toggle-status\', {email:\'' + emailJs + '\', status:' + profileDisabledNext + '})">' + profileBtnLabel + '</button>';
+                row += '<button class="btn" style="background:var(--blue); color:#000" onclick="window.postAction(\'/admin/client/refresh\', {email:\'' + emailJs + '\'})">Refresh Client</button>';
+                row += '<button class="btn" style="background:var(--red)" onclick="window.deleteUser(' + idNum + ', \'' + emailJs + '\')">Delete</button>';
+                row += '</div></td>';
+                row += '</tr>';
+                rows.push(row);
+            } catch (rowErr) {
+                console.error("Skipping malformed user row:", rowErr);
+            }
+        }
+        list.innerHTML = rows.join('');
+    };
+
+    window.renderBadgeLab = function(master) {
+        const el = document.getElementById('master-badge-list');
+        if (!el) return;
+        if (!Array.isArray(master)) master = [];
+        const cards = [];
+        for (let i = 0; i < master.length; i++) {
+            try {
+                const b = master[i] || {};
+                const nameJs = jsSingle(b.name);
+                const nameSafe = safe(b.name);
+                const iconSafe = safe(b.icon);
+                const colorSafe = safe(b.color || '#58a6ff');
+                let card = '<div style="background:#21262d; border:1px solid ' + colorSafe + '; padding:15px; border-radius:8px; min-width:130px; display:flex; flex-direction:column; gap:5px;">';
+                card += '<div style="display:flex; justify-content:space-between;">';
+                card += '<span style="font-size:20px;">' + iconSafe + '</span>';
+                card += '<span style="cursor:pointer; color:var(--red); font-weight:bold;" onclick="window.postAction(\'/admin/badges/delete\', {name:\'' + nameJs + '\'})">✕</span>';
+                card += '</div>';
+                card += '<div style="font-weight:bold; color:' + colorSafe + '; margin-top:5px;">' + nameSafe + '</div>';
+                card += '</div>';
+                cards.push(card);
+            } catch (e) {
+                console.error("Skipping malformed badge:", e);
+            }
+        }
+        el.innerHTML = cards.join('') || '<p style="opacity:0.4; font-size:12px;">No badge templates registered.</p>';
+    };
+
+    window.postAction = async function(route, body) {
+        try {
+            await fetch(API + route, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+        } catch (e) {
+            console.error("Action failed:", e);
+        }
+        window.refreshAll();
+    };
+
+    window.addPerm = (e) => { const t = prompt("Tag Name:"); if(t) window.postAction('/admin/add-perm', {email:e, tag:t}); };
+    window.addBlock = (e) => { const p = prompt("Path to block (e.g. visuals.html) or ALL:"); if(p) window.postAction('/admin/block-user', {email:e, path:p}); };
+
+    window.createBadgeTemplate = () => {
+        const name = document.getElementById('b-name').value;
+        const icon = document.getElementById('b-icon').value;
+        const color = document.getElementById('b-color').value || "#58a6ff";
+        if(name) {
+            window.postAction('/admin/badges/create', {name, icon, color});
+            document.getElementById('b-name').value = '';
+            document.getElementById('b-icon').value = '';
+        }
+    };
+
+    window.assignBadgeToUser = (e) => {
+        const name = prompt("Enter Master Badge Name to grant:");
+        if(name) window.postAction('/admin/badges/assign', {email:e, name});
+    };
+
+    window.deleteUser = (id, email) => {
+        if (email === myEmail) return alert("Self-wipe restricted.");
+        if (confirm("CRITICAL: Permanently wipe account " + email + "?")) {
+            window.postAction('/admin/delete-user', {id});
+        }
+    };
+
+    async function start() {
+        if (typeof runNeuralGuard !== 'function') {
+            setTimeout(start, 100);
+            return;
+        }
+        try {
+            const d = await runNeuralGuard();
+            if (d && d.user.is_admin === 1) {
+                window.refreshAll();
+                window.toggleAnnInputs();
+
+                // Backoff-aware heartbeat. Polls /sync every 20s in the steady state,
+                // but backs off (20s -> 40s -> 80s -> ... capped at 5 min) when the
+                // relay returns errors or CORS/network failures. Resets on any user
+                // interaction. This is what stops the 502/503 + CORS death-spiral
+                // when the worker is stressed.
+                const MIN_MS = 20000, MAX_MS = 300000;
+                let delay = MIN_MS, failures = 0;
+                const tick = async () => {
+                    if (!myEmail) return;
+                    try {
+                        const r = await fetch(API + "/sync?email=" + encodeURIComponent(myEmail));
+                        if (!r.ok) throw new Error("HTTP " + r.status);
+                        await r.json();
+                        // Success: reset.
+                        delay = MIN_MS;
+                        failures = 0;
+                    } catch (e) {
+                        failures++;
+                        // Exponential backoff: 20s, 40s, 80s, 160s, 300s (cap).
+                        delay = Math.min(MAX_MS, MIN_MS * Math.pow(2, Math.min(failures, 4)));
+                    }
+                    setTimeout(tick, delay);
+                };
+                const arm = () => { delay = MIN_MS; failures = 0; };
+                ['mousedown', 'keydown', 'scroll'].forEach(function(ev) {
+                    window.addEventListener(ev, arm, { passive: true });
+                });
+                setTimeout(tick, delay);
+            } else {
+                window.location.href = '/blocked.html';
+            }
+        } catch (e) {
+            console.error("Startup failed:", e);
+        }
+    }
+
+    window.createAccount = function() {
+        window.location.href = "account-creator.html";
+    };
+
+    start();
+</script>
+</body>
+</html>
