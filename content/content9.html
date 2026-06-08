@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Ninja Fruits Module</title>
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/announcement-engine.js"></script>
+    <script src="/escape-key.js"></script>
+    <script src="/chat-widget.js"></script>
+    <style>
+        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #238636; --red: #f85149; --gold: #d29922; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow: hidden; user-select: none; }
+        header { width: 100%; z-index: 1100; }
+
+        #game-layout { display: flex; gap: 30px; margin-top: 30px; align-items: flex-start; }
+
+        /* LEADERBOARD STYLING */
+        .leaderboard-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 15px; width: 220px; }
+        .lb-entry { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #21262d; }
+        .lb-entry:last-child { border-bottom: none; }
+        .lb-entry img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .lb-rank { font-size: 10px; font-weight: bold; color: var(--gold); min-width: 15px; }
+        .lb-info { flex: 1; min-width: 0; }
+        .lb-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .lb-score { font-size: 11px; font-family: monospace; color: var(--blue); }
+
+        .personal-best-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 15px; width: 220px; margin-top: 15px; box-sizing: border-box; }
+
+        /* GAME STYLING */
+        #game-wrap { position: relative; border: 4px solid var(--border); border-radius: 12px; background: radial-gradient(ellipse at center, #1a2332 0%, #0d1117 70%, #000 100%); box-shadow: 0 0 50px rgba(0,0,0,0.6); overflow: hidden; }
+        canvas { display: block; cursor: crosshair; }
+
+        .panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; width: 180px; display: flex; flex-direction: column; gap: 20px; }
+        .stat-label { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 26px; font-family: monospace; color: var(--blue); }
+
+        .key-hint { font-size: 10px; color: #8b949e; line-height: 1.8; }
+        .key-cap { background: #21262d; border: 1px solid var(--border); padding: 1px 4px; border-radius: 3px; color: #f0f6fc; }
+
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 23, 0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; text-align: center; }
+        .overlay h1 { font-size: 36px; margin: 0 0 8px 0; color: var(--text); text-shadow: 0 0 18px rgba(88, 166, 255, 0.6); }
+        .overlay p { font-size: 13px; color: #8b949e; margin: 4px 0; }
+        .overlay .score-flash { font-size: 22px; color: var(--gold); margin: 12px 0; font-family: monospace; }
+        .play-btn { background: var(--green); color: white; border: none; padding: 12px 30px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-top: 16px; letter-spacing: 1px; }
+        .play-btn:hover { background: #2ea043; }
+
+        .combo-popup { position: absolute; font-family: monospace; font-weight: bold; font-size: 24px; color: var(--gold); text-shadow: 0 0 10px rgba(210, 153, 34, 0.8); pointer-events: none; z-index: 30; transition: transform 0.6s ease-out, opacity 0.6s ease-out; }
+    </style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<div id="game-layout">
+    <!-- LEFT COLUMN -->
+    <div style="display: flex; flex-direction: column;">
+        <div class="leaderboard-panel">
+            <div class="stat-label" style="margin-bottom:10px;">Rankings</div>
+            <div id="leaderboard-list">
+                <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
+            </div>
+        </div>
+
+        <div class="personal-best-panel">
+            <div class="stat-label">Your Archive Best</div>
+            <div id="personal-high-score" class="stat-value" style="font-size: 22px; margin-top: 10px;">0</div>
+        </div>
+    </div>
+
+    <!-- CENTER: GAME -->
+    <div id="game-wrap">
+        <canvas id="game" width="600" height="700"></canvas>
+
+        <!-- Start / Game Over overlay -->
+        <div id="overlay" class="overlay">
+            <h1 id="overlay-title">NINJA FRUITS</h1>
+            <p id="overlay-subtitle">Slice fruits. Avoid bombs. Reach the top.</p>
+            <div id="overlay-score" class="score-flash" style="display:none;"></div>
+            <button id="play-btn" class="play-btn">START</button>
+        </div>
+    </div>
+
+    <!-- RIGHT: STATS -->
+    <div class="panel">
+        <div>
+            <div class="stat-label">Score</div>
+            <div id="score" class="stat-value">0</div>
+        </div>
+        <div>
+            <div class="stat-label">Combo</div>
+            <div id="combo" class="stat-value" style="color: var(--gold);">x1</div>
+        </div>
+        <div>
+            <div class="stat-label">Lives</div>
+            <div id="lives" class="stat-value" style="color: var(--red);">♥♥♥</div>
+        </div>
+        <div class="key-hint">
+            <span class="key-cap">Mouse</span> Aim Knife<br>
+            <span class="key-cap">Click</span> Slash<br>
+            <span class="key-cap">P</span> Pause Link<br>
+            <span style="color:var(--green);">+10 fruit</span><br>
+            <span style="color:var(--gold);">+5 combo bonus</span><br>
+            <span style="color:var(--red);">-1 bomb hit</span>
+        </div>
+        <button onclick="window.resetGame()" style="background:var(--green); color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px;">Reboot System</button>
+    </div>
+</div>
+
+<script>
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const GAME_ID = "content9";
+    const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    let score = 0, highScore = 0;
+    let lives = 3;
+    let combo = 0, comboTimer = 0;
+    let isPaused = false, isPlaying = false, isReady = false;
+    let fruits = [], particles = [], slashTrails = [], floatingTexts = [];
+    let lastSpawn = 0, lastTime = 0;
+    let mouseX = W / 2, mouseY = H / 2;
+    let lastMouseX = W / 2, lastMouseY = H / 2;
+    let mouseDown = false;
+
+    // Fruit & bomb type definitions
+    const FRUITS = [
+        { name: 'apple',   points: 10, color: '#ff5e5e', dark: '#8b1a1a', radius: 36, weight: 22 },
+        { name: 'orange',  points: 10, color: '#ff9b3f', dark: '#a85a14', radius: 36, weight: 22 },
+        { name: 'watermelon', points: 15, color: '#3fb950', dark: '#0d4d1a', radius: 42, weight: 16 },
+        { name: 'lemon',   points: 10, color: '#f0e442', dark: '#9a9308', radius: 32, weight: 18 },
+        { name: 'peach',   points: 12, color: '#ffb3a7', dark: '#a04030', radius: 34, weight: 14 },
+        { name: 'kiwi',    points: 12, color: '#9bc53d', dark: '#3a5e10', radius: 32, weight: 8 }
+    ];
+    const BOMBS = [
+        { name: 'bomb',    points: -1, color: '#1a1a1a', dark: '#000000', radius: 32, weight: 30 }
+    ];
+
+    // ─────────────────────────────────────────
+    // AUTH / DATA SYNC
+    // ─────────────────────────────────────────
+    async function init() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+        const data = await runNeuralGuard('');
+        if (!data) return;
+
+        loadLeaderboard();
+        loadPersonalBest();
+        isReady = true;
+
+        document.getElementById('play-btn').addEventListener('click', startGame);
+        document.addEventListener('keydown', e => { if (e.code === 'KeyP' && isPlaying) isPaused = !isPaused; });
+
+        // Mouse tracking
+        canvas.addEventListener('mousemove', e => {
+            const r = canvas.getBoundingClientRect();
+            lastMouseX = mouseX; lastMouseY = mouseY;
+            mouseX = e.clientX - r.left;
+            mouseY = e.clientY - r.top;
+        });
+        canvas.addEventListener('mousedown', e => { mouseDown = true; slash(); });
+        canvas.addEventListener('mouseup',   e => { mouseDown = false; });
+        canvas.addEventListener('mouseleave', e => { mouseDown = false; });
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const r = canvas.getBoundingClientRect();
+            const t = e.touches[0];
+            lastMouseX = mouseX; lastMouseY = mouseY;
+            mouseX = t.clientX - r.left;
+            mouseY = t.clientY - r.top;
+            mouseDown = true;
+            slash();
+        }, { passive: false });
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const r = canvas.getBoundingClientRect();
+            const t = e.touches[0];
+            lastMouseX = mouseX; lastMouseY = mouseY;
+            mouseX = t.clientX - r.left;
+            mouseY = t.clientY - r.top;
+        }, { passive: false });
+        canvas.addEventListener('touchend',  e => { mouseDown = false; });
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    async function loadLeaderboard() {
+        try {
+            const res = await fetch(`${API}/game/leaderboard?content=${GAME_ID}`);
+            const topUsers = await res.json();
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = topUsers.map((u, i) => `
+                <div class="lb-entry">
+                    <span class="lb-rank">#${i+1}</span>
+                    <img src="${u.profile_picture || DEFAULT_ICON}">
+                    <div class="lb-info">
+                        <span class="lb-name">${u.display_name || u.email.split('@')[0]}</span>
+                        <span class="lb-score">${u.score.toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('') || '<div style="font-size:11px;opacity:0.5;">No records found.</div>';
+        } catch (e) { console.error("Leaderboard Sync Error"); }
+    }
+
+    async function loadPersonalBest() {
+        try {
+            const email = localStorage.getItem('ada_user_email');
+            const res = await fetch(`${API}/game/get-score?email=${encodeURIComponent(email)}&content=${GAME_ID}`);
+            const data = await res.json();
+            highScore = data.score || 0;
+            document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+        } catch (e) { console.error("Personal Best Sync Error"); }
+    }
+
+    // ─────────────────────────────────────────
+    // GAME LOGIC
+    // ─────────────────────────────────────────
+    function startGame() {
+        score = 0; lives = 3; combo = 0; comboTimer = 0;
+        fruits = []; particles = []; slashTrails = []; floatingTexts = [];
+        document.getElementById('score').innerText = 0;
+        document.getElementById('combo').innerText = 'x1';
+        document.getElementById('lives').innerText = '♥♥♥';
+        document.getElementById('overlay').style.display = 'none';
+        isPlaying = true;
+        isPaused = false;
+    }
+
+    function endGame() {
+        isPlaying = false;
+        const overlay = document.getElementById('overlay');
+        document.getElementById('overlay-title').innerText = 'GAME OVER';
+        document.getElementById('overlay-subtitle').innerText = lives <= 0 ? 'You ran out of lives.' : 'Round finished.';
+        const scoreBox = document.getElementById('overlay-score');
+        scoreBox.style.display = 'block';
+        scoreBox.innerText = `Final Score: ${score.toLocaleString()}`;
+        document.getElementById('play-btn').innerText = 'RETRY';
+        overlay.style.display = 'flex';
+        loadLeaderboard();
+        loadPersonalBest();
+    }
+
+    function pickSpawn() {
+        // 25% chance of bomb, 75% fruit
+        if (Math.random() < 0.25) {
+            return { ...BOMBS[0] };
+        }
+        const totalWeight = FRUITS.reduce((a, f) => a + f.weight, 0);
+        let r = Math.random() * totalWeight;
+        for (const f of FRUITS) {
+            r -= f.weight;
+            if (r <= 0) return { ...f };
+        }
+        return { ...FRUITS[0] };
+    }
+
+    function spawnFruit() {
+        const t = pickSpawn();
+        const x = 60 + Math.random() * (W - 120);
+        // Pick a launch velocity that arcs over the play area
+        const targetX = 80 + Math.random() * (W - 160);
+        const peakY = 80 + Math.random() * 180;     // peak height
+        const dx = targetX - x;
+        const dy = H - peakY;
+        // Solve for vx, vy given gravity
+        const gravity = 0.35;
+        const flightTime = Math.sqrt(2 * dy / gravity);
+        const vx = dx / flightTime;
+        const vy = -Math.sqrt(2 * gravity * dy);
+        fruits.push({
+            x, y: H + 40,
+            vx, vy,
+            radius: t.radius,
+            color: t.color, dark: t.dark, points: t.points, name: t.name,
+            rotation: 0, vRotation: (Math.random() - 0.5) * 0.15,
+            sliced: false
+        });
+    }
+
+    function spawnParticles(x, y, color, count = 14) {
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 5;
+            particles.push({
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                life: 30 + Math.random() * 20,
+                maxLife: 50,
+                color,
+                size: 3 + Math.random() * 5
+            });
+        }
+    }
+
+    function addFloatingText(x, y, text, color) {
+        const el = document.createElement('div');
+        el.className = 'combo-popup';
+        el.style.left = (x - 30) + 'px';
+        el.style.top = (y - 20) + 'px';
+        el.style.color = color;
+        el.textContent = text;
+        canvas.parentElement.appendChild(el);
+        floatingTexts.push({ el, life: 60, maxLife: 60 });
+    }
+
+    function slash() {
+        slashTrails.push({ x1: lastMouseX, y1: lastMouseY, x2: mouseX, y2: mouseY, life: 18 });
+        if (slashTrails.length > 20) slashTrails.shift();
+
+        // Check slice collisions
+        for (let i = fruits.length - 1; i >= 0; i--) {
+            const f = fruits[i];
+            if (f.sliced) continue;
+            const d = pointToSegmentDistance(mouseX, mouseY, lastMouseX, lastMouseY, f.x, f.y);
+            if (d < f.radius + 6) {
+                sliceFruit(i);
+            }
+        }
+    }
+
+    function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
+        const dot = A * C + B * D, lenSq = C * C + D * D;
+        let t = lenSq !== 0 ? dot / lenSq : -1;
+        t = Math.max(0, Math.min(1, t));
+        const dx = px - (x1 + t * C), dy = py - (y1 + t * D);
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function sliceFruit(idx) {
+        const f = fruits[idx];
+        f.sliced = true;
+        spawnParticles(f.x, f.y, f.color, 16);
+        spawnParticles(f.x, f.y, '#ffffff', 6);
+
+        if (f.name === 'bomb') {
+            lives--;
+            combo = 0;
+            score = Math.max(0, score - 5);
+            addFloatingText(f.x, f.y, '💥 BOMB!', '#f85149');
+            document.getElementById('lives').innerText = '♥'.repeat(Math.max(0, lives)) || '—';
+            // Big black particle burst
+            for (let i = 0; i < 30; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 4 + Math.random() * 6;
+                particles.push({
+                    x: f.x, y: f.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 40, maxLife: 40,
+                    color: '#444', size: 4 + Math.random() * 6
+                });
+            }
+        } else {
+            combo++;
+            comboTimer = 90;
+            const comboBonus = Math.floor(combo / 3) * 5;
+            const earned = f.points + comboBonus;
+            score += earned;
+            addFloatingText(f.x, f.y, `+${earned}`, combo > 3 ? '#ffd966' : '#3fb950');
+            if (combo > 2) addFloatingText(f.x, f.y - 30, `x${combo} COMBO`, '#d29922');
+        }
+
+        document.getElementById('score').innerText = score.toLocaleString();
+        const comboMult = Math.max(1, Math.floor(combo / 3) + 1);
+        document.getElementById('combo').innerText = `x${comboMult}`;
+
+        // Save score live
+        saveScore();
+        fruits.splice(idx, 1);
+
+        if (lives <= 0) {
+            // Bomb is the last hit that emptied lives
+            setTimeout(endGame, 600);
+        }
+    }
+
+    async function saveScore() {
+        if (score > highScore) {
+            highScore = score;
+            document.getElementById('personal-high-score').innerText = highScore.toLocaleString();
+        }
+        try {
+            await fetch(`${API}/game/save-score`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: localStorage.getItem('ada_user_email'), gameId: GAME_ID, score: score })
+            });
+        } catch (e) { /* silent */ }
+    }
+
+    // ─────────────────────────────────────────
+    // RENDERING
+    // ─────────────────────────────────────────
+    function drawFruit(f) {
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.rotation);
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(3, 5, f.radius * 0.9, f.radius * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+        // Body
+        ctx.fillStyle = f.color;
+        ctx.beginPath(); ctx.arc(0, 0, f.radius, 0, Math.PI * 2); ctx.fill();
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath(); ctx.ellipse(-f.radius * 0.35, -f.radius * 0.4, f.radius * 0.35, f.radius * 0.22, -0.4, 0, Math.PI * 2); ctx.fill();
+        // Stem / leaf for non-bombs
+        if (f.name !== 'bomb') {
+            ctx.fillStyle = '#3a5e10';
+            ctx.beginPath(); ctx.ellipse(f.radius * 0.45, -f.radius * 0.85, 8, 4, 0.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#5a3a18';
+            ctx.fillRect(-1, -f.radius - 4, 2, 6);
+        } else {
+            // Bomb fuse
+            ctx.strokeStyle = '#5a3a18';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, -f.radius);
+            ctx.quadraticCurveTo(8, -f.radius - 8, 4, -f.radius - 14);
+            ctx.stroke();
+            // Spark
+            ctx.fillStyle = `rgba(255, ${100 + Math.random() * 100}, 0, ${0.7 + Math.random() * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(4, -f.radius - 14, 4 + Math.random() * 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Bolt highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.beginPath(); ctx.arc(-f.radius * 0.35, -f.radius * 0.35, f.radius * 0.3, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawKnife() {
+        // Knife follows the cursor
+        const ang = Math.atan2(mouseY - lastMouseY, mouseX - lastMouseX);
+        ctx.save();
+        ctx.translate(mouseX, mouseY);
+        ctx.rotate(ang);
+        // Blade
+        ctx.fillStyle = '#d8dee9';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(28, -4);
+        ctx.lineTo(34, 0);
+        ctx.lineTo(28, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#5a6470';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Handle
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(-14, -5, 14, 10);
+        ctx.strokeStyle = '#3a1d08';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-14, -5, 14, 10);
+        // Guard
+        ctx.fillStyle = '#d29922';
+        ctx.fillRect(-15, -6, 3, 12);
+        ctx.restore();
+    }
+
+    function drawSlashTrails() {
+        for (let i = slashTrails.length - 1; i >= 0; i--) {
+            const s = slashTrails[i];
+            const alpha = s.life / 18;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(88, 166, 255, 0.8)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(s.x1, s.y1);
+            ctx.lineTo(s.x2, s.y2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            s.life--;
+            if (s.life <= 0) slashTrails.splice(i, 1);
+        }
+    }
+
+    function drawParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            const alpha = p.life / p.maxLife;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.25;
+            p.vx *= 0.98;
+            p.life--;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function drawBackground() {
+        // Subtle ambient panel
+        const g = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, W / 1.5);
+        g.addColorStop(0, 'rgba(88, 166, 255, 0.06)');
+        g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+        // Wood-grain hint at the bottom (the cutting board feel)
+        const grad = ctx.createLinearGradient(0, H - 90, 0, H);
+        grad.addColorStop(0, 'rgba(60, 40, 20, 0)');
+        grad.addColorStop(1, 'rgba(60, 40, 20, 0.5)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, H - 90, W, 90);
+    }
+
+    // ─────────────────────────────────────────
+    // MAIN LOOP
+    // ─────────────────────────────────────────
+    function gameLoop(time = 0) {
+        const dt = Math.min(time - lastTime, 50);
+        lastTime = time;
+
+        if (isPlaying && !isPaused) {
+            // Spawn cadence — speeds up over time
+            const spawnInterval = Math.max(450, 1200 - score * 0.4);
+            if (time - lastSpawn > spawnInterval) {
+                spawnFruit();
+                // Sometimes spawn a second one close after
+                if (Math.random() < 0.3) setTimeout(() => { if (isPlaying) spawnFruit(); }, 250);
+                lastSpawn = time;
+            }
+        }
+
+        // Update floating texts
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const t = floatingTexts[i];
+            t.life--;
+            if (t.life <= 0) {
+                if (t.el && t.el.parentElement) t.el.parentElement.removeChild(t.el);
+                floatingTexts.splice(i, 1);
+            } else {
+                t.el.style.opacity = t.life / t.maxLife;
+                t.el.style.transform = `translateY(${(1 - t.life / t.maxLife) * 40}px)`;
+            }
+        }
+
+        // Combo timer
+        if (comboTimer > 0) {
+            comboTimer -= 1;
+            if (comboTimer === 0) combo = 0;
+        }
+        if (combo > 0 && comboTimer > 0) {
+            const comboMult = Math.max(1, Math.floor(combo / 3) + 1);
+            document.getElementById('combo').innerText = `x${comboMult}`;
+        } else if (combo === 0) {
+            document.getElementById('combo').innerText = 'x1';
+        }
+
+        // Update fruits
+        for (let i = fruits.length - 1; i >= 0; i--) {
+            const f = fruits[i];
+            f.x += f.vx;
+            f.y += f.vy;
+            f.vy += 0.35; // gravity
+            f.rotation += f.vRotation;
+            if (f.y > H + 80) {
+                // Fruit fell unsliced — small penalty for fruits, no penalty for bombs
+                if (f.name !== 'bomb') {
+                    combo = 0;
+                }
+                fruits.splice(i, 1);
+            }
+        }
+
+        // ── DRAW ──
+        ctx.clearRect(0, 0, W, H);
+        drawBackground();
+        drawSlashTrails();
+        fruits.forEach(drawFruit);
+        drawParticles();
+        if (isPlaying) drawKnife();
+
+        // Pause indicator
+        if (isPaused && isPlaying) {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.7)';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = 'bold 48px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('PAUSED', W / 2, H / 2);
+            ctx.font = '14px monospace';
+            ctx.fillStyle = '#8b949e';
+            ctx.fillText('Press P to resume', W / 2, H / 2 + 30);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.resetGame = () => {
+        startGame();
+    };
+
+    init();
+</script>
+</body>
+</html>
