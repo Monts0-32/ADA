@@ -1,12 +1,12 @@
 (function() {
     // --- CONFIGURATION ---
-    const CHANGELOG_VERSION = "1.3.1"; // Change this to trigger a new popup
-    const UPDATE_DATE = "Jun 03, 2026";
-    const LOG_TITLE = "Hotfix :)";
+    const CHANGELOG_VERSION = "1.3.2"; // Change this to trigger a new popup
+    const UPDATE_DATE = "Jun 08, 2026";
+    const LOG_TITLE = "Update :)";
     
     const CHANGES = [
-        "Chess is now fixed!",
-        "Proxy is being fixed"
+        "New systems!",
+        "New Game!"
     ];
     // ---------------------
 
