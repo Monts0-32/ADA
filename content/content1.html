@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>ADA | Tetris Module</title>
     <script src="/uplink.js"></script>
-    <script src="/announcement-engine.js"></script>
     <script src="/header-engine.js"></script>
+    <script src="/announcement-engine.js"></script>
     <script src="/escape-key.js"></script>
     <script src="/chat-widget.js"></script>
     <style>
@@ -261,15 +261,29 @@
         if (e.code === 'ArrowLeft') { player.pos.x--; if(collide(arena, player)) player.pos.x++; }
         else if (e.code === 'ArrowRight') { player.pos.x++; if(collide(arena, player)) player.pos.x--; }
         else if (e.code === 'ArrowDown') { player.pos.y++; if(collide(arena, player)) player.pos.y--; }
-        else if (e.code === 'ArrowUp' || e.code === 'KeyR') { 
+        else if (e.code === 'ArrowUp' || e.code === 'KeyR') {
             const old = player.matrix; player.matrix = rotate(player.matrix);
             if(collide(arena, player)) player.matrix = old;
         }
-        else if (e.code === 'Space') { 
+        else if (e.code === 'Space') {
             while(!collide(arena, player)) player.pos.y++;
             player.pos.y--; merge();
         }
         else if (e.code === 'KeyP') isPaused = !isPaused;
+    });
+
+
+    let _adaPrevPaused = false;
+    window.addEventListener('ada:announcement:pause', () => {
+        if (!isReady) return;
+        _adaPrevPaused = isPaused;
+        isPaused = true;
+        if (typeof window.ADA_PauseGame === 'function') window.ADA_PauseGame(GAME_ID);
+    });
+    window.addEventListener('ada:announcement:resume', () => {
+        if (!isReady) return;
+        isPaused = _adaPrevPaused;
+        if (typeof window.ADA_ResumeGame === 'function') window.ADA_ResumeGame(GAME_ID);
     });
 
     window.resetGame = () => { arena.forEach(row => row.fill(0)); score = 0; document.getElementById('score').innerText = 0; resetPlayer(); };
