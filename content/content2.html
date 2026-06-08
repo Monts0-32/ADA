@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <title>ADA | Snake</title>
 <script src="/uplink.js"></script>
-<script src="/announcement-engine.js"></script>
 <script src="/escape-key.js"></script>
 <script src="/header-engine.js"></script>
+<script src="/announcement-engine.js"></script>
 <style>
 :root {
     --bg: #0d1117; --surface: #161b22; --border: #30363d;
@@ -341,6 +341,27 @@ function updateHUD() {
     document.getElementById('h-length').textContent = foodEaten;
     document.getElementById('h-best').textContent   = myBest;
 }
+
+
+let _adaPrevPaused = false;
+let _adaLoopWasRunning = false;
+window.addEventListener('ada:announcement:pause', () => {
+    if (!gameRunning) return;
+    _adaPrevPaused = gamePaused;
+    gamePaused = true;
+    _adaLoopWasRunning = !!gameLoop;
+    if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+    if (typeof window.ADA_PauseGame === 'function') window.ADA_PauseGame(GAME_ID);
+});
+window.addEventListener('ada:announcement:resume', () => {
+    if (!gameRunning) return;
+    gamePaused = _adaPrevPaused;
+    if (!gamePaused && _adaLoopWasRunning) {
+        gameLoop = setInterval(tick, tickMs);
+    }
+    _adaLoopWasRunning = false;
+    if (typeof window.ADA_ResumeGame === 'function') window.ADA_ResumeGame(GAME_ID);
+});
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
