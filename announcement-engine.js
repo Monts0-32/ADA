@@ -21,9 +21,24 @@
 
     let isModalOpen = false;
 
+    const registeredGames = new Set();
+
+    window.ADA_PauseGame = function(gameId) {
+        if (gameId) registeredGames.add(gameId);
+        window.dispatchEvent(new CustomEvent('ada:announcement:pause', { detail: { gameId: gameId || null } }));
+    };
+
+    window.ADA_ResumeGame = function(gameId) {
+        if (gameId) registeredGames.delete(gameId);
+        window.dispatchEvent(new CustomEvent('ada:announcement:resume', { detail: { gameId: gameId || null } }));
+    };
+
     function showAnnouncement(ann) {
         if (isModalOpen) return;
         isModalOpen = true;
+
+
+        window.dispatchEvent(new CustomEvent('ada:announcement:pause', { detail: { gameId: null } }));
 
         const overlay = document.createElement('div');
         overlay.id = 'ada-announcement-overlay';
@@ -108,6 +123,9 @@
             }
             overlay.remove();
             isModalOpen = false;
+
+
+            window.dispatchEvent(new CustomEvent('ada:announcement:resume', { detail: { gameId: null } }));
         };
     }
 
