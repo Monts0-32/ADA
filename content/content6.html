@@ -1,0 +1,3945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADA | Apex Racing</title>
+<script src="/uplink.js"></script>
+<script src="/header-engine.js"></script>
+<script src="/announcement-engine.js"></script>
+<script src="/escape-key.js"></script>
+<script src="/chat-widget.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0d1117;
+    --header: #161b22;
+    --surface: #161b22;
+    --border: #30363d;
+    --border-2: #21262d;
+    --text: #c9d1d9;
+    --text-2: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --btn-green: #238636;
+    --red: #f85149;
+    --gold: #d29922;
+    --purple: #a371f7;
+    --orange: #db6d28;
+    --cyan: #56d4dd;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+}
+::selection { background: var(--blue); color: white; }
+
+#ada-header-anchor { position: relative; z-index: 100; }
+
+.container { max-width: 1300px; margin: 0 auto; padding: 30px 20px; }
+
+/* ===== MENU SCREEN ===== */
+#menu-screen { display: block; }
+#game-screen { display: none; }
+
+.page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.page-sub {
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.menu-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .menu-layout { grid-template-columns: 1fr; }
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.panel-title::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--blue);
+    border-radius: 50%;
+}
+
+.panel-title .count {
+    margin-left: auto;
+    color: var(--text-2);
+    font-weight: 600;
+}
+
+/* MAP CARDS */
+.map-list { display: flex; flex-direction: column; gap: 10px; }
+
+.map-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+
+.map-card:hover {
+    border-color: var(--blue);
+    background: #0d1117;
+}
+
+.map-card.active {
+    border-color: var(--green);
+    background: rgba(35, 134, 54, 0.05);
+}
+
+.map-card.active::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    color: var(--green);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.map-thumb {
+    width: 100%;
+    aspect-ratio: 1.7;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.map-thumb svg { width: 100%; height: 100%; display: block; }
+
+.map-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.map-card.active .map-name { color: var(--green); }
+
+.map-meta {
+    font-size: 11px;
+    color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+}
+
+.map-meta .meta-row { display: flex; justify-content: space-between; }
+
+/* HERO */
+.hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.hero-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+}
+
+#preview-canvas { width: 100%; height: 100%; display: block; }
+
+.hero-content { padding: 20px; }
+
+.hero-name {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.hero-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--green);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    vertical-align: middle;
+    position: relative;
+    top: -4px;
+}
+
+.hero-tag.new { background: var(--gold); }
+
+.hero-desc {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 18px;
+}
+
+.hero-stat-label {
+    font-size: 10px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.hero-stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.hero-stat-val.blue { color: var(--blue); }
+.hero-stat-val.green { color: var(--green); }
+.hero-stat-val.gold { color: var(--gold); }
+.hero-stat-val.red { color: var(--red); }
+
+/* CAR SELECTOR */
+.car-select {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.car-option {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.car-option:hover { border-color: var(--blue); }
+
+.car-option.active {
+    border-color: var(--green);
+    background: rgba(35, 134, 54, 0.05);
+}
+
+.car-swatch {
+    width: 28px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.car-info { min-width: 0; }
+
+.car-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.car-stat {
+    font-size: 10px;
+    color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ROSTER */
+.roster {
+    margin-bottom: 16px;
+}
+
+.roster-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-2);
+}
+
+.roster-item:last-child { border-bottom: none; }
+
+.roster-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+    flex-shrink: 0;
+}
+
+.roster-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.roster-name.you { color: var(--green); font-weight: 600; }
+
+.roster-ping {
+    font-size: 10px;
+    color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* BUTTONS */
+.btn {
+    background: #21262d;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: 0.15s;
+    text-align: center;
+    width: 100%;
+}
+
+.btn:hover { background: #30363d; border-color: var(--text-2); }
+
+.btn.primary {
+    background: var(--btn-green);
+    border-color: var(--btn-green);
+    color: white;
+    font-size: 14px;
+    padding: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn.primary:hover { background: #2ea043; border-color: #2ea043; }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn.full { width: 100%; }
+
+.btn-stack { display: flex; flex-direction: column; gap: 8px; }
+
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* KEY HINTS */
+.key-hint {
+    font-size: 10px;
+    color: var(--text-2);
+    line-height: 1.9;
+}
+
+.key-cap {
+    background: #21262d;
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    display: inline-block;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* RANKINGS */
+.lb-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-2);
+}
+
+.lb-entry:last-child { border-bottom: none; }
+
+.lb-rank {
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--gold);
+    min-width: 24px;
+}
+
+.lb-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+.lb-info { flex: 1; min-width: 0; }
+
+.lb-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lb-time {
+    font-size: 11px;
+    color: var(--blue);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ===== GAME SCREEN (FULLSCREEN) ===== */
+#game-screen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.game-topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    pointer-events: none;
+}
+
+.game-topbar .left, .game-topbar .right { display: flex; gap: 16px; align-items: center; }
+
+.tb-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.tb-label {
+    font-size: 9px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.tb-val {
+    font-size: 14px;
+    color: white;
+    font-weight: 600;
+}
+
+.tb-val.green { color: var(--green); }
+.tb-val.blue { color: var(--blue); }
+.tb-val.gold { color: var(--gold); }
+.tb-val.red { color: var(--red); }
+
+.exit-btn {
+    pointer-events: all;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    transition: 0.15s;
+}
+
+.exit-btn:hover { background: var(--red); border-color: var(--red); color: white; }
+
+.game-bottombar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 14px 18px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+    z-index: 10;
+    pointer-events: none;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* SPEED */
+.speed-cluster { text-align: right; }
+
+.speed-big {
+    font-size: 72px;
+    font-weight: 700;
+    line-height: 0.9;
+    color: white;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+
+.speed-unit {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+.gear-tag {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 3px;
+    font-size: 11px;
+    color: white;
+}
+
+.gear-tag .gn { color: var(--gold); font-weight: 700; }
+
+/* BOOST */
+.boost-wrap {
+    pointer-events: all;
+    width: 200px;
+}
+
+.boost-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.boost-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.boost-fill {
+    height: 100%;
+    background: var(--blue);
+    box-shadow: 0 0 10px var(--blue);
+    transition: width 0.1s;
+}
+
+.boost-fill.low { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+/* LAP TIMER PANEL (bottom center) */
+.timing-panel {
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    pointer-events: all;
+    backdrop-filter: blur(8px);
+}
+
+.timing-title {
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+}
+
+.timing-row {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+}
+
+.timing-cell { color: var(--text); }
+.timing-cell .label { color: var(--text-2); margin-right: 4px; font-size: 9px; }
+.timing-cell .val { color: white; font-weight: 600; }
+.timing-cell .val.green { color: var(--green); }
+.timing-cell .val.gold { color: var(--gold); }
+
+/* MINIMAP */
+.minimap-panel {
+    position: absolute;
+    top: 60px;
+    right: 18px;
+    width: 180px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 10;
+    pointer-events: all;
+    backdrop-filter: blur(8px);
+}
+
+.minimap-title {
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+}
+
+#minimap-canvas {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #000;
+    border-radius: 4px;
+    border: 1px solid var(--border-2);
+    display: block;
+}
+
+/* ROSTER PANEL (left) */
+.live-roster {
+    position: absolute;
+    top: 60px;
+    left: 18px;
+    width: 200px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    pointer-events: all;
+    backdrop-filter: blur(8px);
+}
+
+.live-title {
+    font-size: 9px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.live-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border-2);
+}
+
+.live-item:last-child { border-bottom: none; }
+
+.live-pos {
+    color: var(--gold);
+    font-weight: 700;
+    width: 14px;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 4px currentColor;
+    flex-shrink: 0;
+}
+
+.live-name {
+    flex: 1;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.live-name.you { color: var(--green); font-weight: 600; }
+
+.live-time {
+    color: var(--text-2);
+    font-size: 10px;
+}
+
+/* COUNTDOWN */
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.countdown.active { opacity: 1; }
+
+.countdown .big {
+    font-size: 200px;
+    font-weight: 700;
+    color: white;
+    line-height: 1;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.7);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.countdown .big.go { color: var(--green); }
+
+.countdown .sub {
+    font-size: 18px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 8px;
+    margin-top: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* RESULT OVERLAY */
+.result-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 30px;
+    font-family: 'JetBrains Mono', monospace;
+    backdrop-filter: blur(6px);
+}
+
+.result-overlay.active { display: flex; }
+
+.result-pos {
+    font-size: 100px;
+    font-weight: 700;
+    line-height: 1;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.result-pos.win { color: var(--gold); text-shadow: 0 0 40px var(--gold); }
+.result-pos.lose { color: var(--text); }
+
+.result-place {
+    font-size: 24px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 30px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-bottom: 30px;
+    padding: 20px 30px;
+    background: rgba(13, 17, 23, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-width: 460px;
+}
+
+.result-stat {
+    text-align: center;
+}
+
+.result-stat-label {
+    font-size: 10px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+}
+
+.result-stat-val {
+    font-size: 24px;
+    color: white;
+    font-weight: 600;
+}
+
+.result-stat-val.gold { color: var(--gold); }
+.result-stat-val.blue { color: var(--blue); }
+.result-stat-val.green { color: var(--green); }
+
+.result-btns { display: flex; gap: 10px; }
+
+.result-btn {
+    background: #21262d;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    transition: 0.15s;
+}
+
+.result-btn:hover { background: #30363d; }
+
+.result-btn.primary {
+    background: var(--btn-green);
+    border-color: var(--btn-green);
+    color: white;
+}
+
+.result-btn.primary:hover { background: #2ea043; }
+
+/* MOBILE */
+.mobile-controls {
+    display: none;
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    gap: 6px;
+}
+
+@media (max-width: 700px) {
+    .live-roster, .minimap-panel { display: none; }
+    .mobile-controls { display: flex; }
+    .speed-big { font-size: 48px; }
+}
+
+.m-btn {
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    cursor: pointer;
+}
+
+.m-btn:active { background: var(--blue); border-color: var(--blue); color: white; }
+
+/* TIPS */
+.tips {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.6;
+}
+
+.tips strong { color: var(--text); font-weight: 600; }
+
+.version-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+</style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<!-- ============ MENU SCREEN ============ -->
+<div id="menu-screen">
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">Apex Racing <span class="version-tag">v1.0</span></h1>
+        <div class="page-sub">3D Multiplayer Arcade Racing · 4 Live Drivers · 2 Circuits</div>
+    </div>
+
+    <div class="menu-layout">
+        <!-- LEFT: MAP SELECT -->
+        <div>
+            <div class="panel" style="margin-bottom: 16px;">
+                <div class="panel-title">Circuit Select <span class="count">2</span></div>
+                <div class="map-list" id="map-list">
+                    <div class="map-card active" data-map="cascade">
+                        <div class="map-thumb">
+                            <svg viewBox="0 0 200 118" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="200" height="118" fill="#0d1117"/>
+                                <g stroke="#1c2128" stroke-width="0.4" opacity="0.5">
+                                    <line x1="0" y1="29" x2="200" y2="29"/>
+                                    <line x1="0" y1="59" x2="200" y2="59"/>
+                                    <line x1="0" y1="89" x2="200" y2="89"/>
+                                    <line x1="50" y1="0" x2="50" y2="118"/>
+                                    <line x1="100" y1="0" x2="100" y2="118"/>
+                                    <line x1="150" y1="0" x2="150" y2="118"/>
+                                </g>
+                                <path d="M 50 70 Q 50 30 90 30 L 130 30 Q 160 30 160 60 Q 160 88 130 88 L 70 88 Q 50 88 50 70 Z"
+                                    fill="none" stroke="#3fb950" stroke-width="2.5"/>
+                                <circle cx="50" cy="70" r="3" fill="#3fb950"/>
+                                <text x="100" y="14" fill="#8b949e" font-size="7" font-family="monospace" text-anchor="middle">START/FINISH</text>
+                                <line x1="50" y1="70" x2="50" y2="35" stroke="#3fb950" stroke-width="0.5" stroke-dasharray="2 2"/>
+                            </svg>
+                        </div>
+                        <div class="map-name">Cascade Loop</div>
+                        <div class="map-meta">
+                            <div class="meta-row"><span>Length</span><span>4.2 KM</span></div>
+                            <div class="meta-row"><span>Corners</span><span>12</span></div>
+                            <div class="meta-row"><span>Type</span><span>Banked Oval</span></div>
+                        </div>
+                    </div>
+
+                    <div class="map-card" data-map="neongrid">
+                        <div class="map-thumb">
+                            <svg viewBox="0 0 200 118" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="200" height="118" fill="#0d1117"/>
+                                <g stroke="#1c2128" stroke-width="0.4" opacity="0.5">
+                                    <line x1="0" y1="29" x2="200" y2="29"/>
+                                    <line x1="0" y1="59" x2="200" y2="59"/>
+                                    <line x1="0" y1="89" x2="200" y2="89"/>
+                                    <line x1="50" y1="0" x2="50" y2="118"/>
+                                    <line x1="100" y1="0" x2="100" y2="118"/>
+                                    <line x1="150" y1="0" x2="150" y2="118"/>
+                                </g>
+                                <path d="M 35 59 Q 65 30 100 59 Q 135 88 165 59 Q 135 30 100 59 Q 65 88 35 59"
+                                    fill="none" stroke="#d29922" stroke-width="2.5"/>
+                                <circle cx="35" cy="59" r="3" fill="#d29922"/>
+                                <text x="100" y="14" fill="#8b949e" font-size="7" font-family="monospace" text-anchor="middle">START/FINISH</text>
+                                <line x1="35" y1="59" x2="35" y2="20" stroke="#d29922" stroke-width="0.5" stroke-dasharray="2 2"/>
+                            </svg>
+                        </div>
+                        <div class="map-name">Neon Grid</div>
+                        <div class="map-meta">
+                            <div class="meta-row"><span>Length</span><span>3.6 KM</span></div>
+                            <div class="meta-row"><span>Corners</span><span>11</span></div>
+                            <div class="meta-row"><span>Type</span><span>Figure-8</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Controls</div>
+                <div class="key-hint">
+                    <span class="key-cap">W</span> <span class="key-cap">↑</span> Accelerate<br>
+                    <span class="key-cap">S</span> <span class="key-cap">↓</span> Brake / Reverse<br>
+                    <span class="key-cap">A</span> <span class="key-cap">D</span> Steer<br>
+                    <span class="key-cap">SHIFT</span> Boost<br>
+                    <span class="key-cap">CTRL</span> Drift<br>
+                    <span class="key-cap">C</span> Camera<br>
+                    <span class="key-cap">ESC</span> Exit Race
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER: HERO -->
+        <div>
+            <div class="hero">
+                <div class="hero-preview">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <div class="hero-content">
+                    <div>
+                        <span class="hero-name" id="hero-name">Cascade Loop</span>
+                        <span class="hero-tag" id="hero-tag">SELECTED</span>
+                    </div>
+                    <p class="hero-desc" id="hero-desc">
+                        A high-speed banked oval set against a neon skyline. 12 waypoints with 4 dedicated banked turns favoring committed corner entry. Use the outside curb on sweepers to maintain momentum through the back straight.
+                    </p>
+
+                    <div class="hero-stats">
+                        <div>
+                            <div class="hero-stat-label">Length</div>
+                            <div class="hero-stat-val" id="stat-length">4.2 KM</div>
+                        </div>
+                        <div>
+                            <div class="hero-stat-label">Laps</div>
+                            <div class="hero-stat-val" id="stat-laps">3</div>
+                        </div>
+                        <div>
+                            <div class="hero-stat-label">Driv.</div>
+                            <div class="hero-stat-val blue" id="stat-drivers">4 / 4</div>
+                        </div>
+                        <div>
+                            <div class="hero-stat-label">Status</div>
+                            <div class="hero-stat-val green" id="stat-status">OPEN</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-title" style="margin-bottom: 10px;">Choose Vehicle</div>
+                    <div class="car-select" id="car-select"></div>
+
+                    <div class="btn-row" style="margin-bottom: 8px;">
+                        <button class="btn primary" id="start-race-btn" onclick="startRace()">Enter Race</button>
+                        <button class="btn" id="host-race-btn" onclick="openMultiplayerLobby()">Multiplayer</button>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn" id="map-creator-btn" onclick="openMapCreator()">Map Creator</button>
+                        <button class="btn" id="browse-maps-btn" onclick="openCommunityMaps()">Community Maps</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tips">
+                <strong>Tip:</strong> Boost pads (magenta) refill your boost meter when driven over. Hold <span class="key-cap">CTRL</span> mid-corner to drift — reduces grip but lets you carry more speed through tight bends.
+            </div>
+        </div>
+
+        <!-- RIGHT: ROSTER & LB -->
+        <div>
+            <div class="panel" style="margin-bottom: 16px;">
+                <div class="panel-title">Live Roster <span class="count" id="roster-count">4 / 4</span></div>
+                <div class="roster" id="menu-roster"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">All-Time Records</div>
+                <div id="leaderboard">
+                    <div style="font-size:11px; opacity:0.5;">Loading rankings...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ============ MULTIPLAYER LOBBY OVERLAY ============ -->
+<div id="mp-lobby-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1500; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border);">
+        <div>
+            <div style="font-size:18px; font-weight:700; color:var(--text);">Multiplayer Lobby</div>
+            <div style="font-size:12px; color:var(--text-2); font-family:'JetBrains Mono', monospace;">Race against other ADA drivers in real time</div>
+        </div>
+        <button class="btn" id="mp-close-btn" style="width:auto; padding:8px 14px;">Back to Menu</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 320px 1fr; flex:1; min-height:0;">
+        <!-- LEFT: ROOM LIST -->
+        <div style="background:var(--surface); border-right:1px solid var(--border); overflow-y:auto; padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px;">Open Lobbies</div>
+                <button class="btn" id="mp-refresh-btn" style="width:auto; padding:4px 10px; font-size:11px;">Refresh</button>
+            </div>
+            <div id="mp-room-list" style="margin-bottom:16px;">
+                <div style="font-size:11px; color:var(--text-2); text-align:center; padding:20px 0; opacity:0.6;">Loading lobbies…</div>
+            </div>
+
+            <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Create New</div>
+            <input id="mp-room-name" type="text" placeholder="Lobby name…" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--text); font-family:inherit; font-size:13px; margin-bottom:8px;">
+            <select id="mp-room-map" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--text); font-family:inherit; font-size:13px; margin-bottom:8px;">
+                <option value="cascade">Cascade Loop</option>
+                <option value="neongrid">Neon Grid</option>
+            </select>
+            <button class="btn primary" id="mp-create-btn">Create Lobby</button>
+
+            <div style="font-size:10px; color:var(--text-2); margin-top:16px; line-height:1.6; font-family:'JetBrains Mono', monospace;">
+                <strong style="color:var(--text);">How it works:</strong><br>
+                · Create a lobby and share the room code with another player<br>
+                · Up to 4 racers per lobby<br>
+                · Real-time position sync every 100ms<br>
+                · Best lap times posted to global leaderboard
+            </div>
+        </div>
+
+        <!-- RIGHT: LOBBY ROOM -->
+        <div style="padding:24px; overflow-y:auto;">
+            <div id="mp-room-empty" style="text-align:center; color:var(--text-2); padding:60px 20px;">
+                <div style="font-size:48px; opacity:0.3; margin-bottom:12px;">⌖</div>
+                <div style="font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px;">No Lobby Selected</div>
+                <div style="font-size:12px;">Join an open lobby on the left, or create your own.</div>
+            </div>
+
+            <div id="mp-room-active" style="display:none;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                    <div>
+                        <div style="font-size:22px; font-weight:700; color:var(--text);" id="mp-room-title">Lobby Name</div>
+                        <div style="font-size:12px; color:var(--text-2); font-family:'JetBrains Mono', monospace; margin-top:4px;">
+                            CODE: <span id="mp-room-code" style="color:var(--cyan); font-weight:700; font-size:14px;">————</span>
+                            <button onclick="mpCopyCode()" style="background:none; border:1px solid var(--border); color:var(--text-2); padding:2px 8px; border-radius:3px; font-size:10px; cursor:pointer; margin-left:8px;">Copy</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn" id="mp-leave-btn" style="width:auto; padding:8px 14px; background:var(--red); border-color:var(--red); color:white;">Leave</button>
+                        <button class="btn primary" id="mp-start-btn" style="width:auto; padding:8px 14px;">Start Race</button>
+                    </div>
+                </div>
+
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:16px;">
+                    <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Racers in Lobby</div>
+                    <div id="mp-player-list"></div>
+                </div>
+
+                <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px;">
+                    <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Lobby Chat</div>
+                    <div id="mp-chat-log" style="height:200px; overflow-y:auto; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text); margin-bottom:8px;"></div>
+                    <div style="display:flex; gap:6px;">
+                        <input id="mp-chat-input" type="text" placeholder="Say something…" style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:6px 10px; color:var(--text); font-family:inherit; font-size:12px;">
+                        <button class="btn" id="mp-chat-send" style="width:auto; padding:6px 14px;">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ COMMUNITY MAPS BROWSER ============ -->
+<div id="cm-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:1500; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border);">
+        <div>
+            <div style="font-size:18px; font-weight:700; color:var(--text);">Community Maps</div>
+            <div style="font-size:12px; color:var(--text-2); font-family:'JetBrains Mono', monospace;">Player-created tracks from the ADA community</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn" id="cm-refresh-btn" style="width:auto; padding:8px 14px;">Refresh</button>
+            <button class="btn" id="cm-close-btn" style="width:auto; padding:8px 14px;">Back to Menu</button>
+        </div>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; padding:24px;">
+        <div id="cm-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+            <div style="grid-column: 1/-1; text-align:center; color:var(--text-2); padding:60px 20px;">
+                <div style="font-size:48px; opacity:0.3; margin-bottom:12px;">⊞</div>
+                <div style="font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px;">Loading community maps…</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ GAME SCREEN (FULLSCREEN) ============ -->
+<div id="game-screen">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- TOP BAR -->
+    <div class="game-topbar">
+        <div class="left">
+            <div class="tb-stat">
+                <div class="tb-label">Lap</div>
+                <div class="tb-val"><span id="g-lap">1</span> / <span id="g-laps-total">3</span></div>
+            </div>
+            <div class="tb-stat">
+                <div class="tb-label">Position</div>
+                <div class="tb-val" id="g-position">1<span style="color:var(--text-2);font-size:11px;" id="g-pos-suffix">ST</span></div>
+            </div>
+            <div class="tb-stat">
+                <div class="tb-label">Race Time</div>
+                <div class="tb-val blue" id="g-race-time">00:00.000</div>
+            </div>
+            <div class="tb-stat">
+                <div class="tb-label">Best Lap</div>
+                <div class="tb-val gold" id="g-best-lap">--:--.---</div>
+            </div>
+        </div>
+        <div class="right">
+            <button class="exit-btn" onclick="exitRace()">← EXIT</button>
+        </div>
+    </div>
+
+    <!-- LEFT: ROSTER -->
+    <div class="live-roster">
+        <div class="live-title">LIVE STANDINGS</div>
+        <div id="live-roster"></div>
+    </div>
+
+    <!-- RIGHT: MINIMAP -->
+    <div class="minimap-panel">
+        <div class="minimap-title">TACTICAL</div>
+        <canvas id="minimap-canvas" width="164" height="164"></canvas>
+    </div>
+
+    <!-- BOTTOM -->
+    <div class="game-bottombar">
+        <div class="timing-panel" id="timing-panel">
+            <div class="timing-title">LAP TELEMETRY</div>
+            <div class="timing-row">
+                <div class="timing-cell"><span class="label">L1</span><span class="val" id="t-l1">--:--.---</span></div>
+                <div class="timing-cell"><span class="label">L2</span><span class="val" id="t-l2">--:--.---</span></div>
+                <div class="timing-cell"><span class="label">L3</span><span class="val" id="t-l3">--:--.---</span></div>
+            </div>
+        </div>
+
+        <div class="boost-wrap">
+            <div class="boost-label">
+                <span>BOOST</span>
+                <span id="boost-pct">100%</span>
+            </div>
+            <div class="boost-bar">
+                <div class="boost-fill" id="boost-fill" style="width:100%"></div>
+            </div>
+        </div>
+
+        <div class="speed-cluster">
+            <div class="speed-big" id="speed-num">0</div>
+            <div class="speed-unit">KM/H</div>
+            <div class="gear-tag">GEAR <span class="gn" id="gear-num">1</span></div>
+        </div>
+    </div>
+
+    <!-- COUNTDOWN -->
+    <div class="countdown" id="countdown">
+        <div class="big" id="cd-big">3</div>
+        <div class="sub" id="cd-sub">GET READY</div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result-overlay" id="result-overlay">
+        <div class="result-pos" id="res-pos">1</div>
+        <div class="result-place" id="res-place">VICTORY</div>
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="result-stat-label">Total Time</div>
+                <div class="result-stat-val blue" id="res-total">00:00.000</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Best Lap</div>
+                <div class="result-stat-val gold" id="res-best">00:00.000</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Top Speed</div>
+                <div class="result-stat-val green" id="res-top">0 KM/H</div>
+            </div>
+        </div>
+        <div class="result-btns">
+            <button class="result-btn primary" onclick="restartRace()">Race Again</button>
+            <button class="result-btn" onclick="exitRace()">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- MOBILE -->
+    <div class="mobile-controls">
+        <div class="m-btn" id="m-left">◀</div>
+        <div class="m-btn" id="m-up">▲</div>
+        <div class="m-btn" id="m-down">▼</div>
+        <div class="m-btn" id="m-right">▶</div>
+        <div class="m-btn" id="m-boost" style="background:rgba(248,81,73,0.2); border-color:var(--red); color:var(--red);">⚡</div>
+    </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ===== STATE =====
+const STATE = {
+    map: 'cascade',
+    carIdx: 0,
+    raceState: 'menu', // menu, countdown, racing, finished
+    raceTime: 0,
+    bestLap: Infinity,
+    topSpeed: 0,
+    countVal: 3,
+    cameraMode: 0,
+    playerName: 'RIDER_01'
+};
+
+const ROSTER = [
+    { name: 'RIDER_01', color: 0x58a6ff, isPlayer: true, label: 'Velocity GT', topSpeed: 285, accel: 8.2 },
+    { name: 'NIGHTFOX', color: 0xf85149, isPlayer: false, label: 'Apex RS', topSpeed: 270, accel: 8.8, skill: 0.92 },
+    { name: 'VOLT_07', color: 0xd29922, isPlayer: false, label: 'Ion Cruiser', topSpeed: 260, accel: 7.6, skill: 0.85 },
+    { name: 'CIPHER_4', color: 0xa371f7, isPlayer: false, label: 'Phantom X', topSpeed: 295, accel: 7.9, skill: 0.95 }
+];
+
+const CARS_INFO = [
+    { name: 'Velocity GT', color: 0x58a6ff, top: 285, accel: '8.2s', grip: 'Medium', desc: 'Balanced' },
+    { name: 'Apex RS', color: 0xf85149, top: 270, accel: '8.8s', grip: 'High', desc: 'Grip Tuned' },
+    { name: 'Ion Cruiser', color: 0xd29922, top: 260, accel: '7.6s', grip: 'Low', desc: 'Drift King' },
+    { name: 'Phantom X', color: 0xa371f7, top: 295, accel: '7.9s', grip: 'Medium', desc: 'Top Speed' }
+];
+
+const MAPS = {
+    cascade: {
+        name: 'Cascade Loop',
+        laps: 3,
+        length: '4.2 KM',
+        trackWidth: 24,
+        drivers: '4 / 4',
+        status: 'OPEN',
+        desc: 'A high-speed banked oval set against a neon skyline. 12 waypoints with 4 dedicated banked turns favoring committed corner entry. Use the outside curb on sweepers to maintain momentum through the back straight.',
+        theme: { primary: 0x3fb950, accent: 0x58a6ff, ground: 0x0a0f14, fog: 0x0a0f1c, sky: 0x0d1117, groundLine: 0x1c2128 },
+        waypoints: [
+            { x: 0, z: -120, w: 18 },
+            { x: 60, z: -100, w: 18 },
+            { x: 110, z: -60, w: 18 },
+            { x: 140, z: 0, w: 22, bank: 0.4 },
+            { x: 130, z: 70, w: 22, bank: 0.4 },
+            { x: 80, z: 110, w: 18 },
+            { x: 0, z: 120, w: 18 },
+            { x: -80, z: 110, w: 18 },
+            { x: -130, z: 70, w: 22, bank: 0.4 },
+            { x: -140, z: 0, w: 22, bank: 0.4 },
+            { x: -110, z: -60, w: 18 },
+            { x: -60, z: -100, w: 18 }
+        ],
+        boostPads: [{ x: 80, z: 110 }, { x: -80, z: 110 }, { x: 0, z: -120 }]
+    },
+    neongrid: {
+        name: 'Neon Grid',
+        laps: 3,
+        length: '3.6 KM',
+        trackWidth: 24,
+        drivers: '4 / 4',
+        status: 'OPEN',
+        desc: 'A figure-8 circuit with a crossover section and a high-speed tunnel run. 11 waypoints with negative-banked intersection requiring precise throttle control. Watch your boost management through the long back straight.',
+        theme: { primary: 0xd29922, accent: 0xa371f7, ground: 0x0d0a14, fog: 0x0a0f1c, sky: 0x11081c, groundLine: 0x2a1c3a },
+        waypoints: [
+            { x: 0, z: -100, w: 16 },
+            { x: 50, z: -80, w: 16 },
+            { x: 90, z: -40, w: 16 },
+            { x: 100, z: 10, w: 16 },
+            { x: 60, z: 50, w: 14, bank: 0.2 },
+            { x: 20, z: 70, w: 12, bank: 0.3 },
+            { x: -20, z: 70, w: 12, bank: 0.3 },
+            { x: -60, z: 50, w: 14, bank: 0.2 },
+            { x: -100, z: 10, w: 16 },
+            { x: -90, z: -40, w: 16 },
+            { x: -50, z: -80, w: 16 },
+            { x: 10, z: -50, w: 14, bank: -0.2 },
+            { x: -10, z: 30, w: 14, bank: -0.2 }
+        ],
+        boostPads: [{ x: 100, z: 10 }, { x: -100, z: 10 }, { x: 10, z: -50 }]
+    }
+};
+
+// ===== KEYS =====
+const keys = {};
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && STATE.raceState !== 'menu') { exitRace(); return; }
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === ' ') e.preventDefault();
+    if (e.key.toLowerCase() === 'c' && STATE.raceState === 'racing') {
+        STATE.cameraMode = (STATE.cameraMode + 1) % 3;
+    }
+});
+window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+const mobileState = { up: false, down: false, left: false, right: false, boost: false };
+function bindMobile(id, key) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); mobileState[key] = true; });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); mobileState[key] = false; });
+    el.addEventListener('mousedown', () => mobileState[key] = true);
+    el.addEventListener('mouseup', () => mobileState[key] = false);
+    el.addEventListener('mouseleave', () => mobileState[key] = false);
+}
+bindMobile('m-up', 'up');
+bindMobile('m-down', 'down');
+bindMobile('m-left', 'left');
+bindMobile('m-right', 'right');
+bindMobile('m-boost', 'boost');
+
+// ===== THREE.JS =====
+const stage = document.getElementById('game-canvas');
+const previewCanvas = document.getElementById('preview-canvas');
+const minimapCanvas = document.getElementById('minimap-canvas');
+
+const renderer = new THREE.WebGLRenderer({ canvas: stage, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 2000);
+
+// Lighting
+scene.add(new THREE.AmbientLight(0x334455, 0.45));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55);
+sun.position.set(150, 250, 100);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -250;
+sun.shadow.camera.right = 250;
+sun.shadow.camera.top = 250;
+sun.shadow.camera.bottom = -250;
+sun.shadow.camera.far = 700;
+scene.add(sun);
+
+// ===== PREVIEW RENDERER =====
+const previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true });
+previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
+const previewScene = new THREE.Scene();
+const previewCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+previewScene.add(new THREE.AmbientLight(0x556677, 0.6));
+const previewSun = new THREE.DirectionalLight(0xffffff, 0.6);
+previewSun.position.set(50, 80, 30);
+previewScene.add(previewSun);
+
+let previewTrack = null;
+let previewCar = null;
+let previewTime = 0;
+
+function buildPreview(mapKey) {
+    if (previewTrack) {
+        previewScene.remove(previewTrack);
+        previewTrack.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+    if (previewCar) {
+        previewScene.remove(previewCar);
+        previewCar.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+
+    const cfg = MAPS[mapKey];
+    const theme = cfg.theme;
+    previewScene.fog = new THREE.Fog(theme.fog, 80, 250);
+    previewScene.background = new THREE.Color(theme.sky);
+
+    const group = new THREE.Group();
+    previewScene.add(group);
+
+    // Simple track for preview
+    const wps = cfg.waypoints;
+    const points3 = wps.map(w => new THREE.Vector3(w.x, 0, w.z));
+    const curve = new THREE.CatmullRomCurve3(points3, true, 'catmullrom', 0.5);
+    const samples = 80;
+
+    // Match the in-game track width
+    const halfW = (cfg.trackWidth || 24) / 2;
+    const positions = [], colors = [], indices = [];
+    for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const pos = curve.getPointAt(t);
+        const tan = curve.getTangentAt(t).normalize();
+        const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0, 1, 0)).normalize();
+        const yBank = (cfg.waypoints[Math.floor(t * wps.length) % wps.length]?.bank || 0) * 4;
+        positions.push(pos.x - right.x * halfW, yBank, pos.z - right.z * halfW);
+        positions.push(pos.x + right.x * halfW, yBank, pos.z + right.z * halfW);
+        const isStripe = (i % 4 < 2);
+        const c1 = isStripe ? [0.4, 0.5, 0.6] : [0.5, 0.5, 0.55];
+        const c2 = isStripe ? [0.5, 0.5, 0.55] : [0.4, 0.5, 0.6];
+        colors.push(c1[0], c1[1], c1[2]);
+        colors.push(c2[0], c2[1], c2[2]);
+    }
+    for (let i = 0; i < samples; i++) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        indices.push(a, c, b, b, c, d);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({
+        vertexColors: true, roughness: 0.6, metalness: 0.2,
+        emissive: new THREE.Color(theme.primary), emissiveIntensity: 0.04
+    });
+    group.add(new THREE.Mesh(geo, mat));
+
+    // Glowing rails
+    for (let side = -1; side <= 1; side += 2) {
+        const pts = [];
+        for (let i = 0; i <= samples; i++) {
+            const t = i / samples;
+            const pos = curve.getPointAt(t);
+            const tan = curve.getTangentAt(t).normalize();
+            const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0, 1, 0)).normalize();
+            pts.push(pos.x + right.x * (halfW + 0.5) * side, 0.3, pos.z + right.z * (halfW + 0.5) * side);
+        }
+        const rg = new THREE.BufferGeometry();
+        rg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        const rm = new THREE.LineBasicMaterial({ color: side > 0 ? theme.primary : theme.accent });
+        group.add(new THREE.Line(rg, rm));
+    }
+
+    // Ground
+    const gGeo = new THREE.PlaneGeometry(400, 400);
+    const gMat = new THREE.MeshStandardMaterial({ color: theme.ground, roughness: 0.95 });
+    const g = new THREE.Mesh(gGeo, gMat);
+    g.rotation.x = -Math.PI / 2;
+    g.position.y = -0.1;
+    group.add(g);
+
+    previewTrack = group;
+    previewTrack.userData.curve = curve;
+    previewTrack.userData.length = curve.getLength();
+
+    // Simple car
+    previewCar = buildSimpleCar(0x58a6ff);
+    previewScene.add(previewCar);
+
+    // Set up camera path
+    previewCamera.position.set(60, 50, 60);
+    previewCamera.lookAt(0, 0, 0);
+}
+
+function buildSimpleCar(color) {
+    const g = new THREE.Group();
+    const bodyGeo = new THREE.BoxGeometry(2, 0.6, 4);
+    const bodyMat = new THREE.MeshStandardMaterial({ color, metalness: 0.8, roughness: 0.25, emissive: new THREE.Color(color), emissiveIntensity: 0.1 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.6;
+    g.add(body);
+    const cabGeo = new THREE.BoxGeometry(1.6, 0.5, 1.8);
+    const cabMat = new THREE.MeshStandardMaterial({ color: 0x0a0f14, metalness: 0.9, roughness: 0.1 });
+    const cab = new THREE.Mesh(cabGeo, cabMat);
+    cab.position.set(0, 1.15, -0.1);
+    g.add(cab);
+    for (let x of [-1, 1]) for (let z of [-1.4, 1.4]) {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 12), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        w.rotation.z = Math.PI / 2;
+        w.position.set(x * 1.05, 0.4, z);
+        g.add(w);
+    }
+    return g;
+}
+
+// ===== TRACK BUILDER =====
+let trackGroup = null;
+let track = null;
+let trackWidth = 16;
+let previewState = { running: true };
+
+function buildTrack(mapKey) {
+    if (trackGroup) {
+        scene.remove(trackGroup);
+        trackGroup.traverse(o => {
+            if (o.geometry) o.geometry.dispose();
+            if (o.material) {
+                if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+                else o.material.dispose();
+            }
+        });
+    }
+    const cfg = MAPS[mapKey];
+    const theme = cfg.theme;
+    scene.fog = new THREE.Fog(theme.fog, 180, 600);
+    scene.background = new THREE.Color(theme.sky);
+
+    trackGroup = new THREE.Group();
+    scene.add(trackGroup);
+
+    const wps = cfg.waypoints;
+    const points3 = wps.map(w => new THREE.Vector3(w.x, 0, w.z));
+    const curve = new THREE.CatmullRomCurve3(points3, true, 'catmullrom', 0.5);
+    const samples = 200;
+    const sampled = curve.getSpacedPoints(samples);
+    // Use per-map trackWidth so each track can have its own width.
+    // Default 24m matches the cascade/neongrid standard.
+    const trackWidthAvg = cfg.trackWidth || 24;
+    const halfW = trackWidthAvg / 2;
+
+    const positions = [], uvs = [], colors = [], indices = [];
+    function getBasis(t) {
+        const tangent = curve.getTangentAt(t % 1).normalize();
+        const pos = curve.getPointAt(t % 1);
+        return { pos, tangent };
+    }
+    for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const { pos, tangent } = getBasis(t);
+        const right = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+        const yBank = (cfg.waypoints[Math.floor(t * wps.length) % wps.length]?.bank || 0);
+        const yOff = yBank * 6;
+        const lx = pos.x - right.x * halfW, lz = pos.z - right.z * halfW;
+        const rx = pos.x + right.x * halfW, rz = pos.z + right.z * halfW;
+        positions.push(lx, yOff, lz, rx, yOff, rz);
+        uvs.push(0, t * 30, 1, t * 30);
+        const isStripe = (i % 4 < 2);
+        const c1 = isStripe ? [0.95, 0.95, 0.95] : [0.15, 0.15, 0.18];
+        const c2 = isStripe ? [0.15, 0.15, 0.18] : [0.95, 0.95, 0.95];
+        colors.push(c1[0], c1[1], c1[2], c2[0], c2[1], c2[2]);
+    }
+    for (let i = 0; i < samples; i++) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        indices.push(a, c, b, b, c, d);
+    }
+    const trackGeo = new THREE.BufferGeometry();
+    trackGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    trackGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    trackGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    trackGeo.setIndex(indices);
+    trackGeo.computeVertexNormals();
+    const trackMat = new THREE.MeshStandardMaterial({
+        vertexColors: true, roughness: 0.55, metalness: 0.1,
+        emissive: new THREE.Color(theme.primary), emissiveIntensity: 0.03
+    });
+    const trackMesh = new THREE.Mesh(trackGeo, trackMat);
+    trackMesh.receiveShadow = true;
+    trackGroup.add(trackMesh);
+
+    // Dashed center line
+    const dashPts = [];
+    for (let i = 0; i <= samples * 4; i++) {
+        const t = i / (samples * 4);
+        const { pos } = getBasis(t);
+        const yBank = (cfg.waypoints[Math.floor(t * wps.length) % wps.length]?.bank || 0);
+        dashPts.push(pos.x, yBank * 6 + 0.05, pos.z);
+    }
+    const dashGeo = new THREE.BufferGeometry();
+    dashGeo.setAttribute('position', new THREE.Float32BufferAttribute(dashPts, 3));
+    trackGroup.add(new THREE.Line(dashGeo, new THREE.LineDashedMaterial({ color: theme.primary, dashSize: 1.2, gapSize: 0.8, transparent: true, opacity: 0.7 })));
+    trackGroup.children[trackGroup.children.length - 1].computeLineDistances();
+
+    // Side rails
+    for (let side = -1; side <= 1; side += 2) {
+        const pts = [];
+        for (let i = 0; i <= samples; i++) {
+            const t = i / samples;
+            const { pos, tangent } = getBasis(t);
+            const right = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+            const yBank = (cfg.waypoints[Math.floor(t * wps.length) % wps.length]?.bank || 0);
+            pts.push(pos.x + right.x * (halfW + 0.4) * side, yBank * 6 + 0.2, pos.z + right.z * (halfW + 0.4) * side);
+        }
+        const rg = new THREE.BufferGeometry();
+        rg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        const rm = new THREE.LineBasicMaterial({ color: side > 0 ? theme.primary : theme.accent, transparent: true, opacity: 0.85 });
+        trackGroup.add(new THREE.Line(rg, rm));
+    }
+
+    // Pillars
+    for (let i = 0; i < wps.length; i++) {
+        const wp = wps[i], next = wps[(i + 1) % wps.length];
+        const dx = next.x - wp.x, dz = next.z - wp.z;
+        const len = Math.hypot(dx, dz);
+        const nx = -dz / len, nz = dx / len;
+        for (let s of [-1, 1]) {
+            const px = wp.x + nx * (halfW + 6) * s, pz = wp.z + nz * (halfW + 6) * s;
+            const pillar = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 35, 1.5),
+                new THREE.MeshStandardMaterial({
+                    color: 0x0a0f14, metalness: 0.85, roughness: 0.3,
+                    emissive: new THREE.Color(s > 0 ? theme.primary : theme.accent),
+                    emissiveIntensity: 0.3
+                })
+            );
+            pillar.position.set(px, 17, pz);
+            pillar.castShadow = true;
+            trackGroup.add(pillar);
+            const top = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), new THREE.MeshBasicMaterial({ color: s > 0 ? theme.primary : theme.accent }));
+            top.position.set(px, 35, pz);
+            trackGroup.add(top);
+        }
+    }
+
+    // Skyline silhouettes
+    for (let i = 0; i < 50; i++) {
+        const angle = (i / 50) * Math.PI * 2;
+        const radius = 250 + Math.random() * 60;
+        const x = Math.cos(angle) * radius, z = Math.sin(angle) * radius;
+        const h = 25 + Math.random() * 70, w = 8 + Math.random() * 14;
+        const b = new THREE.Mesh(
+            new THREE.BoxGeometry(w, h, w),
+            new THREE.MeshStandardMaterial({ color: 0x050810, roughness: 0.8 })
+        );
+        b.position.set(x, h / 2, z);
+        trackGroup.add(b);
+    }
+
+    // Ground
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(800, 800, 40, 40),
+        new THREE.MeshStandardMaterial({ color: theme.ground, roughness: 0.95 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.1;
+    ground.receiveShadow = true;
+    trackGroup.add(ground);
+
+    const grid = new THREE.GridHelper(800, 80, theme.groundLine, theme.groundLine);
+    grid.material.opacity = 0.25;
+    grid.material.transparent = true;
+    trackGroup.add(grid);
+
+    // Start line
+    const startT = 0;
+    const startPos = curve.getPointAt(startT);
+    const startTan = curve.getTangentAt(startT).normalize();
+
+    const lineCanvas = document.createElement('canvas');
+    lineCanvas.width = 256; lineCanvas.height = 32;
+    const lctx = lineCanvas.getContext('2d');
+    for (let i = 0; i < 16; i++) {
+        lctx.fillStyle = i % 2 ? '#fff' : '#000';
+        lctx.fillRect(i * 16, 0, 16, 32);
+    }
+    const lineTex = new THREE.CanvasTexture(lineCanvas);
+    const startLine = new THREE.Mesh(
+        new THREE.PlaneGeometry(trackWidthAvg, 1.5),
+        new THREE.MeshBasicMaterial({ map: lineTex })
+    );
+    startLine.rotation.x = -Math.PI / 2;
+    startLine.position.copy(startPos);
+    startLine.position.y += 0.1;
+    startLine.rotation.z = -Math.atan2(startTan.x, startTan.z);
+    trackGroup.add(startLine);
+
+    // Boost pads
+    cfg.boostPads.forEach(bp => {
+        const padCanvas = document.createElement('canvas');
+        padCanvas.width = 128; padCanvas.height = 64;
+        const pctx = padCanvas.getContext('2d');
+        pctx.fillStyle = '#21262d'; pctx.fillRect(0, 0, 128, 64);
+        pctx.strokeStyle = '#d29922'; pctx.lineWidth = 3;
+        pctx.strokeRect(4, 4, 120, 56);
+        pctx.fillStyle = '#d29922';
+        pctx.font = 'bold 22px monospace';
+        pctx.textAlign = 'center';
+        pctx.fillText('BOOST', 64, 42);
+        const padTex = new THREE.CanvasTexture(padCanvas);
+        const pad = new THREE.Mesh(
+            new THREE.PlaneGeometry(4, 3),
+            new THREE.MeshBasicMaterial({ map: padTex, transparent: true })
+        );
+        pad.rotation.x = -Math.PI / 2;
+        pad.position.set(bp.x, 0.15, bp.z);
+        trackGroup.add(pad);
+    });
+
+    track = { curve, length: curve.getLength(), startPos, startTan };
+}
+
+// ===== CAR BUILDER =====
+function buildCar(color) {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 0.6, 4),
+        new THREE.MeshStandardMaterial({ color, metalness: 0.8, roughness: 0.25, emissive: new THREE.Color(color), emissiveIntensity: 0.12 })
+    );
+    body.position.y = 0.6;
+    body.castShadow = true;
+    group.add(body);
+
+    const cab = new THREE.Mesh(
+        new THREE.BoxGeometry(1.6, 0.5, 1.8),
+        new THREE.MeshStandardMaterial({ color: 0x0a0f14, metalness: 0.9, roughness: 0.1, emissive: new THREE.Color(color), emissiveIntensity: 0.2 })
+    );
+    cab.position.set(0, 1.15, -0.1);
+    cab.castShadow = true;
+    group.add(cab);
+
+    const wingMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 });
+    const frontWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.3), wingMat);
+    frontWing.position.set(0, 0.6, 2);
+    group.add(frontWing);
+    const rearWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.3), wingMat);
+    rearWing.position.set(0, 1.1, -2);
+    group.add(rearWing);
+    for (let s of [-0.9, 0.9]) {
+        const sup = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.1), wingMat);
+        sup.position.set(s, 0.85, -2);
+        group.add(sup);
+    }
+
+    for (let s of [-0.7, 0.7]) {
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        head.position.set(s, 0.6, 2.05);
+        group.add(head);
+        const tail = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
+        tail.position.set(s, 0.6, -2.05);
+        group.add(tail);
+    }
+
+    const ug = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.4, 4.4),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+    );
+    ug.rotation.x = -Math.PI / 2;
+    ug.position.y = 0.05;
+    group.add(ug);
+
+    for (let x of [-1, 1]) for (let z of [-1.4, 1.4]) {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 12), new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.3 }));
+        w.rotation.z = Math.PI / 2;
+        w.position.set(x * 1.05, 0.4, z);
+        w.castShadow = true;
+        group.add(w);
+    }
+    return group;
+}
+
+// ===== CAR CLASS =====
+class Car {
+    constructor(roster, startOffset) {
+        this.mesh = buildCar(roster.color);
+        this.color = roster.color;
+        this.name = roster.name;
+        this.isPlayer = roster.isPlayer;
+        this.skill = roster.skill || 1.0;
+        this.aggression = 0.5;
+
+        this.position = new THREE.Vector3();
+        this.velocity = new THREE.Vector3();
+        this.speed = 0;
+        this.heading = 0;
+        this.steerAngle = 0;
+        this.lateralVel = 0;
+
+        this.lap = 1;
+        this.checkpoint = 0;
+        this.totalProgress = 0;
+        this.lastCheckpointT = 0;
+        this.currentLapTime = 0;
+        this.lapTimes = [];
+        this.dnf = false;
+        this.boost = 100;
+        this.boostActive = false;
+        this.padCooldowns = {}; // padKey -> seconds remaining
+        this.targetError = 0;
+        this.targetErrorVel = 0;
+
+        this.placeAtStart(startOffset);
+        scene.add(this.mesh);
+    }
+
+    placeAtStart(offset) {
+        if (!track) return;
+        const t = 0;
+        const pos = track.curve.getPointAt(t);
+        const tan = track.curve.getTangentAt(t).normalize();
+        const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0, 1, 0)).normalize();
+        // F1-style grid: 2 columns × N rows. Pole position (offset 0) is on the
+        // front row INSIDE the start line. Other rows are spaced 6m behind.
+        const col = offset % 2;
+        const row = Math.floor(offset / 2);
+        const xOff = (col - 0.5) * 7;   // 7m between left/right column
+        const zOff = row * 7;            // each row 7m behind the previous
+        // Car spawns on start line (tangent) + offset along right + offset back along tan
+        this.position.copy(pos).addScaledVector(right, xOff).addScaledVector(tan, -zOff);
+        this.heading = Math.atan2(tan.x, tan.z);
+        this.velocity.set(0, 0, 0);
+        this.speed = 0;
+        this.lap = 1;
+        this.totalProgress = 0;
+        this.lastCheckpointT = 0;
+        this.lapTimes = [];
+        this.currentLapTime = 0;
+        this.dnf = false;
+        this.boost = 100;
+        this.boostActive = false;
+        this.padCooldowns = {};
+        this.mesh.position.copy(this.position);
+        this.mesh.position.y = 0.4;
+        this.mesh.rotation.y = this.heading;
+    }
+
+    findNearestT() {
+        const samples = 60;
+        let bestT = 0, bestDist = Infinity;
+        const lastT = this.lastCheckpointT;
+        for (let i = 0; i <= samples; i++) {
+            const t = ((lastT - 0.1) + (i / samples) * 0.3 + 1) % 1;
+            const p = track.curve.getPointAt(t);
+            const d = this.position.distanceToSquared(p);
+            if (d < bestDist) { bestDist = d; bestT = t; }
+        }
+        return bestT;
+    }
+
+    update(dt) {
+        const nearestT = this.findNearestT();
+        const trackPos = track.curve.getPointAt(nearestT);
+        const trackTan = track.curve.getTangentAt(nearestT).normalize();
+        const trackRight = new THREE.Vector3().crossVectors(trackTan, new THREE.Vector3(0, 1, 0)).normalize();
+
+        if (this.isPlayer) this.updatePlayer(dt);
+        else this.updateAI(dt, nearestT);
+
+        this.physicsStep(dt, nearestT, trackPos, trackTan, trackRight);
+    }
+
+    updatePlayer(dt) {
+        const accelKey = keys['w'] || keys['arrowup'] || mobileState.up;
+        const brakeKey = keys['s'] || keys['arrowdown'] || mobileState.down;
+        const leftKey = keys['a'] || keys['arrowleft'] || mobileState.left;
+        const rightKey = keys['d'] || keys['arrowright'] || mobileState.right;
+        const boostKey = keys['shift'] || keys[' '] || mobileState.boost;
+        const driftKey = keys['control'];
+        const resetKey = keys['r'];
+
+        if (resetKey) { this.placeAtStart(0); return; }
+
+        let throttle = 0;
+        if (accelKey) throttle = 1;
+        if (brakeKey) throttle = -1;
+
+        let steerInput = 0;
+        if (leftKey) steerInput = 1;
+        if (rightKey) steerInput = -1;
+
+        // Tuned for arcade feel: 32 m/s top = ~115 km/h display, snappy but controllable
+        const maxSpeed = 32;
+        const accelForce = 14;
+        const brakeForce = 30;
+        const drag = 1.0;
+        const rolling = 0.3;
+
+        const isDrifting = driftKey && this.speed > 6 && Math.abs(steerInput) > 0.1;
+        const steerSpeed = isDrifting ? 2.4 : 1.7;
+
+        if (boostKey && this.boost > 0 && this.speed > 3) {
+            this.boostActive = true;
+            this.boost = Math.max(0, this.boost - 30 * dt);
+        } else {
+            this.boostActive = false;
+        }
+        this.boost = Math.min(100, this.boost + 6 * dt);
+
+        if (throttle > 0) {
+            const boostMul = this.boostActive ? 1.5 : 1.0;
+            this.speed += throttle * accelForce * boostMul * dt;
+        } else if (throttle < 0) {
+            this.speed += throttle * brakeForce * dt;
+        } else {
+            this.speed -= rolling * dt;
+        }
+        // Quadratic-ish drag: stronger at high speed
+        this.speed -= this.speed * drag * 0.03 * dt;
+        this.speed = Math.max(-8, Math.min(maxSpeed * (this.boostActive ? 1.3 : 1), this.speed));
+
+        // Steering: scales with speed but never less than 0.4 (you can still
+        // steer at a near-stop for parking)
+        const speedFactor = Math.min(1, Math.max(0.4, this.speed / 12));
+        this.steerAngle += steerInput * steerSpeed * dt * speedFactor;
+        // Self-centering
+        this.steerAngle *= Math.exp(-4 * dt);
+        // Clamp to prevent runaway
+        this.steerAngle = Math.max(-1.2, Math.min(1.2, this.steerAngle));
+
+        // Yaw: wider wheelbase = wider turning radius = easier to drive
+        const yawRate = (this.steerAngle * this.speed) / 10;
+        this.heading += yawRate * dt;
+    }
+
+    updateAI(dt, nearestT) {
+        const lookAhead = 0.04 + (this.speed / 90) * 0.02;
+        const targetT = (nearestT + lookAhead) % 1;
+        const errTarget = (this.skill - 0.5) * 8;
+        this.targetError += (Math.random() - 0.5) * 4 * dt;
+        this.targetError = Math.max(-errTarget, Math.min(errTarget, this.targetError));
+        this.targetErrorVel += -this.targetError * 2 * dt;
+        this.targetError += this.targetErrorVel * dt;
+
+        const targetPos = track.curve.getPointAt(targetT);
+        const targetTan = track.curve.getTangentAt(targetT).normalize();
+        const targetRight = new THREE.Vector3().crossVectors(targetTan, new THREE.Vector3(0, 1, 0)).normalize();
+        const targetPosOff = targetPos.clone().addScaledVector(targetRight, this.targetError);
+        const toTarget = targetPosOff.clone().sub(this.position);
+        toTarget.y = 0;
+        const desiredHeading = Math.atan2(toTarget.x, toTarget.z);
+        let headingDiff = desiredHeading - this.heading;
+        while (headingDiff > Math.PI) headingDiff -= 2 * Math.PI;
+        while (headingDiff < -Math.PI) headingDiff += 2 * Math.PI;
+        this.steerAngle = Math.max(-1.5, Math.min(1.5, headingDiff * 1.8));
+
+        const skillTopSpeed = 22 + this.skill * 12;
+        const accelTarget = skillTopSpeed * (1 - Math.abs(headingDiff) * 0.4);
+        if (this.speed < accelTarget) this.speed += (10 + this.skill * 6) * dt;
+        else this.speed -= 12 * dt;
+        this.speed = Math.max(0, this.speed);
+
+        if (this.boost > 50 && Math.abs(headingDiff) < 0.3 && Math.random() < 0.005) {
+            this.boostActive = true;
+            this.boost -= 30 * dt;
+        } else {
+            this.boostActive = false;
+        }
+        this.boost = Math.min(100, this.boost + 8 * dt);
+        if (this.boostActive) this.speed = Math.min(this.speed, skillTopSpeed * 1.3);
+
+        const yawRate = (this.steerAngle * this.speed) / 10;
+        this.heading += yawRate * dt;
+    }
+
+    physicsStep(dt, nearestT, trackPos, trackTan, trackRight) {
+        // 1. Forward direction from current heading
+        const fx = Math.sin(this.heading), fz = Math.cos(this.heading);
+
+        // 2. Integrate position using current forward velocity
+        this.position.x += fx * this.speed * dt;
+        this.position.z += fz * this.speed * dt;
+
+        // 3. Boost pad pickup
+        // Each pad has a short per-car cooldown (~1.2s) so you can't refuel
+        // instantly from the same pad, but different pads stack/overlap freely
+        // even while a previous boost is still active.
+        const cfg = MAPS[STATE.map];
+        cfg.boostPads.forEach((bp, i) => {
+            const key = i;
+            if ((this.padCooldowns[key] || 0) > 0) return;
+            const d = Math.hypot(this.position.x - bp.x, this.position.z - bp.z);
+            if (d < 4) {
+                this.boost = 100;
+                this.boostActive = true;
+                this.padCooldowns[key] = 1.2;
+            }
+        });
+        // Tick down all pad cooldowns
+        for (const k in this.padCooldowns) {
+            this.padCooldowns[k] = Math.max(0, this.padCooldowns[k] - dt);
+        }
+
+        // 4. INVISIBLE WALLS — hard collision with track edges.
+        //    Wall offset is dynamically based on the track width defined per map.
+        //    We compute the offset from the centerline, and if the car goes past
+        //    the wall on either side, we clamp position back and reflect velocity
+        //    inward. This prevents the car from launching into the void.
+        const trackWidth = (cfg.trackWidth || 24);
+        const wallOffset = trackWidth / 2;
+        const lx = this.position.x - trackPos.x;
+        const lz = this.position.z - trackPos.z;
+        const lateralOffset = lx * trackRight.x + lz * trackRight.z;
+        if (lateralOffset > wallOffset) {
+            // Hit right wall
+            const overshoot = lateralOffset - wallOffset;
+            this.position.x -= trackRight.x * overshoot;
+            this.position.z -= trackRight.z * overshoot;
+            // Kill the lateral component of velocity to simulate a bounce
+            const forwardSpeed = this.speed;
+            this.speed = Math.max(0, forwardSpeed * 0.3); // heavy slowdown on wall hit
+            // Push the heading back toward the track
+            // (no-op for now; the wall clamp is enough)
+        } else if (lateralOffset < -wallOffset) {
+            // Hit left wall
+            const overshoot = -wallOffset - lateralOffset;
+            this.position.x += trackRight.x * overshoot;
+            this.position.z += trackRight.z * overshoot;
+            this.speed = Math.max(0, this.speed * 0.3);
+        }
+
+        // 5. Hard floor on the ground (don't sink into the ground)
+        // 6. Apply transform to mesh
+        this.mesh.position.set(this.position.x, 0.4, this.position.z);
+        this.mesh.rotation.y = this.heading;
+
+        // 7. Banking: tilt the car slightly based on local track curvature
+        const lookAheadT = (nearestT + 0.005) % 1;
+        const aheadTan = track.curve.getTangentAt(lookAheadT).normalize();
+        const curTan = track.curve.getTangentAt(nearestT).normalize();
+        const cross = curTan.x * aheadTan.z - curTan.z * aheadTan.x;
+        this.mesh.rotation.z = -cross * 0.4;
+
+        // 8. Progress along track (handles wrap-around)
+        const prevT = this.lastCheckpointT;
+        let deltaT = nearestT - prevT;
+        if (deltaT < -0.5) deltaT += 1;
+        if (deltaT > 0.5) deltaT -= 1;
+        this.totalProgress += deltaT * track.length;
+        this.lastCheckpointT = nearestT;
+
+        // 9. Lap detection — crossed the start/finish line
+        if (nearestT < 0.05 && prevT > 0.95 && this.totalProgress > 20) {
+            this.lap++;
+            this.lapTimes.push(this.currentLapTime);
+            this.currentLapTime = 0;
+            if (this.isPlayer && this.lapTimes[this.lapTimes.length - 1] < STATE.bestLap) {
+                STATE.bestLap = this.lapTimes[this.lapTimes.length - 1];
+            }
+            if (this.lap > MAPS[STATE.map].laps) this.lap = MAPS[STATE.map].laps;
+        }
+        this.currentLapTime += dt;
+    }
+}
+
+// ===== MENU SETUP =====
+let cars = [];
+buildPreview(STATE.map);
+buildMenuUI();
+
+function buildMenuUI() {
+    // Car select
+    const carSel = document.getElementById('car-select');
+    carSel.innerHTML = '';
+    CARS_INFO.forEach((c, i) => {
+        const opt = document.createElement('div');
+        opt.className = 'car-option' + (i === STATE.carIdx ? ' active' : '');
+        opt.innerHTML = `
+            <div class="car-swatch" style="background:#${c.color.toString(16).padStart(6, '0')}; color:#${c.color.toString(16).padStart(6, '0')}"></div>
+            <div class="car-info">
+                <div class="car-name">${c.name}</div>
+                <div class="car-stat">${c.top} km/h · ${c.accel} 0-100</div>
+            </div>
+        `;
+        opt.onclick = () => {
+            STATE.carIdx = i;
+            document.querySelectorAll('.car-option').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            previewCar && previewScene.remove(previewCar);
+            previewCar = buildSimpleCar(c.color);
+            previewScene.add(previewCar);
+        };
+        carSel.appendChild(opt);
+    });
+
+    // Roster
+    const roster = document.getElementById('menu-roster');
+    roster.innerHTML = '';
+    ROSTER.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'roster-item';
+        const ping = 12 + Math.floor(Math.random() * 40);
+        item.innerHTML = `
+            <div class="roster-color" style="background:#${r.color.toString(16).padStart(6, '0')}; color:#${r.color.toString(16).padStart(6, '0')}"></div>
+            <div class="roster-name ${r.isPlayer ? 'you' : ''}">${r.name}${r.isPlayer ? ' (YOU)' : ''}</div>
+            <div class="roster-ping">${ping}ms</div>
+        `;
+        roster.appendChild(item);
+    });
+
+    // Map cards click
+    document.querySelectorAll('.map-card').forEach(card => {
+        card.onclick = () => {
+            const mapKey = card.dataset.map;
+            STATE.map = mapKey;
+            document.querySelectorAll('.map-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            updateMapUI();
+            buildPreview(mapKey);
+        };
+    });
+
+    updateMapUI();
+}
+
+function updateMapUI() {
+    const cfg = MAPS[STATE.map];
+    document.getElementById('hero-name').textContent = cfg.name;
+    document.getElementById('hero-desc').textContent = cfg.desc;
+    document.getElementById('stat-length').textContent = cfg.length;
+    document.getElementById('stat-laps').textContent = cfg.laps;
+    document.getElementById('stat-drivers').textContent = cfg.drivers;
+    document.getElementById('stat-status').textContent = cfg.status;
+}
+
+// ===== RESIZE =====
+function resize() {
+    const rect = stage.getBoundingClientRect();
+    renderer.setSize(rect.width, rect.height, false);
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+new ResizeObserver(resize).observe(stage);
+resize();
+
+function resizePreview() {
+    const rect = previewCanvas.getBoundingClientRect();
+    previewRenderer.setSize(rect.width, rect.height, false);
+    previewCamera.aspect = rect.width / rect.height;
+    previewCamera.updateProjectionMatrix();
+}
+new ResizeObserver(resizePreview).observe(previewCanvas);
+resizePreview();
+
+// ===== CAMERA =====
+// Frame-rate independent damping: higher = snappier, lower = laggier
+const CAM_DAMP = 8.0;
+const _camTargetPos = new THREE.Vector3();
+const _camTargetLook = new THREE.Vector3();
+const _camCurrentLook = new THREE.Vector3();
+let _camInit = false;
+
+function updateCamera(dt) {
+    if (!cars[0]) return;
+    const player = cars[0];
+    const pos = player.position;
+    const heading = player.heading;
+
+    // Forward & right vectors derived from heading
+    const fx = Math.sin(heading), fz = Math.cos(heading);
+
+    if (STATE.cameraMode === 0) {
+        // Chase cam: behind & above the car
+        const backDist = 9, upDist = 4.0;
+        _camTargetPos.set(
+            pos.x - fx * backDist,
+            pos.y + upDist,
+            pos.z - fz * backDist
+        );
+        _camTargetLook.set(
+            pos.x + fx * 6,
+            pos.y + 1.2,
+            pos.z + fz * 6
+        );
+    } else if (STATE.cameraMode === 1) {
+        // Hood cam: just above and in front of the car
+        _camTargetPos.set(
+            pos.x + fx * 1.8,
+            pos.y + 1.6,
+            pos.z + fz * 1.8
+        );
+        _camTargetLook.set(
+            pos.x + fx * 25,
+            pos.y + 1.0,
+            pos.z + fz * 25
+        );
+    } else {
+        // Cinematic: orbits around the car
+        const angle = STATE.raceTime * 0.4;
+        _camTargetPos.set(
+            pos.x + Math.cos(angle) * 18,
+            pos.y + 8,
+            pos.z + Math.sin(angle) * 18
+        );
+        _camTargetLook.set(pos.x, pos.y + 1, pos.z);
+    }
+
+    // Snap to target on first frame after each race to avoid a fly-in jump
+    if (!_camInit) {
+        camera.position.copy(_camTargetPos);
+        _camCurrentLook.copy(_camTargetLook);
+        _camInit = true;
+    }
+
+    // Frame-rate independent exponential smoothing
+    // alpha = 1 - exp(-damp * dt) so behavior is consistent across frame rates
+    const safeDt = Math.max(0.001, Math.min(0.1, dt || 0.016));
+    const alpha = 1 - Math.exp(-CAM_DAMP * safeDt);
+    camera.position.lerp(_camTargetPos, alpha);
+    _camCurrentLook.lerp(_camTargetLook, alpha);
+
+    // Always look at the car lookahead point — never the world origin
+    camera.lookAt(_camCurrentLook);
+}
+
+// ===== MINIMAP =====
+const mctx = minimapCanvas.getContext('2d');
+function drawMinimap() {
+    const w = minimapCanvas.width, h = minimapCanvas.height;
+    mctx.fillStyle = '#000';
+    mctx.fillRect(0, 0, w, h);
+
+    const scale = 0.8;
+    const cx = w / 2, cy = h / 2;
+
+    mctx.strokeStyle = '#3fb950';
+    mctx.lineWidth = 4;
+    mctx.beginPath();
+    const samples = 80;
+    for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const p = track.curve.getPointAt(t);
+        const x = cx + p.x * scale, y = cy + p.z * scale;
+        if (i === 0) mctx.moveTo(x, y); else mctx.lineTo(x, y);
+    }
+    mctx.closePath();
+    mctx.stroke();
+
+    mctx.strokeStyle = '#21262d';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+
+    const cfg = MAPS[STATE.map];
+    mctx.fillStyle = '#d29922';
+    cfg.boostPads.forEach(bp => {
+        mctx.beginPath();
+        mctx.arc(cx + bp.x * scale, cy + bp.z * scale, 3, 0, Math.PI * 2);
+        mctx.fill();
+    });
+
+    cars.forEach(c => {
+        const x = cx + c.position.x * scale, y = cy + c.position.z * scale;
+        const r = c.isPlayer ? 5 : 3.5;
+        mctx.fillStyle = '#' + c.color.toString(16).padStart(6, '0');
+        mctx.beginPath();
+        mctx.arc(x, y, r, 0, Math.PI * 2);
+        mctx.fill();
+        if (c.isPlayer) {
+            mctx.strokeStyle = '#fff';
+            mctx.lineWidth = 1;
+            mctx.stroke();
+        }
+    });
+}
+
+// ===== HUD =====
+function formatTime(s) {
+    if (!isFinite(s) || s < 0) return '--:--.---';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, '0')}:${sec.toFixed(3).padStart(6, '0')}`;
+}
+
+function updateHUD() {
+    const player = cars[0];
+    if (!player) return;
+    const sorted = [...cars].sort((a, b) => b.totalProgress - a.totalProgress);
+    const pos = sorted.indexOf(player) + 1;
+
+    document.getElementById('g-lap').textContent = Math.min(player.lap, MAPS[STATE.map].laps);
+    document.getElementById('g-laps-total').textContent = MAPS[STATE.map].laps;
+    document.getElementById('g-position').innerHTML = `${pos}<span style="color:var(--text-2);font-size:11px;">${['ST','ND','RD','TH'][pos-1] || 'TH'}</span>`;
+    document.getElementById('g-race-time').textContent = formatTime(STATE.raceTime);
+    document.getElementById('g-best-lap').textContent = STATE.bestLap < Infinity ? formatTime(STATE.bestLap) : '--:--.---';
+
+    const speedKmh = Math.abs(player.speed) * 3.6;
+    document.getElementById('speed-num').textContent = Math.floor(speedKmh);
+    const gear = Math.max(1, Math.min(6, Math.floor(speedKmh / 50) + 1));
+    document.getElementById('gear-num').textContent = gear;
+
+    document.getElementById('boost-pct').textContent = Math.floor(player.boost) + '%';
+    const bf = document.getElementById('boost-fill');
+    bf.style.width = player.boost + '%';
+    if (player.boost < 30) bf.classList.add('low'); else bf.classList.remove('low');
+
+    if (speedKmh > STATE.topSpeed) STATE.topSpeed = speedKmh;
+
+    // Timing
+    const t1 = player.lapTimes[0] || (player.lap === 2 ? player.currentLapTime : null);
+    const t2 = player.lapTimes[1] || (player.lap === 3 ? player.currentLapTime : null);
+    const t3 = player.lapTimes[2] || null;
+    const fastest = player.lapTimes.length > 0 ? Math.min(...player.lapTimes) : null;
+    document.getElementById('t-l1').innerHTML = t1 ? `${formatTime(t1)}${t1 === fastest ? ' <span style="color:var(--green)">●</span>' : ''}` : '--:--.---';
+    document.getElementById('t-l1').className = 'val' + (t1 === fastest ? ' green' : '');
+    document.getElementById('t-l2').innerHTML = t2 ? `${formatTime(t2)}${t2 === fastest ? ' <span style="color:var(--green)">●</span>' : ''}` : '--:--.---';
+    document.getElementById('t-l2').className = 'val' + (t2 === fastest ? ' green' : '');
+    document.getElementById('t-l3').innerHTML = t3 ? `${formatTime(t3)}${t3 === fastest ? ' <span style="color:var(--green)">●</span>' : ''}` : '--:--.---';
+    document.getElementById('t-l3').className = 'val' + (t3 === fastest ? ' green' : '');
+
+    // Live roster
+    const live = document.getElementById('live-roster');
+    live.innerHTML = '<div class="live-title">LIVE STANDINGS</div>';
+    sorted.forEach((c, i) => {
+        const time = c.lapTimes.reduce((a, b) => a + b, 0) + (c.lap > c.lapTimes.length ? c.currentLapTime : 0);
+        live.innerHTML += `
+            <div class="live-item">
+                <div class="live-pos">${i + 1}</div>
+                <div class="live-dot" style="background:#${c.color.toString(16).padStart(6, '0')}; color:#${c.color.toString(16).padStart(6, '0')}"></div>
+                <div class="live-name ${c.isPlayer ? 'you' : ''}">${c.name}</div>
+                <div class="live-time">${formatTime(time)}</div>
+            </div>
+        `;
+    });
+}
+
+// ===== RACE FLOW =====
+window.startRace = function() {
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+
+    // Cleanup
+    cars.forEach(c => scene.remove(c.mesh));
+    cars = [];
+
+    // Build cars with selected color
+    const selectedCar = CARS_INFO[STATE.carIdx];
+    const playerRoster = { ...ROSTER[0], color: selectedCar.color, name: STATE.playerName };
+    cars.push(new Car(playerRoster, 0));
+    cars.push(new Car(ROSTER[1], 1));
+    cars.push(new Car(ROSTER[2], 2));
+    cars.push(new Car(ROSTER[3], 3));
+
+    // Build track
+    buildTrack(STATE.map);
+
+    // Start countdown
+    STATE.raceState = 'countdown';
+    STATE.countVal = 3;
+    STATE.raceTime = 0;
+    STATE.bestLap = Infinity;
+    STATE.topSpeed = 0;
+    const cd = document.getElementById('countdown');
+    cd.classList.add('active');
+    cd.querySelector('.big').textContent = '3';
+    cd.querySelector('.big').classList.remove('go');
+    cd.querySelector('.sub').textContent = 'GET READY';
+    document.getElementById('result-overlay').classList.remove('active');
+
+    // Reset camera init flag so it snaps to the new car (no fly-in jump)
+    _camInit = false;
+};
+
+window.restartRace = function() {
+    document.getElementById('result-overlay').classList.remove('active');
+    window.startRace();
+};
+
+window.exitRace = function() {
+    STATE.raceState = 'menu';
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'block';
+    document.getElementById('countdown').classList.remove('active');
+    document.getElementById('result-overlay').classList.remove('active');
+    // Stop multiplayer race sync and clean up our state row
+    mpStopRaceSync();
+    mpRemoteStates = [];
+    cars.forEach(c => scene.remove(c.mesh));
+    cars = [];
+    if (trackGroup) {
+        scene.remove(trackGroup);
+        trackGroup.traverse(o => {
+            if (o.geometry) o.geometry.dispose();
+            if (o.material) { if (Array.isArray(o.material)) o.material.forEach(m => m.dispose()); else o.material.dispose(); }
+        });
+        trackGroup = null;
+        track = null;
+    }
+    buildPreview(STATE.map);
+    // If we were racing the creator's preview map, return to the map the user
+    // had selected before opening the creator.
+    if (STATE.map === '__preview__' && preCreatorMap) {
+        STATE.map = preCreatorMap;
+        updateMapUI();
+        buildPreview(STATE.map);
+    }
+};
+
+function updateCountdown(dt) {
+    STATE.countVal -= dt;
+    const cd = document.getElementById('countdown');
+    const big = cd.querySelector('.big');
+    const sub = cd.querySelector('.sub');
+    if (STATE.countVal > 0) {
+        big.textContent = Math.ceil(STATE.countVal);
+    } else if (STATE.countVal > -1) {
+        big.textContent = 'GO!';
+        big.classList.add('go');
+        sub.textContent = 'LAUNCH';
+    } else {
+        cd.classList.remove('active');
+        big.classList.remove('go');
+        STATE.raceState = 'racing';
+    }
+}
+
+function endRace() {
+    const player = cars[0];
+    const sorted = [...cars].sort((a, b) => b.totalProgress - a.totalProgress);
+    const pos = sorted.indexOf(player) + 1;
+    const overlay = document.getElementById('result-overlay');
+    document.getElementById('res-pos').textContent = pos;
+    document.getElementById('res-pos').className = 'result-pos ' + (pos === 1 ? 'win' : 'lose');
+    document.getElementById('res-place').textContent = pos === 1 ? 'VICTORY' : (pos === 2 ? 'P2 FINISH' : (pos === 3 ? 'P3 FINISH' : 'P4 FINISH'));
+    document.getElementById('res-total').textContent = formatTime(STATE.raceTime);
+    document.getElementById('res-best').textContent = STATE.bestLap < Infinity ? formatTime(STATE.bestLap) : '--:--.---';
+    document.getElementById('res-top').textContent = Math.floor(STATE.topSpeed) + ' KM/H';
+    overlay.classList.add('active');
+    STATE.raceState = 'finished';
+
+    // Save to leaderboard
+    submitScore(STATE.raceTime, pos);
+}
+
+async function submitScore(time, pos) {
+    try {
+        if (typeof runNeuralGuard !== 'function') return;
+        const data = await runNeuralGuard('');
+        if (!data) return;
+        const email = localStorage.getItem('ada_user_email') || 'guest';
+        const score = Math.floor(time * 1000) + (pos === 1 ? 0 : 99999);
+        await fetch(`${API}/game/save-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, gameId: 'content6', score })
+        });
+    } catch(e) { console.log('Score submit failed'); }
+}
+
+const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+async function loadLeaderboard() {
+    try {
+        const res = await fetch(`${API}/game/leaderboard?content=content6`);
+        const top = await res.json();
+        const el = document.getElementById('leaderboard');
+        el.innerHTML = top.slice(0, 5).map((u, i) => `
+            <div class="lb-entry">
+                <span class="lb-rank">#${i+1}</span>
+                <div class="lb-avatar"></div>
+                <div class="lb-info">
+                    <div class="lb-name">${esc(u.display_name || (u.email||'').split('@')[0] || 'ANON')}</div>
+                    <div class="lb-time">${(u.score/1000).toFixed(3)}s</div>
+                </div>
+            </div>
+        `).join('') || '<div style="font-size:11px;opacity:0.5;">No records yet — be the first!</div>';
+    } catch(e) {
+        document.getElementById('leaderboard').innerHTML = '<div style="font-size:11px;opacity:0.5;">Leaderboard offline</div>';
+    }
+}
+loadLeaderboard();
+
+// ===== MAIN LOOP =====
+let lastTime = performance.now();
+let previewLastTime = performance.now();
+
+function previewAnimate(now) {
+    requestAnimationFrame(previewAnimate);
+    const dt = Math.min(0.05, (now - previewLastTime) / 1000);
+    previewLastTime = now;
+
+    if (previewTrack && previewTrack.userData.curve) {
+        previewTime += dt * 0.05;
+        const t = previewTime % 1;
+        const p = previewTrack.userData.curve.getPointAt(t);
+        const tan = previewTrack.userData.curve.getTangentAt(t).normalize();
+
+        // Orbit camera
+        const camAngle = previewTime * 0.3;
+        previewCamera.position.set(Math.cos(camAngle) * 90, 45, Math.sin(camAngle) * 90);
+        previewCamera.lookAt(0, 0, 0);
+
+        if (previewCar) {
+            previewCar.position.set(p.x, 0.4, p.z);
+            previewCar.rotation.y = Math.atan2(tan.x, tan.z);
+        }
+
+        previewRenderer.render(previewScene, previewCamera);
+    }
+}
+requestAnimationFrame(previewAnimate);
+
+function animate(now) {
+    requestAnimationFrame(animate);
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    if (STATE.raceState === 'countdown') {
+        updateCountdown(dt);
+        cars.forEach(c => c.update(dt));
+    } else if (STATE.raceState === 'racing') {
+        STATE.raceTime += dt;
+        cars.forEach(c => c.update(dt));
+
+        const player = cars[0];
+        if (player.lap > MAPS[STATE.map].laps) {
+            endRace();
+        }
+    } else if (STATE.raceState === 'finished') {
+        cars.forEach(c => c.update(dt));
+    }
+
+    if (cars.length > 0) {
+        updateCamera(dt);
+        drawMinimap();
+        updateHUD();
+    }
+
+    renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+window.STATE = STATE;
+window.cars = cars;
+
+</script>
+
+<!-- ====== MAP CREATOR OVERLAY ====== -->
+<div id="creator-screen" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:2000; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border);">
+        <div>
+            <div style="font-size:18px; font-weight:700; color:var(--text);">Map Creator</div>
+            <div style="font-size:12px; color:var(--text-2); font-family:'JetBrains Mono', monospace;">Click on the grid to place waypoints · Right-click to remove · Drag to move</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn" id="creator-clear" style="width:auto; padding:8px 14px;">Clear</button>
+            <button class="btn" id="creator-undo" style="width:auto; padding:8px 14px;">Undo</button>
+            <button class="btn" id="creator-new" style="width:auto; padding:8px 14px;">New</button>
+            <button class="btn" id="creator-save" style="width:auto; padding:8px 14px; background:#1f6feb; border-color:#1f6feb; color:white;">Save</button>
+            <button class="btn" id="creator-saveas" style="width:auto; padding:8px 14px; background:#1158c7; border-color:#1f6feb; color:white;">Save As…</button>
+            <button class="btn" id="creator-test" style="width:auto; padding:8px 14px; background:var(--btn-green); border-color:var(--btn-green); color:white;">Test Race</button>
+            <button class="btn" id="creator-close" style="width:auto; padding:8px 14px;">Close</button>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 280px; flex:1; min-height:0;">
+        <div style="position:relative; background:#000; overflow:hidden;">
+            <canvas id="creator-canvas" style="width:100%; height:100%; display:block; cursor:crosshair;"></canvas>
+            <div style="position:absolute; top:12px; left:12px; background:rgba(13,17,23,0.85); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-2);">
+                Waypoints: <span id="creator-count" style="color:var(--text); font-weight:700;">0</span> · Closed loop required (min 4)
+            </div>
+            <div style="position:absolute; bottom:12px; left:12px; background:rgba(13,17,23,0.85); border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--text-2); max-width:300px;">
+                <strong style="color:var(--text);">Controls:</strong> Left-click = add waypoint · Right-click = remove nearest · Click + drag waypoint = move · Shift+click = add boost pad
+            </div>
+        </div>
+
+        <div style="background:var(--surface); border-left:1px solid var(--border); overflow-y:auto; padding:16px;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Track Settings</div>
+
+            <label style="display:block; margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">Map Name</div>
+                <input id="creator-name" type="text" value="My Custom Track" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; color:var(--text); font-family:inherit; font-size:13px;">
+            </label>
+
+            <label style="display:block; margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">Laps: <span id="creator-laps-val">3</span></div>
+                <input id="creator-laps" type="range" min="1" max="10" value="3" style="width:100%;">
+            </label>
+
+            <label style="display:block; margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">Track Width</div>
+                <input id="creator-width" type="range" min="12" max="24" value="16" style="width:100%;">
+                <div style="font-size:10px; color:var(--text-2); margin-top:2px; font-family:'JetBrains Mono', monospace;"><span id="creator-width-val">16</span>m</div>
+            </label>
+
+            <label style="display:block; margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">Primary Color</div>
+                <input id="creator-color" type="color" value="#3fb950" style="width:100%; height:32px; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:2px;">
+            </label>
+
+            <label style="display:block; margin-bottom:12px;">
+                <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">Accent Color</div>
+                <input id="creator-accent" type="color" value="#58a6ff" style="width:100%; height:32px; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:2px;">
+            </label>
+
+            <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; color:var(--text); cursor:pointer;">
+                <input id="creator-bank" type="checkbox" checked>
+                <span>Auto-bank corners (visual only)</span>
+            </label>
+
+            <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin:18px 0 10px;">Saved Tracks</div>
+            <div id="creator-saved-list" style="font-size:12px;"></div>
+
+            <div style="font-size:11px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; margin:18px 0 10px;">Assets Used</div>
+            <div style="font-size:11px; color:var(--text-2); font-family:'JetBrains Mono', monospace; line-height:1.8;">
+                · Track ribbon (vertex-color curbs)<br>
+                · Glowing side rails (line segments)<br>
+                · Pillar lights (boxes + spheres)<br>
+                · Skyline silhouettes (boxes)<br>
+                · Grid floor (GridHelper)<br>
+                · Start/finish line (canvas texture)<br>
+                · Boost pads (canvas texture)<br>
+                · Car models (box meshes)<br>
+                · Underglow planes<br>
+                · Headlight / taillight spheres
+            </div>
+        </div>
+    </div>
+
+    <!-- Name-prompt modal for first save / save-as -->
+    <div id="name-prompt" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.75); align-items:center; justify-content:center; z-index:50;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; max-width:380px; width:90%;">
+            <div style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px;" id="name-prompt-title">Name your track</div>
+            <div style="font-size:11px; color:var(--text-2); margin-bottom:14px;">This is how other players will see it in the community browser.</div>
+            <input id="name-prompt-input" type="text" maxlength="48" placeholder="e.g. Sunset Drift" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:14px; outline:none; margin-bottom:14px;">
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button class="btn" id="name-prompt-cancel" style="width:auto; padding:8px 16px;">Cancel</button>
+                <button class="btn primary" id="name-prompt-ok" style="width:auto; padding:8px 18px;">Save Map</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ====== HTML ESCAPING ======
+// User-controlled fields (display names, chat text, server-returned level
+// metadata) are interpolated into innerHTML in several places below. Without
+// escaping, a name like `<img src=x onerror=...>` would execute arbitrary JS
+// in any browser that rendered it. Always pass untrusted strings through
+// `esc()` before dropping them into HTML.
+const escMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' };
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"'`]/g, c => escMap[c]);
+}
+
+// ====== MAP CREATOR LOGIC ======
+const creator = {
+    canvas: document.getElementById('creator-canvas'),
+    ctx: null,
+    waypoints: [], // {x, z, w, bank}
+    boostPads: [], // {x, z}
+    dragging: null, // {wpIndex}
+    hover: null, // {x, z}
+    width: 16,
+    laps: 3,
+    name: 'My Custom Track',
+    primary: '#3fb950',
+    accent: '#58a6ff',
+    autoBank: true,
+    history: [],
+    gridSize: 30,
+    scale: 1
+};
+
+function cInit() {
+    creator.ctx = creator.canvas.getContext('2d');
+    window.addEventListener('resize', cResize);
+    cResize();
+    cBindEvents();
+    cLoadSavedList();
+    cRender();
+}
+
+function cResize() {
+    const parent = creator.canvas.parentElement;
+    creator.canvas.width = parent.clientWidth * window.devicePixelRatio;
+    creator.canvas.height = parent.clientHeight * window.devicePixelRatio;
+    creator.ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    cRender();
+}
+
+function cBindEvents() {
+    creator.canvas.addEventListener('mousedown', cOnMouseDown);
+    creator.canvas.addEventListener('mousemove', cOnMouseMove);
+    creator.canvas.addEventListener('mouseup', cOnMouseUp);
+    creator.canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); cOnRightClick(e); });
+    creator.canvas.addEventListener('mouseleave', () => { creator.hover = null; cRender(); });
+
+    document.getElementById('creator-clear').onclick = () => { cPushHistory(); creator.waypoints = []; creator.boostPads = []; cRender(); };
+    document.getElementById('creator-undo').onclick = cUndo;
+    document.getElementById('creator-new').onclick = cNew;
+    document.getElementById('creator-save').onclick = cSave;
+    document.getElementById('creator-saveas').onclick = cSaveAs;
+    document.getElementById('creator-test').onclick = cTest;
+    document.getElementById('creator-close').onclick = closeMapCreator;
+
+    document.getElementById('creator-laps').oninput = (e) => {
+        creator.laps = parseInt(e.target.value);
+        document.getElementById('creator-laps-val').textContent = creator.laps;
+    };
+    document.getElementById('creator-width').oninput = (e) => {
+        creator.width = parseInt(e.target.value);
+        document.getElementById('creator-width-val').textContent = creator.width;
+        cRender();
+    };
+    document.getElementById('creator-name').oninput = (e) => { creator.name = e.target.value; };
+    document.getElementById('creator-color').oninput = (e) => { creator.primary = e.target.value; cRender(); };
+    document.getElementById('creator-accent').oninput = (e) => { creator.accent = e.target.value; cRender(); };
+    document.getElementById('creator-bank').onchange = (e) => { creator.autoBank = e.target.checked; cRender(); };
+}
+
+function cPushHistory() {
+    creator.history.push(JSON.stringify({ w: creator.waypoints, b: creator.boostPads }));
+    if (creator.history.length > 30) creator.history.shift();
+}
+
+function cUndo() {
+    if (creator.history.length === 0) return;
+    const state = JSON.parse(creator.history.pop());
+    creator.waypoints = state.w;
+    creator.boostPads = state.b;
+    cRender();
+}
+
+function cScreenToWorld(sx, sy) {
+    const r = creator.canvas.getBoundingClientRect();
+    const cx = r.width / 2, cy = r.height / 2;
+    const worldX = (sx - cx) / 1.2;
+    const worldZ = (sy - cy) / 1.2;
+    return { x: worldX, z: worldZ };
+}
+
+function cWorldToScreen(wx, wz) {
+    const r = creator.canvas.getBoundingClientRect();
+    const cx = r.width / 2, cy = r.height / 2;
+    return { sx: cx + wx * 1.2, sy: cy + wz * 1.2 };
+}
+
+function cOnMouseDown(e) {
+    const r = creator.canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const w = cScreenToWorld(sx, sy);
+
+    // Hit-test existing waypoints for drag
+    for (let i = 0; i < creator.waypoints.length; i++) {
+        const p = cWorldToScreen(creator.waypoints[i].x, creator.waypoints[i].z);
+        if (Math.hypot(p.sx - sx, p.sy - sy) < 10) {
+            creator.dragging = { wpIndex: i };
+            return;
+        }
+    }
+
+    cPushHistory();
+    if (e.shiftKey) {
+        creator.boostPads.push({ x: w.x, z: w.z });
+    } else {
+        creator.waypoints.push({ x: w.x, z: w.z, w: creator.width, bank: 0 });
+    }
+    cRender();
+}
+
+function cOnMouseMove(e) {
+    const r = creator.canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const w = cScreenToWorld(sx, sy);
+    creator.hover = w;
+
+    if (creator.dragging) {
+        creator.waypoints[creator.dragging.wpIndex].x = w.x;
+        creator.waypoints[creator.dragging.wpIndex].z = w.z;
+    }
+    cRender();
+}
+
+function cOnMouseUp() { creator.dragging = null; }
+
+function cOnRightClick(e) {
+    const r = creator.canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+
+    // Remove nearest waypoint
+    let minD = 20, minI = -1;
+    for (let i = 0; i < creator.waypoints.length; i++) {
+        const p = cWorldToScreen(creator.waypoints[i].x, creator.waypoints[i].z);
+        const d = Math.hypot(p.sx - sx, p.sy - sy);
+        if (d < minD) { minD = d; minI = i; }
+    }
+    if (minI >= 0) {
+        cPushHistory();
+        creator.waypoints.splice(minI, 1);
+        cRender();
+        return;
+    }
+    // Remove nearest boost pad
+    let minBD = 20, minBI = -1;
+    for (let i = 0; i < creator.boostPads.length; i++) {
+        const p = cWorldToScreen(creator.boostPads[i].x, creator.boostPads[i].z);
+        const d = Math.hypot(p.sx - sx, p.sy - sy);
+        if (d < minBD) { minBD = d; minBI = i; }
+    }
+    if (minBI >= 0) {
+        cPushHistory();
+        creator.boostPads.splice(minBI, 1);
+        cRender();
+    }
+}
+
+function cRender() {
+    if (!creator.ctx) return;
+    const r = creator.canvas.getBoundingClientRect();
+    const w = r.width, h = r.height;
+    creator.ctx.fillStyle = '#0a0f14';
+    creator.ctx.fillRect(0, 0, w, h);
+
+    // Grid
+    creator.ctx.strokeStyle = '#1c2128';
+    creator.ctx.lineWidth = 1;
+    const step = 30;
+    const cx = w / 2, cy = h / 2;
+    for (let x = cx % step; x < w; x += step) {
+        creator.ctx.beginPath(); creator.ctx.moveTo(x, 0); creator.ctx.lineTo(x, h); creator.ctx.stroke();
+    }
+    for (let y = cy % step; y < h; y += step) {
+        creator.ctx.beginPath(); creator.ctx.moveTo(0, y); creator.ctx.lineTo(w, y); creator.ctx.stroke();
+    }
+
+    // Center crosshair
+    creator.ctx.strokeStyle = '#30363d';
+    creator.ctx.beginPath(); creator.ctx.moveTo(cx, 0); creator.ctx.lineTo(cx, h); creator.ctx.stroke();
+    creator.ctx.beginPath(); creator.ctx.moveTo(0, cy); creator.ctx.lineTo(w, cy); creator.ctx.stroke();
+
+    if (creator.waypoints.length < 2) {
+        document.getElementById('creator-count').textContent = creator.waypoints.length;
+        return;
+    }
+
+    // Auto-bank calculation
+    if (creator.autoBank) {
+        for (let i = 0; i < creator.waypoints.length; i++) {
+            const prev = creator.waypoints[(i - 1 + creator.waypoints.length) % creator.waypoints.length];
+            const cur = creator.waypoints[i];
+            const next = creator.waypoints[(i + 1) % creator.waypoints.length];
+            const v1x = cur.x - prev.x, v1z = cur.z - prev.z;
+            const v2x = next.x - cur.x, v2z = next.z - cur.z;
+            const cross = v1x * v2z - v1z * v2x;
+            creator.waypoints[i].bank = Math.max(-0.4, Math.min(0.4, -cross * 0.001));
+        }
+    }
+
+    // Draw track ribbon
+    creator.ctx.strokeStyle = creator.primary;
+    creator.ctx.lineWidth = Math.max(4, creator.width * 1.2);
+    creator.ctx.lineCap = 'round';
+    creator.ctx.lineJoin = 'round';
+    creator.ctx.beginPath();
+    for (let i = 0; i < creator.waypoints.length; i++) {
+        const p = cWorldToScreen(creator.waypoints[i].x, creator.waypoints[i].z);
+        if (i === 0) creator.ctx.moveTo(p.sx, p.sy);
+        else creator.ctx.lineTo(p.sx, p.sy);
+    }
+    creator.ctx.closePath();
+    creator.ctx.stroke();
+
+    // Inner accent line
+    creator.ctx.strokeStyle = creator.accent;
+    creator.ctx.lineWidth = 2;
+    creator.ctx.setLineDash([8, 8]);
+    creator.ctx.beginPath();
+    for (let i = 0; i < creator.waypoints.length; i++) {
+        const p = cWorldToScreen(creator.waypoints[i].x, creator.waypoints[i].z);
+        if (i === 0) creator.ctx.moveTo(p.sx, p.sy);
+        else creator.ctx.lineTo(p.sx, p.sy);
+    }
+    creator.ctx.closePath();
+    creator.ctx.stroke();
+    creator.ctx.setLineDash([]);
+
+    // Boost pads
+    creator.boostPads.forEach(bp => {
+        const p = cWorldToScreen(bp.x, bp.z);
+        creator.ctx.fillStyle = '#d29922';
+        creator.ctx.fillRect(p.sx - 8, p.sy - 5, 16, 10);
+        creator.ctx.fillStyle = '#000';
+        creator.ctx.font = 'bold 8px monospace';
+        creator.ctx.textAlign = 'center';
+        creator.ctx.textBaseline = 'middle';
+        creator.ctx.fillText('B', p.sx, p.sy);
+    });
+
+    // Waypoint handles
+    for (let i = 0; i < creator.waypoints.length; i++) {
+        const wp = creator.waypoints[i];
+        const p = cWorldToScreen(wp.x, wp.z);
+        const isStart = i === 0;
+        creator.ctx.fillStyle = isStart ? '#3fb950' : '#58a6ff';
+        creator.ctx.strokeStyle = '#000';
+        creator.ctx.lineWidth = 2;
+        creator.ctx.beginPath();
+        creator.ctx.arc(p.sx, p.sy, isStart ? 8 : 6, 0, Math.PI * 2);
+        creator.ctx.fill();
+        creator.ctx.stroke();
+        creator.ctx.fillStyle = '#fff';
+        creator.ctx.font = 'bold 9px monospace';
+        creator.ctx.textAlign = 'center';
+        creator.ctx.textBaseline = 'middle';
+        creator.ctx.fillText(i + 1, p.sx, p.sy);
+    }
+
+    // Hover indicator
+    if (creator.hover) {
+        const p = cWorldToScreen(creator.hover.x, creator.hover.z);
+        creator.ctx.fillStyle = 'rgba(88, 166, 255, 0.3)';
+        creator.ctx.beginPath();
+        creator.ctx.arc(p.sx, p.sy, 4, 0, Math.PI * 2);
+        creator.ctx.fill();
+    }
+
+    document.getElementById('creator-count').textContent = creator.waypoints.length;
+}
+
+// Track the currently-loaded saved track index so Save overwrites the same
+// map; if null, the next Save prompts for a fresh name.
+let cEditingIdx = null;
+
+function cShowNamePrompt(initial, onConfirm) {
+    const overlay = document.getElementById('name-prompt');
+    const input = document.getElementById('name-prompt-input');
+    const ok = document.getElementById('name-prompt-ok');
+    const cancel = document.getElementById('name-prompt-cancel');
+    input.value = initial || '';
+    overlay.style.display = 'flex';
+    setTimeout(() => { input.focus(); input.select(); }, 30);
+    const cleanup = () => {
+        overlay.style.display = 'none';
+        ok.onclick = null;
+        cancel.onclick = null;
+        input.onkeydown = null;
+    };
+    ok.onclick = () => {
+        const v = input.value.trim();
+        cleanup();
+        if (v) onConfirm(v);
+    };
+    cancel.onclick = () => cleanup();
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') ok.onclick();
+        if (e.key === 'Escape') cancel.onclick();
+    };
+}
+
+function cSave() {
+    if (creator.waypoints.length < 4) {
+        alert('Need at least 4 waypoints to make a closed loop');
+        return;
+    }
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    // If editing an existing map, save in place (use its name unless changed).
+    if (cEditingIdx !== null && saved[cEditingIdx]) {
+        cWriteMap(cEditingIdx, creator.name);
+        flashMsg('Map updated');
+        return;
+    }
+    // New map — ask for a name. Default suggestion: existing input or "Untitled Track".
+    cShowNamePrompt(creator.name || 'Untitled Track', (name) => {
+        const saved2 = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+        cEditingIdx = saved2.push({}) - 1;
+        creator.name = name;
+        document.getElementById('creator-name').value = name;
+        cWriteMap(cEditingIdx, name);
+        flashMsg('Map saved as "' + name + '"');
+    });
+}
+
+function cWriteMap(idx, name) {
+    const track = {
+        name,
+        waypoints: creator.waypoints.map(w => ({ x: Math.round(w.x), z: Math.round(w.z), w: w.w, bank: w.bank })),
+        boostPads: creator.boostPads.map(b => ({ x: Math.round(b.x), z: Math.round(b.z) })),
+        laps: creator.laps,
+        trackWidth: creator.width,
+        primary: creator.primary,
+        accent: creator.accent,
+        created: Date.now()
+    };
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    saved[idx] = track;
+    localStorage.setItem('apex_custom_maps', JSON.stringify(saved));
+    cLoadSavedList();
+}
+
+function cSaveAs() {
+    if (creator.waypoints.length < 4) {
+        alert('Need at least 4 waypoints to save');
+        return;
+    }
+    cShowNamePrompt(creator.name + ' copy', (name) => {
+        const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+        cEditingIdx = saved.push({}) - 1;
+        creator.name = name;
+        document.getElementById('creator-name').value = name;
+        cWriteMap(cEditingIdx, name);
+        flashMsg('Saved as new track "' + name + '"');
+    });
+}
+
+function cLoadSavedList() {
+    const el = document.getElementById('creator-saved-list');
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    if (saved.length === 0) {
+        el.innerHTML = '<div style="font-size:11px; color:var(--text-2); opacity:0.6;">No custom maps yet</div>';
+        return;
+    }
+    el.innerHTML = saved.map((t, i) => `
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:8px 10px; margin-bottom:6px;">
+            <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px;">${t.name}</div>
+            <div style="font-size:10px; color:var(--text-2); font-family:'JetBrains Mono', monospace; margin-bottom:6px;">${t.waypoints.length} wp · ${t.laps} laps</div>
+            <div style="display:flex; gap:4px;">
+                <button onclick="cLoad(${i})" style="flex:1; background:var(--blue); border:none; color:white; padding:4px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:600;">Load</button>
+                <button onclick="cRace(${i})" style="flex:1; background:var(--btn-green); border:none; color:white; padding:4px; border-radius:3px; font-size:10px; cursor:pointer; font-weight:600;">Race</button>
+                <button onclick="cDelete(${i})" style="background:var(--red); border:none; color:white; padding:4px 8px; border-radius:3px; font-size:10px; cursor:pointer;">×</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.cLoad = (i) => {
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    const t = saved[i];
+    cEditingIdx = i;
+    creator.waypoints = t.waypoints;
+    creator.boostPads = t.boostPads;
+    creator.laps = t.laps;
+    creator.width = t.trackWidth || creator.width;
+    creator.primary = t.primary;
+    creator.accent = t.accent;
+    creator.name = t.name;
+    document.getElementById('creator-name').value = t.name;
+    document.getElementById('creator-laps').value = t.laps;
+    document.getElementById('creator-laps-val').textContent = t.laps;
+    document.getElementById('creator-width').value = creator.width;
+    document.getElementById('creator-width-val').textContent = creator.width;
+    document.getElementById('creator-color').value = t.primary;
+    document.getElementById('creator-accent').value = t.accent;
+    cRender();
+    flashMsg('Loaded "' + t.name + '" — edit and Save to overwrite, or Save As… for a copy');
+};
+
+window.cNew = () => {
+    cEditingIdx = null;
+    creator.waypoints = [];
+    creator.boostPads = [];
+    creator.name = '';
+    document.getElementById('creator-name').value = '';
+    document.getElementById('creator-name').placeholder = 'e.g. Sunset Drift';
+    cRender();
+    flashMsg('Started a new track');
+};
+
+window.cRace = (i) => {
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    const t = saved[i];
+    // Inject custom map into MAPS registry for the race
+    MAPS['__custom__' + i] = {
+        name: t.name,
+        laps: t.laps,
+        length: 'CUSTOM',
+        drivers: '4 / 4',
+        status: 'CUSTOM',
+        desc: `Custom track · ${t.waypoints.length} waypoints · ${t.boostPads.length} boost pads`,
+        theme: { primary: parseInt(t.primary.slice(1), 16), accent: parseInt(t.accent.slice(1), 16), ground: 0x0a0f14, fog: 0x0a0f1c, sky: 0x0d1117, groundLine: 0x1c2128 },
+        waypoints: t.waypoints,
+        boostPads: t.boostPads
+    };
+    STATE.map = '__custom__' + i;
+    closeMapCreator();
+    startRace();
+};
+
+window.cDelete = (i) => {
+    if (!confirm('Delete this map?')) return;
+    const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+    saved.splice(i, 1);
+    localStorage.setItem('apex_custom_maps', JSON.stringify(saved));
+    cLoadSavedList();
+};
+
+// Track the map that was selected before opening the creator, so we can
+// restore it after a Test Race and not strand the player on the preview map.
+let preCreatorMap = null;
+
+function cTest() {
+    if (creator.waypoints.length < 4) {
+        alert('Need at least 4 waypoints to test');
+        return;
+    }
+    preCreatorMap = STATE.map;
+    const t = {
+        name: creator.name + ' (Preview)',
+        waypoints: creator.waypoints,
+        boostPads: creator.boostPads,
+        laps: creator.laps,
+        trackWidth: creator.width,
+        primary: creator.primary,
+        accent: creator.accent
+    };
+    MAPS['__preview__'] = {
+        name: t.name, laps: t.laps, length: 'PREVIEW', drivers: '4 / 4', status: 'TEST',
+        desc: 'Test race on unsaved map',
+        trackWidth: t.trackWidth,
+        theme: { primary: parseInt(t.primary.slice(1), 16), accent: parseInt(t.accent.slice(1), 16), ground: 0x0a0f14, fog: 0x0a0f1c, sky: 0x0d1117, groundLine: 0x1c2128 },
+        waypoints: t.waypoints, boostPads: t.boostPads
+    };
+    STATE.map = '__preview__';
+    closeMapCreator();
+    // Make sure the menu screen is hidden before racing
+    document.getElementById('menu-screen').style.display = 'none';
+    startRace();
+}
+
+function flashMsg(msg) {
+    const el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--btn-green); color:white; padding:10px 20px; border-radius:6px; font-weight:600; z-index:9999; font-size:13px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+}
+
+window.openMapCreator = function() {
+    document.getElementById('creator-screen').style.display = 'flex';
+    cInit();
+};
+
+window.closeMapCreator = function() {
+    document.getElementById('creator-screen').style.display = 'none';
+};
+
+// ====== CLOUDFLARE D1 MULTIPLAYER ======
+// Racing lobbies are stored in the existing `cubic_levels` table so they use
+// the same endpoints as community tracks. Two name prefixes distinguish them:
+//
+//   [LOBBY] <code> <displayName>     — one row per lobby (host creates it)
+//   [RACE]  <code> <email>           — one row per player (live state + info)
+//
+// We can only INSERT into cubic_levels (no UPDATE), so players re-publish a new
+// row every RACE_POLL_MS during a race. Old rows are pruned by mpPruneStale.
+
+const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+const MP_POLL_MS = 1500;     // lobby list refresh
+const RACE_POLL_MS = 200;    // in-race position sync
+const STATE_TTL_MS = 8000;   // opponent state older than this is ignored
+const LOBBY_TTL_MS = 60000;  // lobby with no host activity older than this is hidden
+
+// Authenticated user state (set after runNeuralGuard resolves)
+let CURRENT_USER = null; // { email, display_name, profile_picture }
+
+async function getUser() {
+    if (CURRENT_USER) return CURRENT_USER;
+    try {
+        if (typeof runNeuralGuard !== 'function') return null;
+        const data = await runNeuralGuard('');
+        if (!data || !data.user) return null;
+        const email = data.user.email;
+        const profile = await fetch(`${API}/profile/get?email=${encodeURIComponent(email)}&by=${encodeURIComponent(email)}`).then(r => r.json()).catch(() => ({}));
+        CURRENT_USER = {
+            email,
+            display_name: profile?.user?.display_name || email.split('@')[0],
+            profile_picture: profile?.user?.profile_picture || null
+        };
+        STATE.playerName = CURRENT_USER.display_name;
+        return CURRENT_USER;
+    } catch (e) { return null; }
+}
+
+// ===== LOBBY STATE =====
+let mpCurrentRoom = null;     // { code, name, host, map, state, players, chat }
+let mpIsHost = false;
+let mpLobbyRowId = null;      // DB id of our [LOBBY] row (for re-publish & delete)
+let mpPollingHandle = null;
+let mpRaceSyncHandle = null;
+
+function mpGenCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = '';
+    for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s;
+}
+
+function lobbyRowName(code, name)    { return '[LOBBY] ' + code + ' ' + name; }
+function playerRowName(code, email)  { return '[RACE] ' + code + ' ' + email.replace(/[^a-z0-9_.@-]/gi, '_'); }
+
+async function mpFetchAllLevels() {
+    try {
+        const res = await fetch(`${API}/cubic/levels`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.levels || [];
+    } catch (e) { return []; }
+}
+
+async function mpListLobbies() {
+    const levels = await mpFetchAllLevels();
+    const now = Date.now();
+    const lobbies = [];
+    for (const l of levels) {
+        if (!l.name || !l.name.startsWith('[LOBBY] ')) continue;
+        let obj = null;
+        try { obj = JSON.parse(l.objects); } catch (e) { continue; }
+        if (!obj || obj.type !== 'lobby') continue;
+        if (obj.state !== 'waiting') continue;
+        // Stale-lobby guard
+        if (now - (obj.last_seen || 0) > LOBBY_TTL_MS) continue;
+        const players = (levels || []).filter(r =>
+            r.name && r.name.startsWith('[RACE] ' + obj.code + ' ') &&
+            (now - new Date(r.created_at + 'Z').getTime() < STATE_TTL_MS)
+        );
+        lobbies.push({
+            id: obj.code,
+            name: obj.name,
+            host: obj.host,
+            map: obj.map,
+            state: obj.state,
+            dbRowId: l.id,
+            created_at: obj.created_at || 0,
+            players: players.map(r => {
+                try { return JSON.parse(r.objects); } catch (e) { return null; }
+            }).filter(Boolean)
+        });
+    }
+    // Newest first
+    lobbies.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    return lobbies;
+}
+
+async function mpCreateLobby() {
+    const user = await getUser();
+    if (!user) { alert('Please log in to host a multiplayer lobby.'); return; }
+    const name = (document.getElementById('mp-room-name').value || '').trim() || (user.display_name + "'s Lobby");
+    const mapKey = document.getElementById('mp-room-map').value;
+    const code = mpGenCode();
+    const room = {
+        type: 'lobby',
+        code,
+        name,
+        host: user.email,
+        map: mapKey,
+        state: 'waiting',
+        last_seen: Date.now(),
+        created_at: Date.now(),
+        chat: []
+    };
+    try {
+        const res = await fetch(`${API}/cubic/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: lobbyRowName(code, name),
+                author: user.display_name,
+                author_email: user.email,
+                email: user.email,
+                difficulty: 'medium',
+                color: '#58a6ff',
+                length: 0,
+                objects: JSON.stringify(room)
+            })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'save failed');
+        // The publish endpoint doesn't return the new row id, so locate it
+        const levels = await mpFetchAllLevels();
+        const found = levels.find(l => l.name === lobbyRowName(code, name));
+        if (!found) throw new Error('lobby created but id not found');
+        mpLobbyRowId = found.id;
+        room._id = found.id;
+        mpCurrentRoom = room;
+        mpIsHost = true;
+        // Also publish our own player state row immediately
+        await mpPublishMyPlayerState();
+        mpOpenRoom();
+        flashMsg('Lobby created: ' + code);
+    } catch (e) {
+        alert('Failed to create lobby: ' + e.message);
+    }
+}
+
+async function mpJoinLobby(code) {
+    const user = await getUser();
+    if (!user) { alert('Please log in to join a multiplayer lobby.'); return; }
+    code = String(code || '').trim();
+    try {
+        const levels = await mpFetchAllLevels();
+        const lobbyRow = levels.find(l => l.name && l.name.startsWith('[LOBBY] ' + code + ' '));
+        if (!lobbyRow) { alert('Lobby not found (code ' + code + ')'); return; }
+        let room;
+        try { room = JSON.parse(lobbyRow.objects); } catch (e) { room = null; }
+        if (!room || room.type !== 'lobby') { alert('Invalid lobby data'); return; }
+        if (room.state === 'racing') { alert('Race already in progress.'); return; }
+        // Count current live players
+        const live = levels.filter(l =>
+            l.name && l.name.startsWith('[RACE] ' + code + ' ') &&
+            (Date.now() - new Date(l.created_at + 'Z').getTime() < STATE_TTL_MS)
+        );
+        if (live.length >= 4 && !live.find(l => l.author_email === user.email)) {
+            alert('Lobby is full.'); return;
+        }
+        // Publish our own player state row — this implicitly "joins" the lobby
+        await mpPublishMyPlayerState();
+        // Refresh lobby data and append join message
+        const fresh = await mpListLobbies();
+        const freshLobby = fresh.find(l => l.id === code);
+        if (freshLobby) {
+            // Add a chat entry by republishing the lobby with a system message.
+            // Only the host does this; if we're not the host we just skip.
+            if (freshLobby.host === user.email) {
+                room.chat = room.chat || [];
+                room.chat.push({ email: 'system', display_name: 'System', text: user.display_name + ' joined', ts: Date.now() });
+                await fetch(`${API}/cubic/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: lobbyRowName(code, room.name),
+                        author: user.display_name,
+                        author_email: user.email,
+                        email: user.email,
+                        difficulty: 'medium',
+                        color: '#58a6ff',
+                        length: 0,
+                        objects: JSON.stringify({ ...room, last_seen: Date.now() })
+                    })
+                });
+            }
+        }
+        mpCurrentRoom = { ...room, code };
+        mpIsHost = (room.host === user.email);
+        mpOpenRoom();
+    } catch (e) {
+        alert('Failed to join: ' + e.message);
+    }
+}
+
+async function mpLeaveLobby() {
+    if (mpPollingHandle) { clearInterval(mpPollingHandle); mpPollingHandle = null; }
+    if (mpRaceSyncHandle) { clearInterval(mpRaceSyncHandle); mpRaceSyncHandle = null; }
+    // Delete our own [RACE] player-state rows for this code so others see we left
+    const user = await getUser();
+    if (user && mpCurrentRoom) {
+        try {
+            const levels = await mpFetchAllLevels();
+            for (const l of levels) {
+                if (l.name === playerRowName(mpCurrentRoom.code, user.email) && l.author_email === user.email) {
+                    fetch(`${API}/cubic/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: l.id, email: user.email })
+                    }).catch(() => {});
+                }
+            }
+        } catch (e) {}
+        // If host leaving an empty lobby, delete the lobby row
+        if (mpIsHost && mpLobbyRowId) {
+            fetch(`${API}/cubic/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: mpLobbyRowId, email: user.email })
+            }).catch(() => {});
+        }
+    }
+    mpCurrentRoom = null;
+    mpIsHost = false;
+    mpLobbyRowId = null;
+    document.getElementById('mp-room-active').style.display = 'none';
+    document.getElementById('mp-room-empty').style.display = 'block';
+    mpRefreshLobbyList();
+}
+
+async function mpRefreshLobbyList() {
+    const list = await mpListLobbies();
+    const el = document.getElementById('mp-room-list');
+    if (!list || list.length === 0) {
+        el.innerHTML = '<div style="font-size:11px; color:var(--text-2); text-align:center; padding:20px 0; opacity:0.6;">No open lobbies. Create one below.</div>';
+        return;
+    }
+    el.innerHTML = list.map(r => `
+        <div class="mp-lobby-card" data-room-code="${esc(r.id)}" style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px; margin-bottom:8px; cursor:pointer; transition:0.15s;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:4px;">
+                <div style="font-size:13px; font-weight:600; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(r.name)}</div>
+                <div style="font-size:10px; color:var(--green); font-weight:700; margin-left:8px;">${r.players.length}/4</div>
+            </div>
+            <div style="font-size:10px; color:var(--text-2); font-family:'JetBrains Mono', monospace;">${r.map === 'cascade' ? 'Cascade Loop' : (r.map === 'neongrid' ? 'Neon Grid' : 'Custom')} · ${esc(r.state)} · code <span style="color:var(--cyan);">${esc(r.id)}</span></div>
+        </div>
+    `).join('');
+    el.querySelectorAll('.mp-lobby-card').forEach(card => {
+        card.onclick = () => mpJoinLobby(card.dataset.roomCode);
+    });
+}
+
+async function mpOpenRoom() {
+    const room = mpCurrentRoom;
+    if (!room) return;
+    document.getElementById('mp-room-empty').style.display = 'none';
+    document.getElementById('mp-room-active').style.display = 'block';
+    document.getElementById('mp-room-title').textContent = room.name;
+    document.getElementById('mp-room-code').textContent = room.code;
+    mpRenderRoom();
+    if (mpPollingHandle) clearInterval(mpPollingHandle);
+    mpPollingHandle = setInterval(async () => {
+        await mpPollRoom();
+    }, MP_POLL_MS);
+    mpPollRoom();
+}
+
+async function mpPollRoom() {
+    if (!mpCurrentRoom) return;
+    const code = mpCurrentRoom.code;
+    try {
+        const levels = await mpFetchAllLevels();
+        const lobbyRow = levels.find(l => l.name && l.name.startsWith('[LOBBY] ' + code + ' '));
+        if (!lobbyRow) {
+            // Lobby was deleted (host left)
+            if (mpIsHost) return; // host knows
+            flashMsg('Lobby closed by host');
+            mpLeaveLobby();
+            return;
+        }
+        let fresh;
+        try { fresh = JSON.parse(lobbyRow.objects); } catch (e) { return; }
+        // Update room state but keep our own player list derived from live rows
+        const now = Date.now();
+        const live = levels.filter(l =>
+            l.name && l.name.startsWith('[RACE] ' + code + ' ') &&
+            (now - new Date(l.created_at + 'Z').getTime() < STATE_TTL_MS)
+        );
+        const players = live.map(l => {
+            try { return JSON.parse(l.objects); } catch (e) { return null; }
+        }).filter(Boolean);
+        mpCurrentRoom = { ...fresh, code, players };
+        mpRenderRoom();
+        // If race started elsewhere and we're not in race, join it
+        if (fresh.state === 'racing' && STATE.raceState === 'menu') {
+            clearInterval(mpPollingHandle); mpPollingHandle = null;
+            STATE.map = fresh.map;
+            startRace();
+            mpStartRaceSync();
+        }
+    } catch (e) {}
+}
+
+function mpRenderRoom() {
+    if (!mpCurrentRoom) return;
+    const r = mpCurrentRoom;
+    const list = document.getElementById('mp-player-list');
+    const players = r.players || [];
+    list.innerHTML = players.map(p => {
+        const colorHex = '#' + (p.car_color || 0x58a6ff).toString(16).padStart(6, '0');
+        const isHost = p.email === r.host;
+        return `
+            <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-2);">
+                <div style="width:10px; height:10px; border-radius:50%; background:${colorHex}; box-shadow:0 0 6px ${colorHex};"></div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:var(--text);">${esc(p.display_name || p.email)}${isHost ? ' <span style="font-size:9px; background:var(--blue); color:white; padding:1px 4px; border-radius:2px; margin-left:4px;">HOST</span>' : ''}</div>
+                    <div style="font-size:10px; color:var(--text-2); font-family:'JetBrains Mono', monospace;">${esc((CARS_INFO[p.car_idx] && CARS_INFO[p.car_idx].name) || 'Velocity GT')}</div>
+                </div>
+            </div>
+        `;
+    }).join('') + (players.length < 4 ? `
+        <div style="padding:10px 0; text-align:center; font-size:11px; color:var(--text-2); opacity:0.6; font-style:italic;">
+            Share code <span style="font-family:'JetBrains Mono', monospace; color:var(--cyan);">${esc(r.code)}</span> to invite players
+        </div>
+    ` : '');
+
+    // Chat
+    const chat = document.getElementById('mp-chat-log');
+    chat.innerHTML = (r.chat || []).slice(-20).map(m => {
+        if (m.email === 'system') {
+            return `<div style="color:var(--text-2); opacity:0.6; text-align:center; font-size:10px; padding:2px 0;">— ${esc(m.text)} —</div>`;
+        }
+        return `<div><span style="color:var(--blue);">${esc(m.display_name)}:</span> ${esc(m.text)}</div>`;
+    }).join('');
+    chat.scrollTop = chat.scrollHeight;
+
+    // Start button visibility
+    const startBtn = document.getElementById('mp-start-btn');
+    startBtn.style.display = (mpIsHost && players.length >= 1) ? 'block' : 'none';
+}
+
+async function mpPublishMyPlayerState(extra = {}) {
+    if (!mpCurrentRoom) return;
+    const user = await getUser();
+    if (!user) return;
+    const me = cars[0];
+    const pos = me ? me.position : { x: 0, z: 0 };
+    const data = {
+        type: 'player',
+        email: user.email,
+        display_name: user.display_name,
+        profile_picture: user.profile_picture,
+        car_color: CARS_INFO[STATE.carIdx].color,
+        car_idx: STATE.carIdx,
+        ts: Date.now(),
+        ...extra
+    };
+    if (me) {
+        data.x = pos.x;
+        data.z = pos.z;
+        data.heading = me.heading;
+        data.lap = me.lap;
+        data.totalProgress = me.totalProgress;
+        data.boost = me.boost;
+        data.finished = me.lap > MAPS[STATE.map].laps;
+    }
+    try {
+        await fetch(`${API}/cubic/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: playerRowName(mpCurrentRoom.code, user.email),
+                author: user.display_name,
+                author_email: user.email,
+                email: user.email,
+                difficulty: 'medium',
+                color: '#58a6ff',
+                length: 0,
+                objects: JSON.stringify(data)
+            })
+        });
+    } catch (e) {}
+}
+
+async function mpSendChat() {
+    if (!mpCurrentRoom) return;
+    const user = await getUser();
+    if (!user) return;
+    const input = document.getElementById('mp-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    // Append locally for instant feedback
+    mpCurrentRoom.chat = mpCurrentRoom.chat || [];
+    mpCurrentRoom.chat.push({ email: user.email, display_name: user.display_name, text, ts: Date.now() });
+    input.value = '';
+    mpRenderRoom();
+    // Persist to the lobby row (anyone in the lobby can republish; last write wins
+    // for chat, which is fine for a casual lobby)
+    try {
+        const levels = await mpFetchAllLevels();
+        const lobbyRow = levels.find(l => l.name && l.name.startsWith('[LOBBY] ' + mpCurrentRoom.code + ' '));
+        if (lobbyRow) {
+            let fresh;
+            try { fresh = JSON.parse(lobbyRow.objects); } catch (e) { fresh = { ...mpCurrentRoom }; }
+            fresh.chat = mpCurrentRoom.chat;
+            fresh.last_seen = Date.now();
+            await fetch(`${API}/cubic/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: lobbyRow.name,
+                    author: user.display_name,
+                    author_email: user.email,
+                    email: user.email,
+                    difficulty: 'medium',
+                    color: '#58a6ff',
+                    length: 0,
+                    objects: JSON.stringify(fresh)
+                })
+            });
+        }
+    } catch (e) {}
+}
+
+async function mpStartRace() {
+    if (!mpCurrentRoom || !mpIsHost) return;
+    // Update the lobby row with state=racing
+    try {
+        const levels = await mpFetchAllLevels();
+        const lobbyRow = levels.find(l => l.name && l.name.startsWith('[LOBBY] ' + mpCurrentRoom.code + ' '));
+        if (lobbyRow) {
+            let fresh;
+            try { fresh = JSON.parse(lobbyRow.objects); } catch (e) { fresh = { ...mpCurrentRoom }; }
+            fresh.state = 'racing';
+            fresh.started_at = Date.now();
+            fresh.last_seen = Date.now();
+            const user = await getUser();
+            await fetch(`${API}/cubic/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: lobbyRow.name,
+                    author: user?.display_name || 'Host',
+                    author_email: user?.email || mpCurrentRoom.host,
+                    email: user?.email || mpCurrentRoom.host,
+                    difficulty: 'medium',
+                    color: '#58a6ff',
+                    length: 0,
+                    objects: JSON.stringify(fresh)
+                })
+            });
+        }
+    } catch (e) {}
+    if (mpPollingHandle) { clearInterval(mpPollingHandle); mpPollingHandle = null; }
+    STATE.map = mpCurrentRoom.map;
+    startRace();
+    mpStartRaceSync();
+}
+
+window.mpCopyCode = function() {
+    if (!mpCurrentRoom) return;
+    navigator.clipboard.writeText(mpCurrentRoom.code).then(() => flashMsg('Code copied!'));
+};
+
+// ===== RACE-TIME SYNC =====
+function mpStartRaceSync() {
+    if (mpRaceSyncHandle) clearInterval(mpRaceSyncHandle);
+    mpRaceSyncHandle = setInterval(async () => {
+        if (!mpCurrentRoom || !cars[0]) return;
+        await mpPublishMyPlayerState();
+        // Read opponents
+        try {
+            const levels = await mpFetchAllLevels();
+            const now = Date.now();
+            const oppRows = levels.filter(l => {
+                if (!l.name || !l.name.startsWith('[RACE] ' + mpCurrentRoom.code + ' ')) return false;
+                return (now - new Date(l.created_at + 'Z').getTime() < STATE_TTL_MS);
+            });
+            const user = await getUser();
+            const states = oppRows.map(r => {
+                try { return JSON.parse(r.objects); } catch (e) { return null; }
+            }).filter(s => s && s.email !== (user && user.email));
+            // Keep only the freshest state per email
+            const byEmail = new Map();
+            for (const s of states) {
+                const cur = byEmail.get(s.email);
+                if (!cur || s.ts > cur.ts) byEmail.set(s.email, s);
+            }
+            mpRemoteStates = Array.from(byEmail.values());
+        } catch (e) {}
+    }, RACE_POLL_MS);
+}
+
+function mpStopRaceSync() {
+    if (mpRaceSyncHandle) { clearInterval(mpRaceSyncHandle); mpRaceSyncHandle = null; }
+    // Best-effort: mark our state as finished by writing a final row
+    if (mpCurrentRoom && cars[0]) {
+        mpPublishMyPlayerState({ finished: true });
+    }
+}
+
+let mpRemoteStates = []; // opponents' state in current race
+
+// Periodically prune the player's own old state rows so we don't fill the
+// cubic_levels table. We can only delete rows we authored.
+async function mpPruneStale() {
+    const user = await getUser();
+    if (!user) return;
+    try {
+        const levels = await mpFetchAllLevels();
+        const now = Date.now();
+        for (const l of levels) {
+            if (l.author_email !== user.email) continue;
+            if (!l.name) continue;
+            if (!l.name.startsWith('[RACE] ')) continue;
+            const age = now - new Date(l.created_at + 'Z').getTime();
+            if (age > STATE_TTL_MS) {
+                fetch(`${API}/cubic/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: l.id, email: user.email })
+                }).catch(() => {});
+            }
+        }
+    } catch (e) {}
+}
+setInterval(mpPruneStale, 15000);
+
+// ===== LOBBY UI WIRING =====
+window.openMultiplayerLobby = function() {
+    document.getElementById('mp-lobby-screen').style.display = 'flex';
+    document.getElementById('menu-screen').style.display = 'none';
+    mpRefreshLobbyList();
+    getUser(); // warm cache
+};
+
+document.getElementById('mp-close-btn').onclick = () => {
+    if (mpCurrentRoom) { mpLeaveLobby(); }
+    document.getElementById('mp-lobby-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'block';
+};
+document.getElementById('mp-refresh-btn').onclick = mpRefreshLobbyList;
+document.getElementById('mp-create-btn').onclick = mpCreateLobby;
+document.getElementById('mp-leave-btn').onclick = mpLeaveLobby;
+document.getElementById('mp-start-btn').onclick = mpStartRace;
+document.getElementById('mp-chat-send').onclick = mpSendChat;
+document.getElementById('mp-chat-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') mpSendChat();
+});
+
+// ====== COMMUNITY MAPS (uses cubic_levels) ======
+let cmCachedLevels = []; // cache last fetch so cmRaceLevel doesn't re-hit the API
+
+async function cmLoadList() {
+    try {
+        const res = await fetch(`${API}/cubic/levels`);
+        if (!res.ok) throw new Error('load failed');
+        const data = await res.json();
+        // Filter to only racing tracks (we tag by name prefix)
+        const tracks = (data.levels || []).filter(l => l.name && l.name.startsWith('[RACE]'));
+        cmCachedLevels = data.levels || [];
+        cmRenderGrid(tracks);
+    } catch (e) {
+        document.getElementById('cm-grid').innerHTML = `
+            <div style="grid-column: 1/-1; text-align:center; color:var(--text-2); padding:40px 20px;">
+                <div style="font-size:14px; color:var(--red); margin-bottom:8px;">Failed to load community maps</div>
+                <div style="font-size:11px;">${e.message}</div>
+            </div>
+        `;
+    }
+}
+
+function cmRenderGrid(levels) {
+    const grid = document.getElementById('cm-grid');
+    if (levels.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align:center; color:var(--text-2); padding:60px 20px;">
+                <div style="font-size:48px; opacity:0.3; margin-bottom:12px;">⊞</div>
+                <div style="font-size:16px; font-weight:600; color:var(--text); margin-bottom:6px;">No community tracks yet</div>
+                <div style="font-size:12px;">Use the Map Creator to publish your own!</div>
+            </div>
+        `;
+        return;
+    }
+    grid.innerHTML = levels.map(l => {
+        const plays = l.plays || 0;
+        const color = l.color || '#58a6ff';
+        const thumb = l.image_url || '';
+        // l.name is prefixed '[RACE] ' server-side; strip it for display and
+        // escape the remainder so a malicious server response can't inject HTML.
+        const displayName = esc((l.name || '').replace('[RACE] ', ''));
+        return `
+            <div class="cm-card" data-level-id="${esc(l.id)}" style="background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; transition:0.15s; cursor:pointer;" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+                <div style="aspect-ratio: 16/9; background:#000; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                    ${thumb ? `<img src="${esc(thumb)}" style="width:100%; height:100%; object-fit:cover;">` : `<svg viewBox="0 0 160 90" style="width:100%; height:100%;"><rect width="160" height="90" fill="#0a0f14"/><path d="M 30 60 Q 30 30 60 30 L 100 30 Q 130 30 130 50 Q 130 70 100 70 L 60 70 Q 30 70 30 60 Z" fill="none" stroke="${esc(color)}" stroke-width="2"/></svg>`}
+                </div>
+                <div style="padding:12px;">
+                    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px;">${displayName}</div>
+                    <div style="font-size:11px; color:var(--text-2); font-family:'JetBrains Mono', monospace; margin-bottom:10px;">by ${esc(l.author)} · ${plays} plays</div>
+                    <button class="btn primary" style="width:100%; padding:8px;">Race This Track</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    // Delegated click handler — l.id is server-controlled so we never inline it
+    grid.querySelectorAll('.cm-card').forEach(card => {
+        card.onclick = () => cmRaceLevel(card.dataset.levelId);
+    });
+}
+
+async function cmRaceLevel(id) {
+    try {
+        // Use cached list when possible; falls back to refetching
+        let levels = cmCachedLevels;
+        if (!levels.length) {
+            const res = await fetch(`${API}/cubic/levels`);
+            const data = await res.json();
+            levels = data.levels || [];
+            cmCachedLevels = levels;
+        }
+        // Coerce both sides to strings — DB id may be number, dataset value may be string
+        const level = levels.find(l => String(l.id) === String(id));
+        if (!level) { alert('Track not found (id ' + id + ')'); return; }
+        let obj;
+        try { obj = JSON.parse(level.objects); } catch (e) { obj = []; }
+        // Race track data is in obj[0] if it's a single track
+        const trackData = Array.isArray(obj) && obj.length > 0 ? obj[0] : null;
+        if (!trackData || !trackData.waypoints) { alert('Invalid track data'); return; }
+        // Build map and race
+        const mapKey = '__cm_' + id;
+        MAPS[mapKey] = {
+            name: level.name.replace('[RACE] ', ''),
+            laps: trackData.laps || 3,
+            length: 'CUSTOM', drivers: 'C', status: 'COMMUNITY',
+            desc: `Community track by ${level.author} · ${trackData.waypoints.length} waypoints`,
+            trackWidth: trackData.trackWidth || 24,
+            theme: { primary: parseInt((trackData.primary || '#3fb950').slice(1), 16), accent: parseInt((trackData.accent || '#58a6ff').slice(1), 16), ground: 0x0a0f14, fog: 0x0a0f1c, sky: 0x0d1117, groundLine: 0x1c2128 },
+            waypoints: trackData.waypoints,
+            boostPads: trackData.boostPads || []
+        };
+        // Increment play count
+        fetch(`${API}/cubic/play?id=${id}`).catch(() => {});
+        closeCommunityMaps();
+        STATE.map = mapKey;
+        startRace();
+    } catch (e) {
+        alert('Failed to load track: ' + e.message);
+    }
+}
+
+window.openCommunityMaps = function() {
+    document.getElementById('cm-screen').style.display = 'flex';
+    document.getElementById('menu-screen').style.display = 'none';
+    cmLoadList();
+};
+window.closeCommunityMaps = function() {
+    document.getElementById('cm-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'block';
+};
+document.getElementById('cm-close-btn').onclick = closeCommunityMaps;
+document.getElementById('cm-refresh-btn').onclick = cmLoadList;
+
+// Patch the map creator's cSave to also publish to the server.
+// We wrap the existing function via the button's onclick so the original
+// function declaration is untouched.
+const _creatorSaveBtn = document.getElementById('creator-save');
+_creatorSaveBtn.addEventListener('click', () => {
+    setTimeout(() => {
+        const saved = JSON.parse(localStorage.getItem('apex_custom_maps') || '[]');
+        const last = saved[saved.length - 1];
+        if (!last) return;
+        const user = localStorage.getItem('ada_user_email') || 'anonymous';
+        const displayName = CURRENT_USER?.display_name || user.split('@')[0];
+        const trackData = {
+            waypoints: last.waypoints,
+            boostPads: last.boostPads,
+            laps: last.laps,
+            trackWidth: last.trackWidth || creator.width,
+            primary: last.primary,
+            accent: last.accent
+        };
+        fetch(`${API}/cubic/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: '[RACE] ' + last.name,
+                author: displayName,
+                author_email: user,
+                email: user,
+                difficulty: 'medium',
+                color: last.primary,
+                length: last.waypoints.length,
+                objects: JSON.stringify([trackData])
+            })
+        }).then(r => r.json()).then(d => {
+            if (d.success) flashMsg('Saved locally + published to community!');
+            else flashMsg('Saved locally (publish failed)');
+        }).catch(() => flashMsg('Saved locally (offline)'));
+    }, 50);
+});
+
+// Render remote players on minimap — wrap the original drawMinimap call
+// from the main animation loop. We do this by monkey-patching the global
+// drawMinimap with a wrapper that draws remote states after the originals.
+const _origDrawMinimap = drawMinimap;
+window.drawMinimap = function() {
+    _origDrawMinimap();
+    if (!mpRemoteStates || mpRemoteStates.length === 0) return;
+    const w = minimapCanvas.width, h = minimapCanvas.height;
+    const scale = 0.8, cx = w / 2, cy = h / 2;
+    mpRemoteStates.forEach(s => {
+        const x = cx + s.x * scale, y = cy + s.z * scale;
+        mctx.fillStyle = '#' + (s.car_color || 0xff2e88).toString(16).padStart(6, '0');
+        mctx.strokeStyle = '#fff';
+        mctx.lineWidth = 1.5;
+        mctx.beginPath();
+        mctx.arc(x, y, 5, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.stroke();
+    });
+};
+drawMinimap = window.drawMinimap;
+
+// Warm up user state
+getUser();
+
+// Periodically prune stale racing state rows from the cubic_levels table
+// (mpPruneStale is defined alongside the other multiplayer functions above).
+// It deletes any [RACE] … row we authored that's older than STATE_TTL_MS.
+
+
+</script>
+</body>
+</html>
