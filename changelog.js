@@ -5,8 +5,9 @@
     const LOG_TITLE = "Update :)";
     
     const CHANGES = [
-        "New systems!",
-        "New Game!"
+        "New games in the making paper io....?",
+        "Racing game launch is not happening due to school blocker I can only test systems when in school and it takes a day to fix.",
+        "chan."
     ];
     // ---------------------
 
