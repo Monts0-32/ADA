@@ -1,7 +1,7 @@
 (function() {
     // --- CONFIGURATION ---
     const CHANGELOG_VERSION = "1.3.3"; // Change this to trigger a new popup
-    const UPDATE_DATE = "Jun 08, 2026";
+    const UPDATE_DATE = "Jun 18, 2026";
     const LOG_TITLE = "Update :)";
     
     const CHANGES = [
