@@ -111,15 +111,20 @@ canvas{display:block;width:600px;height:600px;max-width:100%}
 /* ── LOBBY PLAYER CUBES ── */
 .lobby-cube-slot{
   display:flex;flex-direction:column;align-items:center;gap:6px;
-  padding:10px;background:var(--surface2);border:1px solid var(--border-m);
+  padding:14px 10px 10px;background:var(--surface2);border:1px solid var(--border-m);
   border-radius:var(--r);position:relative
 }
-.lobby-cube-slot .cube-vis{width:34px;height:34px;position:relative;transform-style:preserve-3d}
-.lobby-cube-slot .cube-vis::before,.lobby-cube-slot .cube-vis::after,
-.lobby-cube-slot .cube-vis .face{content:"";position:absolute;width:24px;height:24px;border:1px solid rgba(0,0,0,.4)}
-.lobby-cube-slot .cube-vis .top{transform:translate(5px,0) rotate(-30deg) skewX(-30deg);background:var(--cube-top)}
-.lobby-cube-slot .cube-vis .right{transform:translate(17px,5px) skewY(-30deg);background:var(--cube-side);width:11px}
-.lobby-cube-slot .cube-vis .left{transform:translate(5px,5px) skewY(30deg);background:var(--cube-side2);width:11px}
+.lobby-avatar{width:44px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.lobby-avatar.real-avatar{object-fit:cover;border:2px solid var(--slot-color, var(--blue));background:var(--surface)}
+/* Robot face for AI bots: cube head with two glowing eyes */
+.ai-avatar{
+  background:linear-gradient(135deg,var(--av-top,#e3b341),var(--av-side,#a371f7));
+  border:2px solid var(--av-side,#a371f7);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.4)
+}
+.ai-eye{position:absolute;top:50%;width:7px;height:9px;background:#0d1117;border-radius:50%;transform:translateY(-50%);box-shadow:0 0 6px var(--av-top,#fff)}
+.ai-eye:nth-child(1){left:11px}
+.ai-eye:nth-child(2){right:11px}
 .lobby-cube-slot .pname{font-size:11px;font-weight:600;text-align:center;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lobby-cube-slot .ptag{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .lobby-cube-slot .kick-btn{position:absolute;top:4px;right:4px;background:transparent;border:0;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px}
@@ -403,6 +408,7 @@ let syncMoves = [];          // buffered moves from server
 //  for curved rendering and proper line-segment collision detection.
 // ════════════════════════════════════════════════════════════════════════════
 function makePlayer(opts) {
+  const initialDir = opts.dir || { x: 1, y: 0 };
   return {
     id:       opts.id,
     email:    opts.email || '',
@@ -412,8 +418,11 @@ function makePlayer(opts) {
     y:        opts.y,
     prevX:    opts.x,         // position from last tick (for trail segment)
     prevY:    opts.y,
-    dir:      opts.dir || { x: 1, y: 0 },
-    wantedDir: opts.dir || { x: 1, y: 0 },
+    dir:      initialDir,
+    wantedDir: initialDir,
+    // Smooth rotation angle in radians (0 = facing +X). Always interpolates
+    // toward the angle implied by `dir`, never snaps.
+    facing:   Math.atan2(initialDir.y, initialDir.x),
     // Trail: list of {x, y} float points — the player's PATH since leaving territory.
     // Visual rendering connects these as a polyline (curved appearance).
     // Collision: tests each line segment against other trails.
@@ -430,6 +439,14 @@ function makePlayer(opts) {
       tickCount: 0
     }
   };
+}
+
+// Lerp an angle toward a target, choosing the shortest direction around the circle
+function lerpAngle(current, target, t) {
+  let diff = target - current;
+  while (diff >  Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return current + diff * t;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -980,6 +997,11 @@ function tick() {
       p.dir = p.wantedDir;
     }
 
+    // Smoothly rotate the visual facing toward the cardinal direction of `dir`.
+    // `dir` is unit-vector cardinal; the target angle is atan2(dir.y, dir.x).
+    const targetAngle = Math.atan2(p.dir.y, p.dir.x);
+    p.facing = lerpAngle(p.facing, targetAngle, 0.25);
+
     p.prevX = p.x;
     p.prevY = p.y;
     p.x += p.dir.x * MOVE_SPEED;
@@ -1055,6 +1077,15 @@ function claimReturnedTrail(p) {
   // Claim any enclosed regions (loop closure)
   const claimed = claimEnclosedAreas(p.colorIdx);
   if (claimed > 5) toast(`${p.name} captured ${claimed} cells in a loop!`, 's');
+
+  // Multiplayer: if this player just took out the last opponent and is now
+  // safely home (trail empty), declare them the winner.
+  if (mode === 'online' && !isAiOnly && p.alive) {
+    const remainingAlive = players.filter(q => q.alive && q !== p);
+    if (remainingAlive.length === 0) {
+      endGame(p);
+    }
+  }
 }
 
 function killPlayer(p, by) {
@@ -1074,8 +1105,21 @@ function killPlayer(p, by) {
     if (territoryMap[i] === p.colorIdx) territoryMap[i] = -1;
   }
 
-  if (by) toast(`${by.name} eliminated ${p.name}!`, 'i');
-  else if (p.isLocal) toast('You were eliminated!', 'e');
+  if (by) {
+    toast(`${by.name} eliminated ${p.name}!`, 'i');
+    // Multiplayer: when the killer takes out the last opponent, they must
+    // still return home before being declared winner. We just toast — the
+    // game keeps going until they close their trail or own the whole map.
+    if (mode === 'online' && !isAiOnly) {
+      const remaining = players.filter(q => q.alive);
+      const lastOpponent = remaining.length === 1 && remaining[0] === by;
+      if (lastOpponent && by.trail.length === 0) {
+        // Already safe — declare winner now
+        endGame(by);
+        return;
+      }
+    }
+  } else if (p.isLocal) toast('You were eliminated!', 'e');
 }
 
 function checkWinCondition() {
@@ -1096,17 +1140,18 @@ function checkWinCondition() {
     return;
   }
 
-  // Online public match: end when only 1 player left alive OR server
-  // signaled finished (timer expired / all real players dead)
+  // Online public match
   if (mode === 'online' && players.length > 1) {
-    // Complete-territory win: if any player owns essentially the whole map
+    // Complete-territory win: if any alive player owns essentially the whole map
     for (const p of players) {
       if (!p.alive) continue;
       const pct = getTerritoryPercent(p.colorIdx);
       if (pct >= 99.0) { endGame(p); return; }
     }
-    if (alive.length === 1) { endGame(alive[0]); return; }
-    if (alive.length === 0) { endGame(null); return; }
+    // Edge-of-map death is also death-by-elimination. The survivor must still
+    // return home (clear their trail) before being declared winner. They keep
+    // playing until their trail is empty OR the server finishes the match.
+    return;
   }
 }
 
@@ -1163,7 +1208,258 @@ function endGame(winner) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  RENDER — camera-followed 3D map with curved trails
+//  SMOOTH TERRITORY RENDER — marching squares on a per-player mask
+// ════════════════════════════════════════════════════════════════════════════
+//
+// For each player, build a small bitmap of "owned?" cells for the visible
+// viewport area, then run marching squares to extract smooth contour rings.
+// We then fill each ring as a 3D tile (rounded top, dim side faces) and
+// outline it. Result: territory that flows organically around movement
+// instead of looking like a chessboard.
+
+let _maskBuf = null;  // reused scratch buffer to avoid GC churn
+
+// Returns the visible viewport rect in grid coords given the current camera.
+// We expand by a few cells so blobs at the edge aren't clipped mid-render.
+function visibleGridBounds() {
+  const cam = getCamera();
+  // Camera centers on world pixel (cam.x, cam.y) and zooms by cam.zoom.
+  // World pixel (0,0) corresponds to grid (0,0). Inverse of gridToScreen:
+  //   sx = gx * CELL_SIZE       => gx = sx / CELL_SIZE
+  //   sy = gy * CELL_SIZE * TILT_Y => gy = sy / (CELL_SIZE * TILT_Y)
+  // The visible half-width in world pixels is VIEW_W / (2 * cam.zoom).
+  const halfWPx = VIEW_W / (2 * cam.zoom);
+  const halfHPx = VIEW_H / (2 * cam.zoom);
+  const minSx = cam.x - halfWPx;
+  const maxSx = cam.x + halfWPx;
+  const minSy = cam.y - halfHPx;
+  const maxSy = cam.y + halfHPx;
+  const minGx = Math.floor(minSx / CELL_SIZE) - 2;
+  const maxGx = Math.ceil(maxSx / CELL_SIZE) + 2;
+  const minGy = Math.floor(minSy / (CELL_SIZE * TILT_Y)) - 2;
+  const maxGy = Math.ceil(maxSy / (CELL_SIZE * TILT_Y)) + 2;
+  return {
+    x0: Math.max(0, minGx),
+    y0: Math.max(0, minGy),
+    x1: Math.min(GRID_SIZE, maxGx),
+    y1: Math.min(GRID_SIZE, maxGy),
+  };
+}
+
+// Marching squares: emit a list of polylines (each polyline = list of grid-coord points)
+// representing the boundary of "owned" cells for `maskOwner`. We pass 1 cell of
+// padding around the visible region so boundary contours close correctly.
+function extractBlobContours(mask, w, h, threshold) {
+  // For each cell, sample 4 corners. Build the 4-bit case index.
+  // Edge table maps case -> up to 2 edges as (cornerA, cornerB) pairs:
+  //   corners: 0=BL, 1=BR, 2=TR, 3=TL
+  // Edges are: 0=bottom, 1=right, 2=top, 3=left.
+  // We emit one open polyline per case (no connectivity tracing — sufficient
+  // for visual fidelity at small cell counts).
+  const segs = []; // each: { ax, ay, bx, by }
+  for (let y = 0; y < h - 1; y++) {
+    for (let x = 0; x < w - 1; x++) {
+      const bl = mask[y * w + x]     > threshold ? 1 : 0;
+      const br = mask[y * w + x + 1] > threshold ? 1 : 0;
+      const tr = mask[(y + 1) * w + x + 1] > threshold ? 1 : 0;
+      const tl = mask[(y + 1) * w + x]     > threshold ? 1 : 0;
+      const code = bl | (br << 1) | (tr << 2) | (tl << 3);
+      if (code === 0 || code === 15) continue;
+      // Edge endpoints (grid coords relative to mask origin):
+      //   edge 0 (bottom): (x, y)     -> (x+1, y)
+      //   edge 1 (right):  (x+1, y)   -> (x+1, y+1)
+      //   edge 2 (top):    (x+1, y+1) -> (x, y+1)
+      //   edge 3 (left):   (x, y+1)   -> (x, y)
+      // Linear interp by neighboring cells:
+      const edgePt = (e) => {
+        switch (e) {
+          case 0: return { x: x + 0.5, y };
+          case 1: return { x: x + 1,   y: y + 0.5 };
+          case 2: return { x: x + 0.5, y: y + 1 };
+          case 3: return { x,           y: y + 0.5 };
+        }
+      };
+      const addSeg = (e1, e2) => {
+        const a = edgePt(e1), b = edgePt(e2);
+        segs.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y });
+      };
+      switch (code) {
+        case 1:  addSeg(0, 3); break;
+        case 2:  addSeg(1, 0); break;
+        case 3:  addSeg(1, 3); break;
+        case 4:  addSeg(2, 1); break;
+        case 5:  addSeg(0, 3); addSeg(2, 1); break;        // ambiguous — split
+        case 6:  addSeg(2, 0); break;
+        case 7:  addSeg(2, 3); break;
+        case 8:  addSeg(3, 2); break;
+        case 9:  addSeg(0, 2); break;
+        case 10: addSeg(1, 0); addSeg(3, 2); break;       // ambiguous — split
+        case 11: addSeg(1, 2); break;
+        case 12: addSeg(3, 1); break;
+        case 13: addSeg(0, 1); break;
+        case 14: addSeg(3, 0); break;
+      }
+    }
+  }
+  return segs;
+}
+
+// Greedy-connect segments into polylines (open polylines are fine for filling).
+function connectSegments(segs) {
+  // Build endpoint -> segment index lookup with tolerance
+  const key = (x, y) => `${x.toFixed(2)},${y.toFixed(2)}`;
+  const byStart = new Map();
+  segs.forEach((s, i) => byStart.set(key(s.ax, s.ay), i));
+  const used = new Uint8Array(segs.length);
+  const lines = [];
+  for (let i = 0; i < segs.length; i++) {
+    if (used[i]) continue;
+    used[i] = 1;
+    const line = [{ x: segs[i].ax, y: segs[i].ay }, { x: segs[i].bx, y: segs[i].by }];
+    // Extend forward
+    let last = line[line.length - 1];
+    while (true) {
+      const k = key(last.x, last.y);
+      const nextIdx = byStart.get(k);
+      if (nextIdx == null || used[nextIdx]) break;
+      used[nextIdx] = 1;
+      const nxt = segs[nextIdx];
+      line.push({ x: nxt.bx, y: nxt.by });
+      last = line[line.length - 1];
+    }
+    // Extend backward
+    let first = line[0];
+    while (true) {
+      const k = key(first.x, first.y);
+      const prevIdx = byStart.get(k);
+      if (prevIdx == null || used[prevIdx]) break;
+      used[prevIdx] = 1;
+      const prv = segs[prevIdx];
+      line.unshift({ x: prv.ax, y: prv.ay });
+      first = line[0];
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+// Render all territory as smooth 3D blobs.
+function drawTerritoryBlobs() {
+  if (!territoryMap) return;
+  const b = visibleGridBounds();
+  const w = b.x1 - b.x0 + 2;
+  const h = b.y1 - b.y0 + 2;
+  if (!_maskBuf || _maskBuf.length < w * h) _maskBuf = new Int8Array(w * h);
+
+  // Group visible cells by owner (so we run marching squares once per player)
+  const owners = new Set();
+  for (let gy = b.y0; gy < b.y1; gy++) {
+    for (let gx = b.x0; gx < b.x1; gx++) {
+      const o = territoryMap[cellIdx(gx, gy)];
+      if (o !== -1) owners.add(o);
+    }
+  }
+
+  // For back-to-front rendering, sort owners by avg y of their territory.
+  // Simpler: render all bottom-most (highest y) cells first. We achieve this
+  // by iterating owners in increasing order of `minCy` (lowest row in the
+  // visible window), so the player with territory furthest "down the screen"
+  // renders first. Approximation: use the smallest y in their mask.
+  const ownerList = [...owners].sort((a, b) => {
+    let ay = Infinity, by = Infinity;
+    for (let gy = b.y0; gy < b.y1 && (ay === Infinity || by === Infinity); gy++) {
+      for (let gx = b.x0; gx < b.x1; gx++) {
+        const o = territoryMap[cellIdx(gx, gy)];
+        if (o === a && ay === Infinity) ay = gy;
+        if (o === b && by === Infinity) by = gy;
+      }
+    }
+    return by - ay;
+  });
+
+  for (const owner of ownerList) {
+    const c = PLAYER_COLORS[owner % PLAYER_COLORS.length];
+    // Build mask: 1 where owner matches, 0 otherwise
+    const mask = _maskBuf;
+    mask.fill(0);
+    let hasAny = false;
+    for (let gy = b.y0; gy < b.y1; gy++) {
+      for (let gx = b.x0; gx < b.x1; gx++) {
+        if (territoryMap[cellIdx(gx, gy)] === owner) {
+          mask[(gy - b.y0) * w + (gx - b.x0)] = 1;
+          hasAny = true;
+        }
+      }
+    }
+    if (!hasAny) continue;
+
+    const segs = extractBlobContours(mask, w, h, 0.5);
+    if (segs.length === 0) continue;
+    const lines = connectSegments(segs);
+
+    // Convert each polyline into screen coords (offset by grid bounds),
+    // then render as a soft 3D blob.
+    const lift   = TILE_HEIGHT;             // how much the top sits above ground
+    const offsetGx = b.x0;
+    const offsetGy = b.y0;
+
+    ctx.lineCap  = 'round';
+    ctx.lineJoin = 'round';
+
+    // Draw side-face fill (offset slightly downward + sideways to fake depth)
+    // — for a smooth blob look we draw a thick stroke at the base first,
+    // then the bright top stroke on top.
+    ctx.fillStyle = hexToRgba(c.fill, 0.18);
+    for (const ln of lines) {
+      ctx.beginPath();
+      for (let i = 0; i < ln.length; i++) {
+        const gx = ln[i].x + offsetGx;
+        const gy = ln[i].y + offsetGy;
+        const s = gridToScreen(gx, gy);
+        if (i === 0) ctx.moveTo(s.x, s.y + lift * 0.5);
+        else ctx.lineTo(s.x, s.y + lift * 0.5);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Soft glow stroke (wider, dim) — gives the blob its rounded silhouette
+    ctx.strokeStyle = hexToRgba(c.fill, 0.55);
+    ctx.lineWidth   = CELL_SIZE * 1.4;
+    for (const ln of lines) {
+      ctx.beginPath();
+      for (let i = 0; i < ln.length; i++) {
+        const gx = ln[i].x + offsetGx;
+        const gy = ln[i].y + offsetGy;
+        const s = gridToScreen(gx, gy);
+        if (i === 0) ctx.moveTo(s.x, s.y);
+        else ctx.lineTo(s.x, s.y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // Crisp top stroke — the visible "edge" of the blob
+    ctx.strokeStyle = hexToRgba(c.head, 0.85);
+    ctx.lineWidth   = CELL_SIZE * 0.5;
+    for (const ln of lines) {
+      ctx.beginPath();
+      for (let i = 0; i < ln.length; i++) {
+        const gx = ln[i].x + offsetGx;
+        const gy = ln[i].y + offsetGy;
+        const s = gridToScreen(gx, gy);
+        if (i === 0) ctx.moveTo(s.x, s.y - lift * 0.3);
+        else ctx.lineTo(s.x, s.y - lift * 0.3);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RENDER — camera-followed 3D map with smooth blob territory + cube players
 // ════════════════════════════════════════════════════════════════════════════
 function render() {
   if (!ctx) return;
@@ -1190,64 +1486,12 @@ function render() {
     ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(d.x, d.y); ctx.stroke();
   }
 
-  // ── PASS 2: Territory (sorted back-to-front) ──
-  const cells = [];
-  for (let cy = 0; cy < GRID_SIZE; cy++) {
-    for (let cx = 0; cx < GRID_SIZE; cx++) {
-      const idx = cellIdx(cx, cy);
-      const owner = territoryMap[idx];
-      if (owner === -1) continue;
-      cells.push({ cx, cy, owner });
-    }
-  }
-  cells.sort((a, b) => (a.cy - b.cy) || (a.cx - b.cx));
-
-  for (const { cx, cy, owner } of cells) {
-    const c = PLAYER_COLORS[owner % PLAYER_COLORS.length];
-    const topL = gridToScreen(cx,     cy);
-    const topR = gridToScreen(cx + 1, cy);
-    const botR = gridToScreen(cx + 1, cy + 1);
-    const botL = gridToScreen(cx,     cy + 1);
-    const h = TILE_HEIGHT;
-
-    // Right face
-    ctx.fillStyle = hexToRgba(c.fill, 0.55);
-    ctx.beginPath();
-    ctx.moveTo(botR.x, botR.y);
-    ctx.lineTo(botR.x, botR.y + h);
-    ctx.lineTo(topR.x, topR.y + h);
-    ctx.lineTo(topR.x, topR.y);
-    ctx.closePath();
-    ctx.fill();
-
-    // Front face
-    ctx.fillStyle = hexToRgba(c.fill, 0.45);
-    ctx.beginPath();
-    ctx.moveTo(botL.x, botL.y);
-    ctx.lineTo(botR.x, botR.y);
-    ctx.lineTo(botR.x, botR.y + h);
-    ctx.lineTo(botL.x, botL.y + h);
-    ctx.closePath();
-    ctx.fill();
-
-    // Top face
-    ctx.fillStyle = hexToRgba(c.fill, 0.85);
-    ctx.beginPath();
-    ctx.moveTo(topL.x, topL.y);
-    ctx.lineTo(topR.x, topR.y);
-    ctx.lineTo(botR.x, botR.y);
-    ctx.lineTo(botL.x, botL.y);
-    ctx.closePath();
-    ctx.fill();
-
-    // Back edge highlight
-    ctx.strokeStyle = hexToRgba(c.head, 0.4);
-    ctx.lineWidth = 1 / ZOOM;
-    ctx.beginPath();
-    ctx.moveTo(topL.x, topL.y);
-    ctx.lineTo(topR.x, topR.y);
-    ctx.stroke();
-  }
+  // ── PASS 2: Territory as smooth organic blobs ──
+  // The grid is still square (gameplay data). For rendering we run marching
+  // squares on each player's owned-region to extract smooth contour polylines,
+  // then draw each blob as a 3D tile with a rounded top. This makes territory
+  // look organic and flowing rather than blocky.
+  drawTerritoryBlobs();
 
   // ── PASS 3: TRAILS as curved 3D ribbons ──
   // Each trail is a polyline of float positions. We draw it as a thick line
@@ -1323,7 +1567,7 @@ function render() {
   const livePlayers = players.filter(p => p.alive).sort((a, b) => (a.y - b.y));
   for (const p of livePlayers) {
     const c = PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length];
-    const cubeSize = CELL_SIZE * 1.4;
+    const cubeSize = CELL_SIZE * 1.6;
     const headH = TILE_HEIGHT * 5;
     const base = gridToScreen(p.x + 0.5, p.y + 0.5);
     const head = { x: base.x, y: base.y - headH };
@@ -1334,56 +1578,96 @@ function render() {
     ctx.ellipse(base.x, base.y + 2, CELL_SIZE * 0.8, CELL_SIZE * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pillar (cube = blocky look)
-    ctx.fillStyle = hexToRgba(c.fill, 0.6);
+    // Vertical pillar
+    ctx.fillStyle = hexToRgba(c.fill, 0.55);
     ctx.fillRect(head.x - 4, head.y, 8, headH);
 
-    // Draw the cube (3 visible faces: top, left, right)
-    const half = cubeSize / 2;
-    const top    = { x: head.x,         y: head.y - half };
-    const right  = { x: head.x + half,  y: head.y - half/2 };
-    const left   = { x: head.x - half,  y: head.y - half/2 };
-    const bot    = { x: head.x,         y: head.y };
+    // Rotated cube: 4 side vertices on top face, rotated by `p.facing` around
+    // the vertical axis through (head.x, head.y + half).
+    const half  = cubeSize / 2;
+    const depth = cubeSize * 0.55;          // how "wide" the cube looks from above
+    const cx    = head.x;
+    const cy    = head.y + half;            // pivot at the cube's center
+    const a     = p.facing || 0;
+    // 4 ground-plane points around the cube center, rotated by `a`
+    // (front-of-cube is the side facing the player along `facing`)
+    const v0 = { x: cx + Math.cos(a) * half,           y: cy + Math.sin(a) * half * TILT_Y };
+    const v1 = { x: cx + Math.cos(a + Math.PI/2) * half, y: cy + Math.sin(a + Math.PI/2) * half * TILT_Y };
+    const v2 = { x: cx + Math.cos(a + Math.PI)   * half, y: cy + Math.sin(a + Math.PI)   * half * TILT_Y };
+    const v3 = { x: cx + Math.cos(a - Math.PI/2) * half, y: cy + Math.sin(a - Math.PI/2) * half * TILT_Y };
+    // Top vertices (raised by depth)
+    const t0 = { x: v0.x, y: v0.y - depth };
+    const t1 = { x: v1.x, y: v1.y - depth };
+    const t2 = { x: v2.x, y: v2.y - depth };
+    const t3 = { x: v3.x, y: v3.y - depth };
 
-    // Left face
-    ctx.fillStyle = hexToRgba(c.fill, 0.7);
-    ctx.beginPath();
-    ctx.moveTo(left.x, left.y);
-    ctx.lineTo(bot.x, bot.y);
-    ctx.lineTo(bot.x + half/2, bot.y + half/2);
-    ctx.lineTo(left.x + half/2, left.y + half/2);
-    ctx.closePath();
-    ctx.fill();
+    // ── Determine which 4 side faces are visible (back-face cull) ──
+    // Each face has an outward normal in world-space; we draw it only if it
+    // faces the camera (camera looks down the -Z axis into the screen).
+    // Because we draw onto a 2D screen with vertical compression (TILT_Y),
+    // we just check the screen-space x-component of the outward normal:
+    // faces whose outward normal points to the right (positive x) are
+    // visible on the right, left normals on the left.
+    const faces = [
+      { v: v1, t: t1, next: v2, nextT: t2, side: 1 },   // right side
+      { v: v3, t: t3, next: v0, nextT: t0, side: -1 },  // left side
+    ];
+    // Sort: draw the side farther from the camera first (so the near side
+    // overlaps it). Side `side:1` is right, `-1` is left; whichever is
+    // farther is drawn first.
+    if (Math.cos(a) < 0) faces.reverse();
 
-    // Right face (darker)
-    ctx.fillStyle = hexToRgba(c.fill, 0.55);
-    ctx.beginPath();
-    ctx.moveTo(right.x, right.y);
-    ctx.lineTo(bot.x, bot.y);
-    ctx.lineTo(bot.x + half/2, bot.y + half/2);
-    ctx.lineTo(right.x + half/2, right.y + half/2);
-    ctx.closePath();
-    ctx.fill();
+    for (const f of faces) {
+      const baseAlpha = f.side > 0 ? 0.65 : 0.5;
+      ctx.fillStyle = hexToRgba(c.fill, baseAlpha);
+      ctx.beginPath();
+      ctx.moveTo(f.v.x,  f.v.y);
+      ctx.lineTo(f.next.x, f.next.y);
+      ctx.lineTo(f.nextT.x, f.nextT.y);
+      ctx.lineTo(f.t.x, f.t.y);
+      ctx.closePath();
+      ctx.fill();
+    }
 
-    // Top face (brightest — most visible against territory)
+    // ── Top face (rhombus connecting the 4 top vertices) ──
     ctx.fillStyle = c.head;
     ctx.beginPath();
-    ctx.moveTo(top.x, top.y);
-    ctx.lineTo(top.x + half, top.y + half/2);
-    ctx.lineTo(top.x, top.y + half);
-    ctx.lineTo(top.x - half, top.y + half/2);
+    ctx.moveTo(t0.x, t0.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.lineTo(t2.x, t2.y);
+    ctx.lineTo(t3.x, t3.y);
     ctx.closePath();
     ctx.fill();
 
-    // Cube outline (white border — makes it pop on any territory color)
+    // Subtle inner detail on the top face: a small bright square that
+    // rotates WITH the cube, giving the impression of a face/marking.
+    ctx.save();
+    ctx.translate(cx, cy - depth / 2);
+    ctx.rotate(a);
+    ctx.fillStyle = hexToRgba(c.head, 0.95);
+    ctx.fillRect(-half * 0.35, -half * 0.35, half * 0.7, half * 0.7);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.2 / ZOOM;
+    ctx.strokeRect(-half * 0.35, -half * 0.35, half * 0.7, half * 0.7);
+    ctx.restore();
+
+    // ── Outline of the visible silhouette (makes the cube pop) ──
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.4 / ZOOM;
+    // Top diamond
     ctx.beginPath();
-    ctx.moveTo(top.x, top.y);
-    ctx.lineTo(top.x + half, top.y + half/2);
-    ctx.lineTo(right.x, right.y);
-    ctx.lineTo(left.x, left.y);
+    ctx.moveTo(t0.x, t0.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.lineTo(t2.x, t2.y);
+    ctx.lineTo(t3.x, t3.y);
     ctx.closePath();
+    ctx.stroke();
+    // Vertical edges from top to ground
+    ctx.beginPath();
+    ctx.moveTo(t0.x, t0.y); ctx.lineTo(v0.x, v0.y);
+    ctx.moveTo(t1.x, t1.y); ctx.lineTo(v1.x, v1.y);
+    ctx.moveTo(t2.x, t2.y); ctx.lineTo(v2.x, v2.y);
+    ctx.moveTo(t3.x, t3.y); ctx.lineTo(v3.x, v3.y);
     ctx.stroke();
   }
 
@@ -1644,16 +1928,28 @@ function renderLobby(data) {
       const tag = p.is_ai ? `AI · ${p.difficulty || 'medium'}` : (p.email === hostEmail ? 'HOST' : 'PLAYER');
       const isHostSlot = p.email === hostEmail;
       const showKick = iAmHost && !isHostSlot && !p.is_ai;
+
+      // Avatar: real player → profile picture; AI → robot icon
+      let avatarHtml;
+      if (p.is_ai) {
+        avatarHtml = `<div class="lobby-avatar ai-avatar" style="--av-top:${c.head};--av-side:${c.fill};--av-side2:${hexToRgba(c.fill, 0.55)}">
+            <div class="ai-eye"></div><div class="ai-eye"></div>
+          </div>`;
+      } else {
+        const pic = p.profile_picture || DEFAULT_ICON;
+        avatarHtml = `<img class="lobby-avatar real-avatar" src="${esc(pic)}" alt="" onerror="this.style.background='${c.fill}';this.removeAttribute('src')">`;
+      }
+
       html += `
-        <div class="lobby-cube-slot" style="--cube-top:${c.head};--cube-side:${c.fill};--cube-side2:${hexToRgba(c.fill, 0.6)}">
+        <div class="lobby-cube-slot" style="--cube-top:${c.head};--cube-side:${c.fill};--cube-side2:${hexToRgba(c.fill, 0.6)};--slot-color:${c.fill}">
           ${isHostSlot ? '<span class="crown">👑</span>' : ''}
           ${showKick ? `<button class="kick-btn" onclick="hostKick('${esc(p.email)}')" title="Kick">✕</button>` : ''}
-          <div class="cube-vis"><div class="top"></div><div class="right"></div><div class="left"></div></div>
+          ${avatarHtml}
           <div class="pname">${esc(p.name)}</div>
           <div class="ptag">${tag}</div>
         </div>`;
     } else {
-      html += `<div class="lobby-cube-slot empty"><div class="cube-vis" style="opacity:.3"></div><div class="pname">Empty</div><div class="ptag">—</div></div>`;
+      html += `<div class="lobby-cube-slot empty"><div class="lobby-avatar" style="background:var(--surface);border:1px dashed var(--border-m)"></div><div class="pname">Empty</div><div class="ptag">—</div></div>`;
     }
   }
   slotsEl.innerHTML = html;
