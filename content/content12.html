@@ -882,7 +882,7 @@
     let cutsceneStep = -1;        // index of the currently revealed step
     let cutscenePlaying = true;   // auto-advance is on (host can pause)
     let cutsceneTimers = [];      // pending setTimeouts for the cutscene
-    const CUTSCENE_STEP_MS = 4500; // ms between step reveals
+    const CUTSCENE_STEP_MS = 2500; // ms between step reveals
 
     function clearCutsceneTimers() {
         cutsceneTimers.forEach(t => clearTimeout(t));
@@ -991,7 +991,7 @@
                         api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL })
                             .then(() => pollViewing());
                     }
-                }, 3000);
+                }, 1500);
             }
             return;
         }
@@ -1060,17 +1060,44 @@
     };
 
     // === End ===
+    let endReturnTimer = null;
+    let endReturnCountdown = null;
+    const END_RETURN_SECONDS = 8;
+
     function endGame(data) {
         // Save score = total_rounds * 100 (we don't have total_rounds here, use round+1 as proxy)
         const score = (data.total_rounds || 6) * 100;
         saveScore(score);
 
+        // Clear any prior countdown
+        if (endReturnTimer) { clearTimeout(endReturnTimer); endReturnTimer = null; }
+        if (endReturnCountdown) { clearInterval(endReturnCountdown); endReturnCountdown = null; }
+
         show('end-view');
         document.getElementById('end-emoji').textContent = '🎉';
         document.getElementById('end-title').textContent = 'Game Complete';
-        document.getElementById('end-msg').textContent = `Score saved: ${score}`;
+        document.getElementById('end-msg').textContent =
+            `Score saved: ${score} — returning to menu in ${END_RETURN_SECONDS}s`;
 
         loadLeaderboard('leaderboard-list-end');
+
+        // Auto-return everyone to the menu after END_RETURN_SECONDS
+        let remaining = END_RETURN_SECONDS;
+        endReturnCountdown = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(endReturnCountdown); endReturnCountdown = null;
+                return;
+            }
+            const msg = document.getElementById('end-msg');
+            if (msg) msg.textContent = `Score saved: ${score} — returning to menu in ${remaining}s`;
+        }, 1000);
+
+        endReturnTimer = setTimeout(() => {
+            if (endReturnCountdown) { clearInterval(endReturnCountdown); endReturnCountdown = null; }
+            endReturnTimer = null;
+            goToMenu();
+        }, END_RETURN_SECONDS * 1000);
     }
 
     window.replayFromStart = function() {
@@ -1126,6 +1153,8 @@
         if (viewingPollTimer) { clearInterval(viewingPollTimer); viewingPollTimer = null; }
         if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
         if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        if (endReturnTimer) { clearTimeout(endReturnTimer); endReturnTimer = null; }
+        if (endReturnCountdown) { clearInterval(endReturnCountdown); endReturnCountdown = null; }
         clearCutsceneTimers();
         roomId = null;
         isHost = false;
