@@ -128,8 +128,14 @@
         .viewing-chain-label { font-size: 18px; font-weight: 700; color: var(--blue); }
         .viewing-controls { display: flex; gap: 6px; }
         .reveal-chain { display: flex; flex-direction: column; gap: 10px; }
-        .reveal-step { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; opacity: 0; transform: translateY(10px); transition: opacity 0.5s, transform 0.5s; }
-        .reveal-step.visible { opacity: 1; transform: translateY(0); }
+        .reveal-step { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; opacity: 0; transform: translateY(20px) scale(0.96); transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal-step.visible { opacity: 1; transform: translateY(0) scale(1); }
+        .reveal-arrow { text-align: center; color: var(--muted); font-size: 16px; margin: -2px 0; opacity: 0; transition: opacity 0.6s ease-out; }
+        .reveal-arrow.visible { opacity: 0.6; }
+        .reveal-step .step-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 700; }
+        .reveal-step .byline { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+        .reveal-step .byline img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .reveal-step .byline strong { color: var(--text); font-weight: 600; }
         .reveal-step .head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .reveal-step .head img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
         .reveal-step .head .name { font-size: 13px; font-weight: 600; }
@@ -140,8 +146,9 @@
         .reveal-step .body { font-size: 14px; line-height: 1.5; color: white; padding: 4px 0; }
         .reveal-step .body.text { font-style: italic; }
         .reveal-step .body img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto; }
-        .reveal-step .arrow { text-align: center; color: var(--muted); font-size: 16px; margin: -6px 0; opacity: 0; transition: opacity 0.5s; }
-        .reveal-step .arrow.visible { opacity: 1; }
+        .reveal-arrow { text-align: center; color: var(--muted); font-size: 16px; margin: -6px 0; opacity: 0; transition: opacity 0.6s ease-out; }
+        .reveal-arrow.visible { opacity: 0.6; }
+        .reveal-arrow .arrow { font-size: 18px; }
 
         /* === END === */
         .end-panel { background: var(--header); border: 1px solid var(--border); border-radius: 12px; padding: 30px; max-width: 500px; margin: 0 auto; text-align: center; }
@@ -834,6 +841,9 @@
         if (viewingPollTimer) clearInterval(viewingPollTimer);
         show('viewing-view');
         isViewingHost = isHost;
+        // Reset so the first poll always loads the current chain (handles
+        // late joiners whose currentChainIndex was still at the previous value).
+        currentChainIndex = -1;
         viewingPollTimer = setInterval(pollViewing, 1500);
         pollViewing();
     }
@@ -865,34 +875,83 @@
         }
     }
 
+    // Cutscene-style viewing: each step in a chain appears one at a time
+    // with a long pause so viewers get the "surprise" reveal. The player who
+    // contributed each step is shown as a small caption — the chain is about
+    // the prompt, not the author.
+    let cutsceneStep = -1;        // index of the currently revealed step
+    let cutscenePlaying = true;   // auto-advance is on (host can pause)
+    let cutsceneTimers = [];      // pending setTimeouts for the cutscene
+    const CUTSCENE_STEP_MS = 4500; // ms between step reveals
+
+    function clearCutsceneTimers() {
+        cutsceneTimers.forEach(t => clearTimeout(t));
+        cutsceneTimers = [];
+    }
+
+    function describeStep(step) {
+        // What *kind* of work is this step?
+        if (step.round === 1) return { label: 'Round 1 prompt',   verb: 'written by'  };
+        if (step.round === 2) return { label: 'Round 2 drawing',  verb: 'drawn by'    };
+        if (step.round === 3) return { label: 'Round 3 guess',    verb: 'guessed by'  };
+        if (step.round === 4) return { label: 'Round 4 drawing',  verb: 'drawn by'    };
+        if (step.round === 5) return { label: 'Round 5 guess',    verb: 'guessed by'  };
+        if (step.round === 6) return { label: 'Round 6 drawing',  verb: 'drawn by'    };
+        if (step.round === 7) return { label: 'Round 7 guess',    verb: 'guessed by'  };
+        if (step.round === 8) return { label: 'Round 8 drawing',  verb: 'drawn by'    };
+        if (step.round === 9) return { label: 'Round 9 guess',    verb: 'guessed by'  };
+        if (step.round === 10) return { label: 'Round 10 drawing',verb: 'drawn by'    };
+        // Fallback: derive from kind
+        if (step.kind === 'text') return { label: `Round ${step.round} text`, verb: 'written by' };
+        return { label: `Round ${step.round} drawing`, verb: 'drawn by' };
+    }
+
     async function loadChain(idx, totalChains) {
         const data = await api('/gartic/reveal?room_id=' + encodeURIComponent(roomId) + '&chain_id=' + idx);
         currentChainData = data.chain || [];
 
+        // Reset cutscene state for the new chain
+        cutsceneStep = -1;
+        cutscenePlaying = true;
+        clearCutsceneTimers();
+
         // Top bar
         document.getElementById('viewing-chain-label').textContent = `Chain ${idx + 1}`;
 
-        // Controls (host only)
+        // Controls (host only): pause/resume + prev/next chain
         const controls = document.getElementById('viewing-controls');
         if (isViewingHost) {
             controls.innerHTML = `
-                <button class="btn" onclick="viewingPrev()" ${idx === 0 ? 'disabled' : ''}>← Prev</button>
-                <button class="btn btn-g" onclick="viewingNext()">Next →</button>
+                <button class="btn" id="cutscene-pause-btn" onclick="toggleCutscene()">⏸ Pause</button>
+                <span style="font-size:11px; color:var(--muted); margin: 0 4px;">·</span>
+                <button class="btn" onclick="viewingPrev()" ${idx === 0 ? 'disabled' : ''}>← Prev Chain</button>
+                <button class="btn btn-g" onclick="viewingNext()">Next Chain →</button>
             `;
         } else {
             controls.innerHTML = '';
         }
 
-        // Render the chain with staggered fade-in (3s per step)
+        // Clear the chain container and pre-build all step cards (hidden).
+        // We reveal them one at a time so each reveal feels like a surprise.
         const host = document.getElementById('reveal-chain');
         host.innerHTML = '';
+        host.scrollTop = 0;
 
-        if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        currentChainData.forEach((step, i) => {
+            const desc = describeStep(step);
 
-        for (let i = 0; i < currentChainData.length; i++) {
-            const step = currentChainData[i];
+            // Optional arrow connector before each step (except the first)
+            if (i > 0) {
+                const arrow = document.createElement('div');
+                arrow.className = 'reveal-arrow';
+                arrow.id = `reveal-arrow-${i}`;
+                arrow.innerHTML = '<div class="arrow">▼</div>';
+                host.appendChild(arrow);
+            }
+
             const div = document.createElement('div');
             div.className = 'reveal-step';
+            div.id = `reveal-step-${i}`;
             let body = '';
             if (step.kind === 'text') {
                 body = `<div class="body text">"${esc(step.content)}"</div>`;
@@ -901,52 +960,92 @@
             }
             div.innerHTML = `
                 <div class="head">
-                    <img src="${esc(step.owner_pic || DEFAULT_ICON)}">
-                    <span class="name">${esc(step.owner_name)}</span>
-                    <span class="round-label">Round ${step.round}</span>
+                    <span class="step-label">${esc(desc.label)}</span>
                     <span class="tag ${step.kind}">${step.kind}</span>
                 </div>
                 ${body}
+                <div class="byline">
+                    <img src="${esc(step.owner_pic || DEFAULT_ICON)}">
+                    <span>${esc(desc.verb)} <strong>${esc(step.owner_name)}</strong></span>
+                </div>
             `;
             host.appendChild(div);
+        });
 
-            // Animate in
-            setTimeout(() => div.classList.add('visible'), 50);
+        // Kick off the cutscene
+        revealNextStep();
+    }
 
-            // Insert arrow between steps (after fade)
-            if (i < currentChainData.length - 1) {
-                const arrow = document.createElement('div');
-                arrow.className = 'reveal-step arrow';
-                arrow.innerHTML = '<div class="arrow">▼</div>';
-                host.appendChild(arrow);
-                setTimeout(() => arrow.classList.add('visible'), 250);
+    // Reveal the next un-revealed step. If we're playing, schedule the one
+    // after this one. If we're paused, the host can resume via Play.
+    function revealNextStep() {
+        const host = document.getElementById('reveal-chain');
+        if (!host) return;
+        const nextIndex = cutsceneStep + 1;
+        if (nextIndex >= currentChainData.length) {
+            // All steps shown — schedule auto-advance to the next chain
+            if (cutscenePlaying) {
+                chainAnimTimer = setTimeout(() => {
+                    if (currentChainIndex === cutsceneStep + 0 && cutscenePlaying) {
+                        // Mark that we've finished, then advance
+                        api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL })
+                            .then(() => pollViewing());
+                    }
+                }, 3000);
             }
-
-            // Schedule next step fade-in (3s gap between steps)
-            if (i < currentChainData.length - 1) {
-                chainAnimTimer = setTimeout(() => { /* no-op; loop already created all divs */ }, 3000);
-            }
+            return;
         }
 
-        // After last round fully shown + 3s, auto-advance to next chain
-        const totalDelay = (currentChainData.length * 3000) + 1500;
-        if (chainAnimTimer) clearTimeout(chainAnimTimer);
-        chainAnimTimer = setTimeout(() => {
-            // Only auto-advance if we're still viewing the same chain (host didn't skip)
-            if (isViewingHost && currentChainIndex === idx) {
-                // Check whether there's a next chain
-                if (idx + 1 < totalChains) {
-                    api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL }).then(() => pollViewing());
-                } else {
-                    // Was the last chain — call next which will set status=finished
-                    api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL }).then(() => pollViewing());
-                }
-            }
-        }, totalDelay);
+        const stepEl = document.getElementById(`reveal-step-${nextIndex}`);
+        const arrowEl = document.getElementById(`reveal-arrow-${nextIndex}`);
+        if (stepEl) {
+            // Force a reflow so the transition fires
+            void stepEl.offsetWidth;
+            stepEl.classList.add('visible');
+        }
+        if (arrowEl) {
+            void arrowEl.offsetWidth;
+            arrowEl.classList.add('visible');
+        }
+        cutsceneStep = nextIndex;
+
+        // Scroll the new step into view smoothly
+        if (stepEl && stepEl.scrollIntoView) {
+            stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Update pause button label (host only)
+        const pauseBtn = document.getElementById('cutscene-pause-btn');
+        if (pauseBtn) pauseBtn.textContent = cutscenePlaying ? '⏸ Pause' : '▶ Resume';
+
+        // Schedule the next reveal
+        if (cutscenePlaying) {
+            chainAnimTimer = setTimeout(() => {
+                if (cutscenePlaying) revealNextStep();
+            }, CUTSCENE_STEP_MS);
+        }
     }
+
+    window.toggleCutscene = function() {
+        cutscenePlaying = !cutscenePlaying;
+        const pauseBtn = document.getElementById('cutscene-pause-btn');
+        if (pauseBtn) pauseBtn.textContent = cutscenePlaying ? '⏸ Pause' : '▶ Resume';
+
+        if (cutscenePlaying) {
+            // Resume: schedule the next step if there's one pending
+            if (chainAnimTimer) clearTimeout(chainAnimTimer);
+            chainAnimTimer = setTimeout(() => {
+                if (cutscenePlaying) revealNextStep();
+            }, 1000);
+        } else {
+            // Pause: clear any pending auto-advance
+            if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        }
+    };
 
     window.viewingNext = async function() {
         if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        clearCutsceneTimers();
         const res = await api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL });
         if (!res.success) { toast(res.error || 'Failed', 'e'); return; }
         pollViewing();
@@ -954,6 +1053,7 @@
 
     window.viewingPrev = async function() {
         if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        clearCutsceneTimers();
         const res = await api('/gartic/viewing/prev', 'POST', { room_id: roomId, email: EMAIL });
         if (!res.success) { toast(res.error || 'Failed', 'e'); return; }
         pollViewing();
@@ -1026,6 +1126,7 @@
         if (viewingPollTimer) { clearInterval(viewingPollTimer); viewingPollTimer = null; }
         if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
         if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        clearCutsceneTimers();
         roomId = null;
         isHost = false;
         show('menu-view');
