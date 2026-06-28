@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADA | Gartic Phone</title>
+    <script src="/uplink.js"></script>
+    <script src="/escape-key.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/announcement-engine.js"></script>
+    <script src="/chat-widget.js"></script>
+
+    <style>
+        :root {
+            --bg: #0d1117; --header: #161b22; --border: #30363d;
+            --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149;
+            --muted: #8b949e; --gold: #d29922;
+        }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; min-height: 100vh; user-select: none; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; box-sizing: border-box; }
+        h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
+        .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 10px 12px; border-radius: 6px; font-size: 13px; outline: none; box-sizing: border-box; }
+        .input:focus { border-color: var(--blue); }
+        .btn { padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; background: #21262d; color: white; border: 1px solid var(--border); transition: 0.15s; }
+        .btn:hover { background: #30363d; border-color: #8b949e; }
+        .btn-g { background: var(--btn-green); border-color: var(--btn-green); color: white; }
+        .btn-g:hover { background: #2ea043; border-color: #2ea043; }
+        .btn-b { background: #1f6feb; border-color: #1f6feb; }
+        .btn-b:hover { background: #388bfd; border-color: #388bfd; }
+        .btn-danger { color: var(--red); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* === MENU === */
+        .menu-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+        .menu-row .input { flex: 1; min-width: 180px; }
+        .menu-row label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+
+        .rooms-list { display: flex; flex-direction: column; gap: 8px; }
+        .room-card { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .room-info { flex: 1; min-width: 0; }
+        .room-name { font-size: 14px; font-weight: 600; }
+        .room-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: monospace; }
+        .room-code { font-family: monospace; background: #0d1117; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); color: var(--gold); font-weight: 700; letter-spacing: 1px; }
+        .empty { font-size: 12px; color: var(--muted); padding: 20px; text-align: center; border: 1px dashed var(--border); border-radius: 8px; }
+
+        /* === LOBBY === */
+        .lobby-panel { background: var(--header); border: 1px solid var(--border); border-radius: 10px; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .lobby-code { text-align: center; font-size: 36px; font-family: monospace; font-weight: 700; color: var(--gold); letter-spacing: 6px; margin: 14px 0; padding: 14px; background: #0d1117; border-radius: 8px; border: 1px solid var(--border); }
+        .lobby-code-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); text-align: center; }
+        .player-list { display: flex; flex-direction: column; gap: 6px; margin: 16px 0; }
+        .player-row { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+        .player-row img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .player-row .host-badge { font-size: 9px; background: var(--gold); color: #000; padding: 1px 6px; border-radius: 3px; font-weight: 700; margin-left: auto; }
+        .player-row .you-badge { font-size: 9px; background: var(--blue); color: #000; padding: 1px 6px; border-radius: 3px; font-weight: 700; }
+        .lobby-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+        .lobby-rounds { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+        .lobby-rounds strong { color: var(--blue); }
+
+        /* === PLAY === */
+        .play-grid { display: grid; grid-template-columns: 240px 1fr 240px; gap: 16px; }
+        @media (max-width: 1000px) { .play-grid { grid-template-columns: 1fr; } }
+
+        .play-side { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+        .play-side h3 { margin: 0 0 10px 0; font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; font-weight: 700; }
+        .gen-banner { background: #161b22; border: 1px solid var(--blue); border-radius: 6px; padding: 10px 12px; text-align: center; margin-bottom: 12px; }
+        .gen-num { font-size: 22px; font-weight: 700; color: var(--blue); font-family: monospace; }
+        .gen-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .turn-list { display: flex; flex-direction: column; gap: 5px; }
+        .turn-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #0d1117; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; }
+        .turn-row img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .turn-row.me { border-color: var(--blue); }
+        .turn-row.done { opacity: 0.6; }
+        .turn-row .check { margin-left: auto; color: var(--btn-green); font-weight: 700; }
+        .turn-row .wait { margin-left: auto; color: var(--muted); font-size: 11px; }
+
+        .play-center { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 20px; min-height: 540px; display: flex; flex-direction: column; align-items: center; }
+        .play-prompt { width: 100%; max-width: 600px; text-align: center; margin-bottom: 16px; }
+        .play-prompt .from { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .play-prompt .from img { width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; margin-right: 4px; object-fit: cover; border: 1px solid var(--border); }
+        .play-prompt .body { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 16px; min-height: 80px; max-height: 220px; overflow: auto; font-size: 15px; }
+        .play-prompt .body.text { color: white; font-style: italic; line-height: 1.5; }
+        .play-prompt .body.draw img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto; }
+        .play-prompt .empty-state { background: #0d1117; border: 1px dashed var(--border); border-radius: 6px; padding: 20px; font-size: 13px; color: var(--muted); }
+
+        .play-input-area { width: 100%; max-width: 600px; }
+        .play-textarea { width: 100%; min-height: 110px; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; font-size: 14px; outline: none; resize: vertical; font-family: inherit; box-sizing: border-box; }
+        .play-textarea:focus { border-color: var(--blue); }
+
+        .play-canvas-wrap { width: 100%; max-width: 600px; }
+        .canvas-toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; padding: 8px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px 6px 0 0; border-bottom: none; }
+        .color-swatch { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch.active { border-color: white; }
+        .tool-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+        .tool-btn.active { background: var(--blue); border-color: var(--blue); }
+        #draw-canvas { width: 100%; max-width: 600px; height: 400px; background: white; border: 1px solid var(--border); border-radius: 0 0 6px 6px; cursor: crosshair; display: block; touch-action: none; }
+
+        .play-waiting { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+        .play-waiting .spin { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .breather { text-align: center; padding: 60px 20px; }
+        .breather h2 { font-size: 28px; margin: 0 0 8px 0; color: var(--blue); }
+        .breather p { color: var(--muted); font-size: 14px; }
+
+        /* === WAITING FOR HOST === */
+        .waiting-host { background: var(--header); border: 1px solid var(--border); border-radius: 10px; padding: 40px; max-width: 500px; margin: 40px auto; text-align: center; }
+        .waiting-host .emoji { font-size: 56px; margin-bottom: 12px; }
+        .waiting-host h2 { font-size: 22px; margin: 0 0 6px 0; }
+        .waiting-host p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+        /* === VIEWING === */
+        .viewing-stage { background: var(--header); border: 1px solid var(--border); border-radius: 10px; padding: 20px; min-height: 400px; max-width: 700px; margin: 0 auto; }
+        .viewing-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .viewing-chain-label { font-size: 18px; font-weight: 700; color: var(--blue); }
+        .viewing-controls { display: flex; gap: 6px; }
+        .reveal-chain { display: flex; flex-direction: column; gap: 10px; }
+        .reveal-step { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 12px; opacity: 0; transform: translateY(10px); transition: opacity 0.5s, transform 0.5s; }
+        .reveal-step.visible { opacity: 1; transform: translateY(0); }
+        .reveal-step .head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .reveal-step .head img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .reveal-step .head .name { font-size: 13px; font-weight: 600; }
+        .reveal-step .head .tag { font-size: 9px; background: var(--muted); color: #000; padding: 2px 6px; border-radius: 3px; font-weight: 700; margin-left: auto; text-transform: uppercase; }
+        .reveal-step .head .tag.text { background: var(--blue); }
+        .reveal-step .head .tag.draw { background: var(--gold); }
+        .reveal-step .head .round-label { font-size: 11px; color: var(--muted); font-family: monospace; }
+        .reveal-step .body { font-size: 14px; line-height: 1.5; color: white; padding: 4px 0; }
+        .reveal-step .body.text { font-style: italic; }
+        .reveal-step .body img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto; }
+        .reveal-step .arrow { text-align: center; color: var(--muted); font-size: 16px; margin: -6px 0; opacity: 0; transition: opacity 0.5s; }
+        .reveal-step .arrow.visible { opacity: 1; }
+
+        /* === END === */
+        .end-panel { background: var(--header); border: 1px solid var(--border); border-radius: 12px; padding: 30px; max-width: 500px; margin: 0 auto; text-align: center; }
+        .end-emoji { font-size: 56px; margin-bottom: 10px; }
+        .end-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .end-msg { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+        /* === Leaderboard === */
+        .leaderboard-panel { background: var(--header); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 16px; }
+        .lb-stat-label { font-size: 10px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .lb-entry { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #21262d; }
+        .lb-entry:last-child { border-bottom: none; }
+        .lb-entry img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        .lb-rank { font-size: 10px; font-weight: bold; color: var(--gold); min-width: 15px; }
+        .lb-name { font-size: 11px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-score { font-size: 11px; font-family: monospace; color: var(--blue); }
+
+        /* === Toasts === */
+        #toasts { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: var(--header); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 200px; }
+        .toast-e { border-left: 3px solid var(--red); }
+        .toast-s { border-left: 3px solid var(--btn-green); }
+        .toast-i { border-left: 3px solid var(--blue); }
+    </style>
+</head>
+<body>
+
+<div id="ada-header-anchor"></div>
+
+<div class="container">
+    <h1>📞 Gartic Phone</h1>
+    <p class="page-sub">Write a prompt, watch it mutate through drawings and guesses.</p>
+
+    <!-- ============ MENU ============ -->
+    <div id="menu-view" class="view active">
+        <div class="menu-row">
+            <input class="input" id="roomName" placeholder="Room name…" maxlength="32">
+            <label>Rounds:
+                <select class="input" id="totalRounds" style="max-width:80px;">
+                    <option value="4">4</option>
+                    <option value="6" selected>6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                </select>
+            </label>
+            <label>Max players:
+                <select class="input" id="maxPlayers" style="max-width:80px;">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                </select>
+            </label>
+            <button class="btn btn-g" onclick="createRoom()">+ Create Room</button>
+        </div>
+        <div class="menu-row">
+            <input class="input" id="joinCode" placeholder="Enter 4-char code…" maxlength="4" style="text-transform:uppercase; font-family:monospace; letter-spacing:2px;">
+            <button class="btn btn-b" onclick="joinByCode()">Join</button>
+            <button class="btn" onclick="loadRooms()">↻ Refresh</button>
+        </div>
+        <div id="roomsList" class="rooms-list">
+            <div class="empty">Loading rooms…</div>
+        </div>
+
+        <div class="leaderboard-panel" style="max-width: 500px;">
+            <div class="lb-stat-label">Rankings</div>
+            <div id="leaderboard-list">
+                <div style="font-size:11px; opacity:0.5;">Loading rankings…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ LOBBY ============ -->
+    <div id="lobby-view" class="view">
+        <div class="lobby-panel">
+            <div class="lobby-code-label">Share this code</div>
+            <div class="lobby-code" id="lobby-code">----</div>
+            <div class="lobby-code-label" id="lobby-room-name" style="margin-top: 8px;">Room Name</div>
+            <div class="lobby-code-label" id="lobby-host-name" style="margin-top: 4px; opacity: 0.7; font-size: 11px;">Hosted by —</div>
+            <div class="lobby-rounds">Total rounds: <strong id="lobby-rounds">6</strong></div>
+            <h3 style="text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-top:18px;">Players (<span id="lobby-count">0</span>/<span id="lobby-max">8</span>)</h3>
+            <div class="player-list" id="lobby-players"></div>
+            <div class="lobby-actions" id="lobby-actions"></div>
+        </div>
+    </div>
+
+    <!-- ============ PLAY ============ -->
+    <div id="play-view" class="view">
+        <div class="play-grid">
+            <div>
+                <div class="play-side" style="margin-bottom: 12px;">
+                    <h3>Round</h3>
+                    <div class="gen-banner">
+                        <div class="gen-num" id="gen-current">1</div>
+                        <div class="gen-label">of <span id="gen-total">6</span></div>
+                    </div>
+                    <div class="lb-stat-label" style="margin-bottom:6px;">Your task</div>
+                    <div id="my-task-label" style="font-size:13px; font-weight:600; color:var(--blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">—</div>
+                    <div class="lb-stat-label" style="margin-bottom:6px;">Players</div>
+                    <div class="turn-list" id="turn-list"></div>
+                </div>
+                <div class="leaderboard-panel">
+                    <div class="lb-stat-label">Rankings</div>
+                    <div id="leaderboard-list-play"><div style="font-size:11px; opacity:0.5;">—</div></div>
+                </div>
+            </div>
+
+            <div class="play-center">
+                <div id="play-prompt-host" class="play-prompt"></div>
+                <div id="play-text-host" class="play-input-area" style="display:none;">
+                    <textarea class="play-textarea" id="guess-input" placeholder="Write your answer…" maxlength="500"></textarea>
+                </div>
+                <div id="play-draw-host" class="play-canvas-wrap" style="display:none;">
+                    <div class="canvas-toolbar">
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Color:</span>
+                        <div class="color-swatch active" data-color="#000000" style="background:#000000;"></div>
+                        <div class="color-swatch" data-color="#ffffff" style="background:#ffffff; border:1px solid #444;"></div>
+                        <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;"></div>
+                        <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;"></div>
+                        <div class="color-swatch" data-color="#10b981" style="background:#10b981;"></div>
+                        <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;"></div>
+                        <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;"></div>
+                        <div style="width:10px;"></div>
+                        <span style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Size:</span>
+                        <button class="tool-btn size-btn active" data-size="3">S</button>
+                        <button class="tool-btn size-btn" data-size="6">M</button>
+                        <button class="tool-btn size-btn" data-size="12">L</button>
+                        <div style="width:10px;"></div>
+                        <button class="tool-btn" id="eraser-btn">Eraser</button>
+                        <button class="tool-btn" id="clear-btn">Clear</button>
+                    </div>
+                    <canvas id="draw-canvas" width="600" height="400"></canvas>
+                </div>
+                <div id="play-wait-host" class="play-waiting" style="display:none;">
+                    <div class="spin"></div>
+                    <div id="wait-msg">Waiting for others…</div>
+                </div>
+                <div id="play-breather-host" class="breather" style="display:none;">
+                    <h2>Round <span id="breather-round">1</span> complete!</h2>
+                    <p>Get ready for round <span id="breather-next">2</span>…</p>
+                </div>
+                <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: center;">
+                    <button class="btn btn-g" id="submit-btn" onclick="submitTurn()" style="min-width:140px;">Submit</button>
+                    <button class="btn btn-danger" onclick="leaveGame()">Leave</button>
+                </div>
+            </div>
+
+            <div class="leaderboard-panel">
+                <div class="lb-stat-label">Rankings</div>
+                <div id="leaderboard-list-right"><div style="font-size:11px; opacity:0.5;">—</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ WAITING FOR HOST ============ -->
+    <div id="waiting-view" class="view">
+        <div class="waiting-host">
+            <div class="emoji">🎬</div>
+            <h2>All rounds complete!</h2>
+            <p id="waiting-msg">The host will start viewing soon.</p>
+            <div id="waiting-actions"></div>
+        </div>
+    </div>
+
+    <!-- ============ VIEWING ============ -->
+    <div id="viewing-view" class="view">
+        <div class="viewing-stage">
+            <div class="viewing-top">
+                <div>
+                    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Now viewing</div>
+                    <div class="viewing-chain-label" id="viewing-chain-label">Chain 1</div>
+                </div>
+                <div class="viewing-controls" id="viewing-controls"></div>
+            </div>
+            <div class="reveal-chain" id="reveal-chain"></div>
+        </div>
+    </div>
+
+    <!-- ============ END ============ -->
+    <div id="end-view" class="view">
+        <div class="end-panel">
+            <div class="end-emoji" id="end-emoji">🎉</div>
+            <div class="end-title" id="end-title">Game Complete</div>
+            <div class="end-msg" id="end-msg">Well played.</div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-bottom:20px;">
+                <button class="btn btn-g" onclick="goToMenu()">Back to Menu</button>
+                <button class="btn" onclick="replayFromStart()">Replay Chains</button>
+            </div>
+        </div>
+        <div class="leaderboard-panel" style="max-width: 500px; margin: 20px auto 0;">
+            <div class="lb-stat-label">Rankings</div>
+            <div id="leaderboard-list-end"><div style="font-size:11px; opacity:0.5;">—</div></div>
+        </div>
+    </div>
+
+</div>
+
+<div id="toasts"></div>
+
+<script>
+(async function() {
+    const API     = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const EMAIL   = localStorage.getItem('ada_user_email') || "";
+    const GAME_ID = "content12";
+    const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+    // ---- state ----
+    let roomId = null;
+    let isHost = false;
+    let lobbyPollTimer = null;
+    let statePollTimer = null;
+    let viewingPollTimer = null;
+
+    let lastRound = 0;
+    let lastStatus = null;
+    let breatherUntil = 0;   // ms timestamp; while > Date.now(), show breather overlay
+
+    // Viewing
+    let currentChainIndex = -1;
+    let currentChainData = null;
+    let chainAnimTimer = null;  // rounds animate locally every 3s; on last round + 3s → next chain
+    let isViewingHost = false;
+
+    // Drawing state
+    const canvas = document.getElementById('draw-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    let drawing = false;
+    let currentColor = '#000000';
+    let currentSize = 3;
+    let isEraser = false;
+    let lastX = 0, lastY = 0;
+
+    // === API helper ===
+    async function api(path, method = 'GET', body = null) {
+        const opts = { method, headers: { 'Content-Type': 'application/json' } };
+        if (body) opts.body = JSON.stringify(body);
+        try {
+            const res = await fetch(API + path, opts);
+            return await res.json();
+        } catch (e) {
+            return { error: e.message };
+        }
+    }
+
+    // === View switching ===
+    function show(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    // === Toasts ===
+    function toast(msg, type = 'i') {
+        const container = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.textContent = msg;
+        container.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    // === Escape ===
+    function esc(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // === Menu: rooms list ===
+    window.loadRooms = async function() {
+        const data = await api('/gartic/rooms');
+        const list = document.getElementById('roomsList');
+        if (!data.rooms || data.rooms.length === 0) {
+            list.innerHTML = '<div class="empty">No open rooms — create one above.</div>';
+            return;
+        }
+        list.innerHTML = data.rooms.map(r => `
+            <div class="room-card">
+                <div class="room-info">
+                    <div class="room-name">${esc(r.name)}</div>
+                    <div class="room-meta">Host: ${esc(r.host_email)} · ${r.player_count}/${r.max_players} players</div>
+                </div>
+                <div class="room-code">${esc(r.code || '----')}</div>
+                <button class="btn btn-b" onclick="joinRoom('${esc(r.id)}')">Join</button>
+            </div>
+        `).join('');
+    };
+
+    // === Create / join ===
+    window.createRoom = async function() {
+        if (!EMAIL) { toast('Sign in first', 'e'); return; }
+        const name = document.getElementById('roomName').value.trim() || 'Untitled Room';
+        const max = parseInt(document.getElementById('maxPlayers').value) || 8;
+        const rounds = parseInt(document.getElementById('totalRounds').value) || 6;
+        const res = await api('/gartic/create', 'POST', { email: EMAIL, name, max_players: max, total_rounds: rounds });
+        if (!res.success) { toast(res.error || 'Create failed', 'e'); return; }
+        roomId = res.room_id;
+        isHost = true;
+        enterLobby();
+    };
+
+    window.joinByCode = async function() {
+        if (!EMAIL) { toast('Sign in first', 'e'); return; }
+        const code = document.getElementById('joinCode').value.trim().toUpperCase();
+        if (!code) { toast('Enter a code', 'e'); return; }
+        const find = await api('/gartic/find-by-code?code=' + encodeURIComponent(code));
+        if (find.error) { toast(find.error, 'e'); return; }
+        const res = await api('/gartic/join', 'POST', { email: EMAIL, room_id: find.room_id });
+        if (!res.success) { toast(res.error || 'Join failed', 'e'); return; }
+        roomId = find.room_id;
+        isHost = false;
+        enterLobby();
+    };
+
+    window.joinRoom = async function(rid) {
+        if (!EMAIL) { toast('Sign in first', 'e'); return; }
+        const res = await api('/gartic/join', 'POST', { email: EMAIL, room_id: rid });
+        if (!res.success) { toast(res.error || 'Join failed', 'e'); return; }
+        roomId = rid;
+        isHost = false;
+        enterLobby();
+    };
+
+    // === Lobby ===
+    function enterLobby() {
+        if (lobbyPollTimer) clearInterval(lobbyPollTimer);
+        show('lobby-view');
+        pollLobby();
+        lobbyPollTimer = setInterval(pollLobby, 1500);
+    }
+
+    async function pollLobby() {
+        if (!roomId) return;
+        const data = await api('/gartic/lobby?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+        if (data.error) { toast(data.error, 'e'); goToMenu(); return; }
+
+        isHost = (data.host_email === EMAIL);
+
+        document.getElementById('lobby-code').textContent = data.code || '----';
+        document.getElementById('lobby-room-name').textContent = data.name || 'Untitled Room';
+        document.getElementById('lobby-host-name').textContent = data.players[0]?.name ? `Hosted by ${data.players[0].name}` : '';
+        document.getElementById('lobby-rounds').textContent = data.total_rounds || 6;
+        document.getElementById('lobby-count').textContent = data.players.length;
+        document.getElementById('lobby-max').textContent = data.max_players || 8;
+
+        const list = document.getElementById('lobby-players');
+        list.innerHTML = data.players.map(p => `
+            <div class="player-row">
+                <img src="${esc(p.profile_picture || DEFAULT_ICON)}">
+                <span>${esc(p.name)}</span>
+                ${p.email === data.host_email ? '<span class="host-badge">HOST</span>' : ''}
+                ${p.email === EMAIL ? '<span class="you-badge">YOU</span>' : ''}
+            </div>
+        `).join('');
+
+        const actions = document.getElementById('lobby-actions');
+        if (isHost) {
+            const canStart = data.players.length >= 2;
+            actions.innerHTML = `
+                <button class="btn btn-g" ${canStart ? '' : 'disabled'} onclick="startGame()">▶ Start Game</button>
+                <button class="btn btn-danger" onclick="leaveGame()">Cancel</button>
+            `;
+        } else {
+            actions.innerHTML = `<button class="btn btn-danger" onclick="leaveGame()">Leave</button>`;
+        }
+
+        if (data.status === 'playing') {
+            clearInterval(lobbyPollTimer); lobbyPollTimer = null;
+            enterPlay();
+        } else if (data.status === 'waiting_for_view' || data.status === 'viewing' || data.status === 'finished') {
+            clearInterval(lobbyPollTimer); lobbyPollTimer = null;
+            enterPlay(); // pollState will branch on status
+        } else if (data.status === 'abandoned') {
+            clearInterval(lobbyPollTimer); lobbyPollTimer = null;
+            toast('Room closed', 'e');
+            goToMenu();
+        }
+    }
+
+    window.startGame = async function() {
+        const res = await api('/gartic/lobby/start', 'POST', { room_id: roomId, email: EMAIL });
+        if (!res.success) { toast(res.error || 'Could not start', 'e'); return; }
+    };
+
+    // === Play ===
+    function enterPlay() {
+        show('play-view');
+        lastRound = 0;
+        lastStatus = null;
+        breatherUntil = 0;
+        pollState();
+        if (statePollTimer) clearInterval(statePollTimer);
+        statePollTimer = setInterval(pollState, 1000);
+    }
+
+    async function pollState() {
+        if (!roomId) return;
+        const data = await api('/gartic/state?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+        if (data.error) { toast(data.error, 'e'); leaveGame(); return; }
+
+        // Status transitions
+        if (data.status === 'finished' && lastStatus !== 'finished') {
+            // Skip straight to end (host can also navigate via Replay)
+            clearInterval(statePollTimer); statePollTimer = null;
+            endGame(data);
+            return;
+        }
+
+        if (data.status === 'waiting_for_view') {
+            clearInterval(statePollTimer); statePollTimer = null;
+            showWaitingForHost(data);
+            return;
+        }
+
+        if (data.status === 'viewing') {
+            clearInterval(statePollTimer); statePollTimer = null;
+            enterViewing(data);
+            return;
+        }
+
+        // === playing ===
+        if (data.status === 'playing') {
+            // Round change → breather
+            if (data.round !== lastRound) {
+                const previousRound = lastRound;
+                lastRound = data.round;
+                if (previousRound >= 1) {
+                    breatherUntil = Date.now() + 3000;
+                    document.getElementById('breather-round').textContent = previousRound;
+                    document.getElementById('breather-next').textContent = data.round;
+                }
+                // Reset canvas + input
+                clearCanvas();
+                document.getElementById('guess-input').value = '';
+            }
+            lastStatus = data.status;
+
+            if (breatherUntil > Date.now()) {
+                showBreather();
+            } else {
+                renderPlay(data);
+            }
+        }
+    }
+
+    function showBreather() {
+        document.getElementById('play-prompt-host').innerHTML = '';
+        document.getElementById('play-text-host').style.display = 'none';
+        document.getElementById('play-draw-host').style.display = 'none';
+        document.getElementById('play-wait-host').style.display = 'none';
+        document.getElementById('play-breather-host').style.display = 'block';
+        document.getElementById('submit-btn').disabled = true;
+    }
+
+    function renderPlay(data) {
+        document.getElementById('gen-current').textContent = data.round;
+        document.getElementById('gen-total').textContent = data.total_rounds;
+        const taskLabel = data.round === 1
+            ? 'Write a prompt'
+            : (data.my_kind === 'text' ? 'Write a guess' : 'Draw what you see');
+        document.getElementById('my-task-label').textContent = taskLabel;
+
+        // Turn list
+        const turnList = document.getElementById('turn-list');
+        turnList.innerHTML = data.players.map(p => `
+            <div class="turn-row ${p.email === EMAIL ? 'me' : ''} ${p.submitted ? 'done' : ''}">
+                <img src="${esc(p.profile_picture || DEFAULT_ICON)}">
+                <span>${esc(p.name)}${p.email === EMAIL ? ' (you)' : ''}</span>
+                ${p.submitted ? '<span class="check">✓</span>' : '<span class="wait">…</span>'}
+            </div>
+        `).join('');
+
+        // Areas
+        const promptHost = document.getElementById('play-prompt-host');
+        const textHost   = document.getElementById('play-text-host');
+        const drawHost   = document.getElementById('play-draw-host');
+        const waitHost   = document.getElementById('play-wait-host');
+        const breatherHost = document.getElementById('play-breather-host');
+        const submitBtn  = document.getElementById('submit-btn');
+
+        breatherHost.style.display = 'none';
+
+        if (data.my_submitted) {
+            promptHost.innerHTML = data.source ? renderPrompt(data.source) : '<div class="empty-state">Your original prompt.</div>';
+            textHost.style.display = 'none';
+            drawHost.style.display = 'none';
+            waitHost.style.display = 'block';
+            document.getElementById('wait-msg').textContent = data.all_submitted
+                ? 'All submitted — preparing next round…'
+                : 'Waiting for other players…';
+            submitBtn.disabled = true;
+        } else if (data.round === 1) {
+            promptHost.innerHTML = '<div class="empty-state">Round 1 — write a starting prompt. Anything goes. Be specific or vague.</div>';
+            textHost.style.display = 'block';
+            drawHost.style.display = 'none';
+            waitHost.style.display = 'none';
+            submitBtn.disabled = false;
+        } else {
+            // Show source prompt/drawing
+            if (data.source) {
+                promptHost.innerHTML = renderPrompt(data.source);
+            } else {
+                promptHost.innerHTML = '<div class="empty-state">Loading…</div>';
+            }
+            if (data.my_kind === 'text') {
+                textHost.style.display = 'block';
+                drawHost.style.display = 'none';
+                waitHost.style.display = 'none';
+            } else {
+                textHost.style.display = 'none';
+                drawHost.style.display = 'block';
+                waitHost.style.display = 'none';
+                resizeCanvasToDisplay();
+            }
+            submitBtn.disabled = false;
+        }
+    }
+
+    function renderPrompt(p) {
+        if (!p) return '';
+        let body = '';
+        if (p.kind === 'text') {
+            body = `<div class="body text">"${esc(p.content)}"</div>`;
+        } else {
+            body = `<div class="body draw"><img src="${esc(p.content)}"></div>`;
+        }
+        const label = p.round ? `Round ${p.round} from ` : 'From ';
+        return `<div class="from">${label}<img src="${esc(p.owner_pic || DEFAULT_ICON)}"><strong>${esc(p.owner_name)}</strong></div>${body}`;
+    }
+
+    // === Submit ===
+    window.submitTurn = async function() {
+        if (!roomId) return;
+        const data = await api('/gartic/state?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+        if (!data || data.error) { toast('Lost connection', 'e'); return; }
+
+        let kind, content;
+        if (data.my_kind === 'text') {
+            const txt = document.getElementById('guess-input').value.trim();
+            if (!txt) { toast('Write something first', 'e'); return; }
+            kind = 'text';
+            content = txt.slice(0, 500);
+        } else if (data.my_kind === 'draw') {
+            if (isCanvasBlank()) { toast('Draw something first', 'e'); return; }
+            kind = 'draw';
+            content = canvas.toDataURL('image/png');
+        } else {
+            toast('Not your turn', 'e');
+            return;
+        }
+
+        const res = await api('/gartic/submit', 'POST', {
+            room_id: roomId,
+            email: EMAIL,
+            kind,
+            content
+        });
+        if (!res.success) { toast(res.error || 'Submit failed', 'e'); return; }
+        toast('Submitted!', 's');
+        pollState();
+    };
+
+    // === Waiting for host ===
+    function showWaitingForHost(data) {
+        show('waiting-view');
+        const actions = document.getElementById('waiting-actions');
+        const msg = document.getElementById('waiting-msg');
+        if (isHost) {
+            msg.textContent = 'Press Start Viewing to replay each chain.';
+            actions.innerHTML = `<button class="btn btn-g" onclick="startViewing()">▶ Start Viewing</button>`;
+        } else {
+            msg.textContent = 'The host will start viewing soon. Sit tight!';
+            actions.innerHTML = '';
+        }
+    }
+
+    window.startViewing = async function() {
+        const res = await api('/gartic/start-viewing', 'POST', { room_id: roomId, email: EMAIL });
+        if (!res.success) { toast(res.error || 'Could not start', 'e'); return; }
+        // The state will now be 'viewing'; pollState-once will pick it up
+        // But statePollTimer was cleared. Switch to viewing poll.
+        enterViewing({ status: 'viewing', viewing_chain_index: 0 });
+    };
+
+    // === Viewing ===
+    function enterViewing(data) {
+        if (viewingPollTimer) clearInterval(viewingPollTimer);
+        show('viewing-view');
+        isViewingHost = isHost;
+        viewingPollTimer = setInterval(pollViewing, 1500);
+        pollViewing();
+    }
+
+    async function pollViewing() {
+        if (!roomId) return;
+        const data = await api('/gartic/state?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+        if (data.error) { toast(data.error, 'e'); return; }
+
+        if (data.status === 'finished') {
+            clearInterval(viewingPollTimer); viewingPollTimer = null;
+            endGame(data);
+            return;
+        }
+
+        if (data.status !== 'viewing') {
+            // Still waiting_for_view maybe?
+            if (data.status === 'waiting_for_view') {
+                clearInterval(viewingPollTimer); viewingPollTimer = null;
+                showWaitingForHost(data);
+                return;
+            }
+        }
+
+        const chainIdx = data.viewing_chain_index || 0;
+        if (chainIdx !== currentChainIndex) {
+            currentChainIndex = chainIdx;
+            await loadChain(chainIdx, data.players.length);
+        }
+    }
+
+    async function loadChain(idx, totalChains) {
+        const data = await api('/gartic/reveal?room_id=' + encodeURIComponent(roomId) + '&chain_id=' + idx);
+        currentChainData = data.chain || [];
+
+        // Top bar
+        document.getElementById('viewing-chain-label').textContent = `Chain ${idx + 1}`;
+
+        // Controls (host only)
+        const controls = document.getElementById('viewing-controls');
+        if (isViewingHost) {
+            controls.innerHTML = `
+                <button class="btn" onclick="viewingPrev()" ${idx === 0 ? 'disabled' : ''}>← Prev</button>
+                <button class="btn btn-g" onclick="viewingNext()">Next →</button>
+            `;
+        } else {
+            controls.innerHTML = '';
+        }
+
+        // Render the chain with staggered fade-in (3s per step)
+        const host = document.getElementById('reveal-chain');
+        host.innerHTML = '';
+
+        if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+
+        for (let i = 0; i < currentChainData.length; i++) {
+            const step = currentChainData[i];
+            const div = document.createElement('div');
+            div.className = 'reveal-step';
+            let body = '';
+            if (step.kind === 'text') {
+                body = `<div class="body text">"${esc(step.content)}"</div>`;
+            } else {
+                body = `<div class="body draw"><img src="${esc(step.content)}"></div>`;
+            }
+            div.innerHTML = `
+                <div class="head">
+                    <img src="${esc(step.owner_pic || DEFAULT_ICON)}">
+                    <span class="name">${esc(step.owner_name)}</span>
+                    <span class="round-label">Round ${step.round}</span>
+                    <span class="tag ${step.kind}">${step.kind}</span>
+                </div>
+                ${body}
+            `;
+            host.appendChild(div);
+
+            // Animate in
+            setTimeout(() => div.classList.add('visible'), 50);
+
+            // Insert arrow between steps (after fade)
+            if (i < currentChainData.length - 1) {
+                const arrow = document.createElement('div');
+                arrow.className = 'reveal-step arrow';
+                arrow.innerHTML = '<div class="arrow">▼</div>';
+                host.appendChild(arrow);
+                setTimeout(() => arrow.classList.add('visible'), 250);
+            }
+
+            // Schedule next step fade-in (3s gap between steps)
+            if (i < currentChainData.length - 1) {
+                chainAnimTimer = setTimeout(() => { /* no-op; loop already created all divs */ }, 3000);
+            }
+        }
+
+        // After last round fully shown + 3s, auto-advance to next chain
+        const totalDelay = (currentChainData.length * 3000) + 1500;
+        if (chainAnimTimer) clearTimeout(chainAnimTimer);
+        chainAnimTimer = setTimeout(() => {
+            // Only auto-advance if we're still viewing the same chain (host didn't skip)
+            if (isViewingHost && currentChainIndex === idx) {
+                // Check whether there's a next chain
+                if (idx + 1 < totalChains) {
+                    api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL }).then(() => pollViewing());
+                } else {
+                    // Was the last chain — call next which will set status=finished
+                    api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL }).then(() => pollViewing());
+                }
+            }
+        }, totalDelay);
+    }
+
+    window.viewingNext = async function() {
+        if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        const res = await api('/gartic/viewing/next', 'POST', { room_id: roomId, email: EMAIL });
+        if (!res.success) { toast(res.error || 'Failed', 'e'); return; }
+        pollViewing();
+    };
+
+    window.viewingPrev = async function() {
+        if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        const res = await api('/gartic/viewing/prev', 'POST', { room_id: roomId, email: EMAIL });
+        if (!res.success) { toast(res.error || 'Failed', 'e'); return; }
+        pollViewing();
+    };
+
+    // === End ===
+    function endGame(data) {
+        // Save score = total_rounds * 100 (we don't have total_rounds here, use round+1 as proxy)
+        const score = (data.total_rounds || 6) * 100;
+        saveScore(score);
+
+        show('end-view');
+        document.getElementById('end-emoji').textContent = '🎉';
+        document.getElementById('end-title').textContent = 'Game Complete';
+        document.getElementById('end-msg').textContent = `Score saved: ${score}`;
+
+        loadLeaderboard('leaderboard-list-end');
+    }
+
+    window.replayFromStart = function() {
+        if (!isHost) {
+            // Non-host can just re-watch the current chain (we don't reset server state)
+            currentChainIndex = -1;
+            show('viewing-view');
+            pollViewing();
+            return;
+        }
+        // Host can't actually restart from server — instead, prompt to start a new room
+        toast('Create a new room to play again', 'i');
+        goToMenu();
+    };
+
+    async function saveScore(score) {
+        try {
+            await fetch(API + '/game/save-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: EMAIL, gameId: GAME_ID, score })
+            });
+        } catch (e) { console.error('saveScore', e); }
+    }
+
+    // === Leaderboard ===
+    async function loadLeaderboard(targetId) {
+        try {
+            const res = await fetch(API + '/game/leaderboard?content=' + GAME_ID);
+            const top = await res.json();
+            const host = document.getElementById(targetId);
+            if (!host) return;
+            if (!top || top.length === 0) {
+                host.innerHTML = '<div style="font-size:11px; opacity:0.5;">No scores yet</div>';
+                return;
+            }
+            const medals = ['🥇','🥈','🥉'];
+            host.innerHTML = top.map((u, i) => `
+                <div class="lb-entry">
+                    <div class="lb-rank">${medals[i] || '#' + (i + 1)}</div>
+                    <img src="${esc(u.profile_picture || DEFAULT_ICON)}">
+                    <div class="lb-name">${esc(u.display_name || u.email)}</div>
+                    <div class="lb-score">${u.score}</div>
+                </div>
+            `).join('');
+        } catch (e) { /* ignore */ }
+    }
+
+    // === Leave / menu ===
+    window.goToMenu = function() {
+        if (statePollTimer) { clearInterval(statePollTimer); statePollTimer = null; }
+        if (lobbyPollTimer) { clearInterval(lobbyPollTimer); lobbyPollTimer = null; }
+        if (viewingPollTimer) { clearInterval(viewingPollTimer); viewingPollTimer = null; }
+        if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
+        roomId = null;
+        isHost = false;
+        show('menu-view');
+        loadRooms();
+        loadLeaderboard('leaderboard-list');
+    };
+
+    window.leaveGame = async function() {
+        if (roomId && EMAIL) {
+            try {
+                await fetch(API + '/gartic/leave', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ room_id: roomId, email: EMAIL })
+                });
+            } catch (e) { /* ignore */ }
+        }
+        goToMenu();
+    };
+
+    // === Leave beacon (tab close) ===
+    window.addEventListener('beforeunload', () => {
+        if (roomId && EMAIL) {
+            try {
+                navigator.sendBeacon(API + '/gartic/leave-beacon?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+            } catch (e) { /* ignore */ }
+        }
+    });
+
+    // === Drawing canvas ===
+    function resizeCanvasToDisplay() {
+        const rect = canvas.getBoundingClientRect();
+        const targetW = Math.max(1, Math.floor(rect.width));
+        const targetH = Math.max(1, Math.floor(rect.height));
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+            // Preserve existing pixels across the resize
+            const prev = document.createElement('canvas');
+            prev.width = canvas.width;
+            prev.height = canvas.height;
+            prev.getContext('2d').drawImage(canvas, 0, 0);
+            canvas.width = targetW;
+            canvas.height = targetH;
+            ctx.drawImage(prev, 0, 0, targetW, targetH);
+        }
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Re-apply white background so any new transparent area is white
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function clearCanvas() {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = currentColor;
+    }
+
+    function isCanvasBlank() {
+        const w = canvas.width, h = canvas.height;
+        if (w === 0 || h === 0) return true;
+        try {
+            // Sample a small grid across the canvas — robust against drawings
+            // that don't hit the corners or center, and tolerant of anti-aliasing.
+            const STEP = 8;
+            const data = ctx.getImageData(0, 0, w, h).data;
+            let nonWhite = 0;
+            for (let y = 0; y < h; y += STEP) {
+                for (let x = 0; x < w; x += STEP) {
+                    const i = (y * w + x) * 4;
+                    const r = data[i], g = data[i + 1], b = data[i + 2];
+                    if (r < 235 || g < 235 || b < 235) {
+                        nonWhite++;
+                        // Bail early once we've clearly detected ink
+                        if (nonWhite >= 3) return false;
+                    }
+                }
+            }
+            return nonWhite < 3;
+        } catch (e) { return false; }
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        return { x: cx * scaleX, y: cy * scaleY };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        drawing = true;
+        const p = getPos(e);
+        lastX = p.x; lastY = p.y;
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, currentSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = isEraser ? '#ffffff' : currentColor;
+        ctx.fill();
+    }
+
+    function moveDraw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.strokeStyle = isEraser ? '#ffffff' : currentColor;
+        ctx.lineWidth = currentSize;
+        ctx.stroke();
+        lastX = p.x; lastY = p.y;
+    }
+
+    function endDraw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        drawing = false;
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener('touchcancel', endDraw);
+
+    // Keep canvas sized to its displayed box on viewport changes
+    window.addEventListener('resize', () => {
+        if (document.getElementById('play-draw-host').style.display !== 'none') {
+            resizeCanvasToDisplay();
+        }
+    });
+
+    // Color picker
+    document.querySelectorAll('.color-swatch').forEach(s => {
+        s.addEventListener('click', () => {
+            document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('active'));
+            s.classList.add('active');
+            currentColor = s.dataset.color;
+            isEraser = false;
+            document.getElementById('eraser-btn').classList.remove('active');
+        });
+    });
+
+    document.querySelectorAll('.size-btn').forEach(s => {
+        s.addEventListener('click', () => {
+            document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active'));
+            s.classList.add('active');
+            currentSize = parseInt(s.dataset.size);
+        });
+    });
+
+    document.getElementById('eraser-btn').addEventListener('click', (e) => {
+        isEraser = !isEraser;
+        e.target.classList.toggle('active', isEraser);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+        if (confirm('Clear your drawing?')) clearCanvas();
+    });
+
+    // === Init ===
+    resizeCanvasToDisplay();
+    clearCanvas();
+    if (!EMAIL) {
+        document.getElementById('menu-view').innerHTML = '<div class="empty">Sign in to play Gartic Phone.</div>';
+        return;
+    }
+    loadRooms();
+    loadLeaderboard('leaderboard-list');
+})();
+</script>
+
+</body>
+</html>
