@@ -96,13 +96,17 @@
         .play-textarea { width: 100%; min-height: 110px; background: #0d1117; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 6px; font-size: 14px; outline: none; resize: vertical; font-family: inherit; box-sizing: border-box; }
         .play-textarea:focus { border-color: var(--blue); }
 
-        .play-canvas-wrap { width: 100%; max-width: 600px; }
+        .play-canvas-wrap { width: 100%; max-width: 880px; }
         .canvas-toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; padding: 8px; background: #0d1117; border: 1px solid var(--border); border-radius: 6px 6px 0 0; border-bottom: none; }
         .color-swatch { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
         .color-swatch.active { border-color: white; }
         .tool-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
         .tool-btn.active { background: var(--blue); border-color: var(--blue); }
-        #draw-canvas { width: 100%; max-width: 600px; height: 400px; background: white; border: 1px solid var(--border); border-radius: 0 0 6px 6px; cursor: crosshair; display: block; touch-action: none; }
+        .tool-btn.danger { color: var(--red); }
+        .tool-divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+        #draw-canvas { width: 100%; max-width: 880px; height: 560px; background: white; border: 1px solid var(--border); border-radius: 0 0 6px 6px; cursor: crosshair; display: block; touch-action: none; image-rendering: auto; }
+        .color-picker-input { width: 32px; height: 28px; padding: 0 2px; background: #0d1117; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+        .size-slider { width: 90px; vertical-align: middle; }
 
         .play-waiting { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
         .play-waiting .spin { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
@@ -263,16 +267,22 @@
                         <div class="color-swatch" data-color="#10b981" style="background:#10b981;"></div>
                         <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;"></div>
                         <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;"></div>
-                        <div style="width:10px;"></div>
+                        <input type="color" id="color-picker" class="color-picker-input" value="#000000" title="Custom color">
+                        <div class="tool-divider"></div>
                         <span style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Size:</span>
-                        <button class="tool-btn size-btn active" data-size="3">S</button>
-                        <button class="tool-btn size-btn" data-size="6">M</button>
-                        <button class="tool-btn size-btn" data-size="12">L</button>
-                        <div style="width:10px;"></div>
-                        <button class="tool-btn" id="eraser-btn">Eraser</button>
-                        <button class="tool-btn" id="clear-btn">Clear</button>
+                        <input type="range" id="size-slider" class="size-slider" min="1" max="40" value="3">
+                        <span id="size-display" style="font-size:11px; color:var(--muted); font-family:monospace; min-width:22px; text-align:right;">3</span>
+                        <div class="tool-divider"></div>
+                        <button class="tool-btn" id="pencil-btn">✏️ Pencil</button>
+                        <button class="tool-btn" id="brush-btn">🖌️ Brush</button>
+                        <button class="tool-btn" id="eraser-btn">⌫ Eraser</button>
+                        <button class="tool-btn" id="fill-btn">🪣 Fill</button>
+                        <div class="tool-divider"></div>
+                        <button class="tool-btn" id="undo-btn" title="Undo (Ctrl+Z)">↶ Undo</button>
+                        <button class="tool-btn" id="redo-btn" title="Redo (Ctrl+Y)">↷ Redo</button>
+                        <button class="tool-btn danger" id="clear-btn">Clear All</button>
                     </div>
-                    <canvas id="draw-canvas" width="600" height="400"></canvas>
+                    <canvas id="draw-canvas" width="880" height="560"></canvas>
                 </div>
                 <div id="play-wait-host" class="play-waiting" style="display:none;">
                     <div class="spin"></div>
@@ -353,6 +363,7 @@
     let lobbyPollTimer = null;
     let statePollTimer = null;
     let viewingPollTimer = null;
+    let waitingPollTimer = null;
 
     let lastRound = 0;
     let lastStatus = null;
@@ -372,8 +383,74 @@
     let drawing = false;
     let currentColor = '#000000';
     let currentSize = 3;
-    let isEraser = false;
+    let currentTool = 'pencil'; // 'pencil' | 'brush' | 'eraser' | 'fill'
     let lastX = 0, lastY = 0;
+
+    // Undo / redo stacks — store canvas snapshots as data URLs (cheap, sufficient at 880×560)
+    const undoStack = [];
+    const redoStack = [];
+    const UNDO_LIMIT = 30;
+
+    function pushSnapshot() {
+        try {
+            undoStack.push(canvas.toDataURL());
+            if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+            redoStack.length = 0;
+        } catch (e) { /* tainted canvas, ignore */ }
+    }
+
+    function undo() {
+        if (undoStack.length === 0) return;
+        const prev = undoStack.pop();
+        redoStack.push(canvas.toDataURL());
+        const img = new Image();
+        img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+        img.src = prev;
+    }
+
+    function redo() {
+        if (redoStack.length === 0) return;
+        const next = redoStack.pop();
+        undoStack.push(canvas.toDataURL());
+        const img = new Image();
+        img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+        img.src = next;
+    }
+
+    // Flood-fill at (x,y) with the given color, tolerating an alpha channel.
+    function floodFill(x, y, hexColor) {
+        const w = canvas.width, h = canvas.height;
+        if (x < 0 || y < 0 || x >= w || y >= h) return;
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        const targetIdx = (y * w + x) * 4;
+        const tr = data[targetIdx], tg = data[targetIdx + 1], tb = data[targetIdx + 2], ta = data[targetIdx + 3];
+        // Parse hex color
+        const fr = parseInt(hexColor.slice(1, 3), 16);
+        const fg = parseInt(hexColor.slice(3, 5), 16);
+        const fb = parseInt(hexColor.slice(5, 7), 16);
+        if (tr === fr && tg === fg && tb === fb) return; // already that color
+        const tol = 24;
+        const matches = (i) => {
+            return Math.abs(data[i] - tr) <= tol &&
+                   Math.abs(data[i + 1] - tg) <= tol &&
+                   Math.abs(data[i + 2] - tb) <= tol &&
+                   Math.abs(data[i + 3] - ta) <= tol;
+        };
+        const stack = [[x, y]];
+        while (stack.length) {
+            const [cx, cy] = stack.pop();
+            if (cx < 0 || cy < 0 || cx >= w || cy >= h) continue;
+            const i = (cy * w + cx) * 4;
+            if (!matches(i)) continue;
+            data[i] = fr; data[i + 1] = fg; data[i + 2] = fb; data[i + 3] = 255;
+            stack.push([cx + 1, cy]);
+            stack.push([cx - 1, cy]);
+            stack.push([cx, cy + 1]);
+            stack.push([cx, cy - 1]);
+        }
+        ctx.putImageData(imgData, 0, 0);
+    }
 
     // === API helper ===
     async function api(path, method = 'GET', body = null) {
@@ -667,8 +744,16 @@
         } else {
             body = `<div class="body draw"><img src="${esc(p.content)}"></div>`;
         }
-        const label = p.round ? `Round ${p.round} from ` : 'From ';
-        return `<div class="from">${label}<img src="${esc(p.owner_pic || DEFAULT_ICON)}"><strong>${esc(p.owner_name)}</strong></div>${body}`;
+        const roundLabel = p.round ? `Round ${p.round}` : 'Prompt';
+        // During play (owner_email is null), show only the round label.
+        // During viewing, show the player who created this step.
+        let fromBlock;
+        if (p.owner_email) {
+            fromBlock = `<div class="from"><img src="${esc(p.owner_pic || DEFAULT_ICON)}"><strong>${esc(p.owner_name)}</strong></div>`;
+        } else {
+            fromBlock = `<div class="from" style="opacity:0.6;">${esc(roundLabel)} · Anonymous</div>`;
+        }
+        return `${fromBlock}${body}`;
     }
 
     // === Submit ===
@@ -715,14 +800,33 @@
             msg.textContent = 'The host will start viewing soon. Sit tight!';
             actions.innerHTML = '';
         }
+
+        // Both host + non-host poll state from this view so that when the host
+        // hits Start Viewing, all clients transition together.
+        if (waitingPollTimer) clearInterval(waitingPollTimer);
+        waitingPollTimer = setInterval(pollWaitingForHost, 1000);
+    }
+
+    async function pollWaitingForHost() {
+        if (!roomId) return;
+        const data = await api('/gartic/state?room_id=' + encodeURIComponent(roomId) + '&email=' + encodeURIComponent(EMAIL));
+        if (data.error || !data) return;
+
+        if (data.status === 'viewing') {
+            if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
+            enterViewing(data);
+        } else if (data.status === 'finished') {
+            if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
+            endGame(data);
+        }
+        // else still waiting_for_view — keep polling
     }
 
     window.startViewing = async function() {
         const res = await api('/gartic/start-viewing', 'POST', { room_id: roomId, email: EMAIL });
         if (!res.success) { toast(res.error || 'Could not start', 'e'); return; }
-        // The state will now be 'viewing'; pollState-once will pick it up
-        // But statePollTimer was cleared. Switch to viewing poll.
-        enterViewing({ status: 'viewing', viewing_chain_index: 0 });
+        // The state will now be 'viewing'; the waitingForHost poll picks it up
+        // for everyone (host + non-host), so we don't manually enterViewing here.
     };
 
     // === Viewing ===
@@ -920,6 +1024,7 @@
         if (statePollTimer) { clearInterval(statePollTimer); statePollTimer = null; }
         if (lobbyPollTimer) { clearInterval(lobbyPollTimer); lobbyPollTimer = null; }
         if (viewingPollTimer) { clearInterval(viewingPollTimer); viewingPollTimer = null; }
+        if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
         if (chainAnimTimer) { clearTimeout(chainAnimTimer); chainAnimTimer = null; }
         roomId = null;
         isHost = false;
@@ -974,6 +1079,8 @@
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = currentColor;
+        undoStack.length = 0;
+        redoStack.length = 0;
     }
 
     function isCanvasBlank() {
@@ -1009,14 +1116,35 @@
         return { x: cx * scaleX, y: cy * scaleY };
     }
 
+    function activeStrokeColor() {
+        return currentTool === 'eraser' ? '#ffffff' : currentColor;
+    }
+
+    function strokeWidth() {
+        // Brush is fatter, pencil thinner, eraser fixed-width
+        if (currentTool === 'brush') return Math.max(2, currentSize * 1.6);
+        if (currentTool === 'eraser') return Math.max(8, currentSize * 2);
+        return currentSize;
+    }
+
     function startDraw(e) {
         e.preventDefault();
-        drawing = true;
         const p = getPos(e);
+
+        // Fill bucket is a one-shot — fill, snapshot, done
+        if (currentTool === 'fill') {
+            pushSnapshot();
+            floodFill(Math.floor(p.x), Math.floor(p.y), currentColor);
+            return;
+        }
+
+        // Snapshot before starting any stroke
+        pushSnapshot();
+        drawing = true;
         lastX = p.x; lastY = p.y;
         ctx.beginPath();
-        ctx.arc(lastX, lastY, currentSize / 2, 0, Math.PI * 2);
-        ctx.fillStyle = isEraser ? '#ffffff' : currentColor;
+        ctx.arc(lastX, lastY, strokeWidth() / 2, 0, Math.PI * 2);
+        ctx.fillStyle = activeStrokeColor();
         ctx.fill();
     }
 
@@ -1027,9 +1155,17 @@
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(p.x, p.y);
-        ctx.strokeStyle = isEraser ? '#ffffff' : currentColor;
-        ctx.lineWidth = currentSize;
+        ctx.strokeStyle = activeStrokeColor();
+        ctx.lineWidth = strokeWidth();
+        if (currentTool === 'brush') {
+            // Soft brush: low alpha
+            ctx.globalAlpha = 0.35;
+            ctx.lineCap = 'round';
+        } else {
+            ctx.globalAlpha = 1.0;
+        }
         ctx.stroke();
+        ctx.globalAlpha = 1.0;
         lastX = p.x; lastY = p.y;
     }
 
@@ -1037,6 +1173,7 @@
         if (!drawing) return;
         e.preventDefault();
         drawing = false;
+        ctx.globalAlpha = 1.0;
     }
 
     canvas.addEventListener('mousedown', startDraw);
@@ -1055,35 +1192,77 @@
         }
     });
 
-    // Color picker
+    // === Toolbar wiring ===
+    function setTool(tool) {
+        currentTool = tool;
+        const map = { pencil: 'pencil-btn', brush: 'brush-btn', eraser: 'eraser-btn', fill: 'fill-btn' };
+        ['pencil-btn', 'brush-btn', 'eraser-btn', 'fill-btn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('active', id === map[tool]);
+        });
+        // Update cursor to hint fill bucket
+        canvas.style.cursor = tool === 'fill' ? 'crosshair' : 'crosshair';
+    }
+
+    // Color swatches
     document.querySelectorAll('.color-swatch').forEach(s => {
         s.addEventListener('click', () => {
             document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('active'));
             s.classList.add('active');
             currentColor = s.dataset.color;
-            isEraser = false;
-            document.getElementById('eraser-btn').classList.remove('active');
+            const cp = document.getElementById('color-picker');
+            if (cp) cp.value = currentColor;
+            setTool('pencil');
         });
     });
 
-    document.querySelectorAll('.size-btn').forEach(s => {
-        s.addEventListener('click', () => {
-            document.querySelectorAll('.size-btn').forEach(x => x.classList.remove('active'));
-            s.classList.add('active');
-            currentSize = parseInt(s.dataset.size);
+    // Custom color picker input
+    const colorPicker = document.getElementById('color-picker');
+    if (colorPicker) {
+        colorPicker.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            document.querySelectorAll('.color-swatch').forEach(x => x.classList.remove('active'));
+            setTool('pencil');
         });
-    });
+    }
 
-    document.getElementById('eraser-btn').addEventListener('click', (e) => {
-        isEraser = !isEraser;
-        e.target.classList.toggle('active', isEraser);
-    });
+    // Brush size slider
+    const sizeSlider = document.getElementById('size-slider');
+    const sizeDisplay = document.getElementById('size-display');
+    if (sizeSlider) {
+        sizeSlider.addEventListener('input', (e) => {
+            currentSize = parseInt(e.target.value);
+            if (sizeDisplay) sizeDisplay.textContent = currentSize;
+        });
+    }
+
+    // Tool buttons
+    document.getElementById('pencil-btn').addEventListener('click', () => setTool('pencil'));
+    document.getElementById('brush-btn').addEventListener('click', () => setTool('brush'));
+    document.getElementById('eraser-btn').addEventListener('click', () => setTool('eraser'));
+    document.getElementById('fill-btn').addEventListener('click', () => setTool('fill'));
+    document.getElementById('undo-btn').addEventListener('click', undo);
+    document.getElementById('redo-btn').addEventListener('click', redo);
 
     document.getElementById('clear-btn').addEventListener('click', () => {
-        if (confirm('Clear your drawing?')) clearCanvas();
+        if (confirm('Clear your drawing?')) {
+            pushSnapshot();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = currentColor;
+        }
+    });
+
+    // Keyboard shortcuts: Ctrl+Z / Ctrl+Y
+    window.addEventListener('keydown', (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); undo(); }
+        else if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); redo(); }
     });
 
     // === Init ===
+    setTool('pencil');
     resizeCanvasToDisplay();
     clearCanvas();
     if (!EMAIL) {
