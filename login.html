@@ -3,102 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in to ADA</title>
+    <title>Sign in — ADA OS</title>
     <style>
+        :root {
+            --bg: #0d1117; --panel: #161b22; --border: #30363d;
+            --text: #c9d1d9; --muted: #8b949e; --blue: #58a6ff;
+            --green: #238636; --red: #f85149;
+        }
+        * { box-sizing: border-box; }
         body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 60px;
+            margin: 0; height: 100vh; overflow: hidden;
+            background:
+                radial-gradient(ellipse at 30% 20%, #1c2128 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, #161b22 0%, transparent 50%),
+                #0d1117;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            display: flex; flex-direction: column;
         }
-        .logo { font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #f0f6fc; text-decoration: none; }
-        .box {
-            width: 300px;
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 20px;
+
+        /* Boot/loading screen */
+        .boot-screen {
+            position: fixed; inset: 0; background: #0d1117;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.4s;
         }
-        label { display: block; margin-bottom: 8px; font-size: 14px; text-align: left; }
-        input {
-            width: 100%;
-            padding: 5px 12px;
-            margin-bottom: 16px;
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: white;
-            box-sizing: border-box;
-            outline: none;
+        .boot-screen.hidden { opacity: 0; pointer-events: none; }
+        .boot-logo {
+            font-size: 64px; font-weight: 900; letter-spacing: 8px;
+            color: var(--blue); margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(88,166,255,0.4);
         }
-        input:focus { border-color: #58a6ff; ring: 1px solid #58a6ff; }
-        .btn-go {
-            width: 100%;
-            background-color: #238636;
-            color: white;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
+        .boot-bar {
+            width: 200px; height: 3px; background: #21262d;
+            border-radius: 2px; overflow: hidden;
         }
-        .btn-go:hover { background-color: #2ea043; }
-        #msg { color: #f85149; font-size: 13px; margin-top: 10px; text-align: center; }
+        .boot-bar-fill {
+            width: 0; height: 100%; background: var(--blue);
+            animation: boot-fill 1.4s ease-out forwards;
+        }
+        @keyframes boot-fill { to { width: 100%; } }
+
+        /* Top bar */
+        .login-topbar {
+            height: 36px; padding: 0 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: rgba(13,17,23,0.6);
+        }
+        .login-brand { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: var(--blue); }
+        .login-clock { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; color: var(--muted); }
+
+        /* Main split */
+        .login-main {
+            flex: 1; display: grid; grid-template-columns: 1fr 420px;
+        }
+        .login-hero {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px; position: relative; overflow: hidden;
+        }
+        .login-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(48,54,61,0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(48,54,61,0.15) 1px, transparent 1px);
+            background-size: 60px 60px; pointer-events: none;
+        }
+        .hero-orb {
+            width: 220px; height: 220px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #58a6ff, #1f6feb 40%, #0d1117 80%);
+            box-shadow: 0 0 80px rgba(88,166,255,0.3);
+            margin-bottom: 32px; position: relative; z-index: 1;
+            animation: orb-float 6s ease-in-out infinite;
+        }
+        @keyframes orb-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .hero-title {
+            font-size: 32px; font-weight: 200; letter-spacing: 6px;
+            color: var(--text); margin: 0 0 8px 0; position: relative; z-index: 1;
+        }
+        .hero-sub {
+            font-size: 12px; color: var(--muted); letter-spacing: 4px;
+            text-transform: uppercase; position: relative; z-index: 1;
+        }
+
+        /* Login panel */
+        .login-panel {
+            background: var(--panel); border-left: 1px solid var(--border);
+            padding: 60px 40px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .login-panel h1 {
+            font-size: 22px; font-weight: 400; margin: 0 0 6px 0; color: var(--text);
+        }
+        .login-panel .sub {
+            font-size: 12px; color: var(--muted); margin-bottom: 30px;
+        }
+
+        /* Saved user card (shown when localStorage has creds) */
+        .saved-user {
+            display: flex; align-items: center; gap: 14px; padding: 14px;
+            background: #0d1117; border: 1px solid var(--border);
+            border-radius: 8px; margin-bottom: 24px; cursor: pointer;
+            transition: 0.15s; position: relative;
+        }
+        .saved-user:hover { border-color: var(--blue); background: #0d1117cc; }
+        .saved-user.selected { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+        .saved-user-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: #21262d; overflow: hidden; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .saved-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .saved-user-info { flex: 1; min-width: 0; }
+        .saved-user-name { font-size: 14px; font-weight: 600; color: var(--text); }
+        .saved-user-email { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .saved-user-status {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--green); box-shadow: 0 0 8px var(--green);
+        }
+        .saved-user-clear {
+            background: none; border: none; color: var(--muted);
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 11px;
+        }
+        .saved-user-clear:hover { color: var(--red); background: rgba(248,81,73,0.1); }
+
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 20px 0; color: var(--muted); font-size: 11px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border);
+        }
+
+        .field { margin-bottom: 18px; }
+        .field label {
+            display: block; font-size: 11px; color: var(--muted);
+            margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .field input {
+            width: 100%; padding: 11px 14px; background: #0d1117;
+            border: 1px solid var(--border); border-radius: 6px;
+            color: var(--text); font-size: 14px; outline: none;
+            transition: 0.15s;
+        }
+        .field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
+
+        .btn-signin {
+            width: 100%; padding: 12px; background: var(--green);
+            color: white; border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: 0.15s; margin-top: 8px;
+        }
+        .btn-signin:hover { background: #2ea043; }
+        .btn-signin:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .alt-link {
+            text-align: center; margin-top: 18px;
+            font-size: 12px; color: var(--muted);
+        }
+        .alt-link a { color: var(--blue); text-decoration: none; }
+        .alt-link a:hover { text-decoration: underline; }
+
+        #msg {
+            color: var(--red); font-size: 12px; margin-top: 14px;
+            text-align: center; padding: 8px;
+            background: rgba(248,81,73,0.08); border-radius: 4px;
+            display: none;
+        }
+        #msg.show { display: block; }
     </style>
 </head>
 <body>
 
-<a href="/" class="logo">ADA</a>
-<div class="box">
-    <form id="login-form">
-        <label>Email address</label>
-        <input type="email" id="email" required>
-        
-        <label>Password</label>
-        <input type="password" id="password" required>
-        
-        <button type="submit" class="btn-go">Sign in</button>
-    </form>
-    <div id="msg"></div>
+<div class="boot-screen" id="boot-screen">
+    <div class="boot-logo">ADA</div>
+    <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+</div>
+
+<div class="login-topbar">
+    <div class="login-brand">ADA OS</div>
+    <div class="login-clock" id="topbar-clock">--:--:--</div>
+</div>
+
+<div class="login-main">
+    <div class="login-hero">
+        <div class="hero-orb"></div>
+        <h2 class="hero-title">Archive OS</h2>
+        <p class="hero-sub">Secure Access Terminal</p>
+    </div>
+
+    <div class="login-panel">
+        <h1>Sign in</h1>
+        <p class="sub">Continue to your archive</p>
+
+        <!-- Saved user (visible if previously logged in) -->
+        <div id="saved-user-section"></div>
+
+        <div class="divider" id="divider" style="display:none;">OR SIGN IN WITH ANOTHER ACCOUNT</div>
+
+        <form id="login-form">
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="email" required autocomplete="email">
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" id="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-signin" id="btn-submit">Sign in</button>
+            <div id="msg"></div>
+        </form>
+
+        <p class="alt-link">No account? <a href="/account-creator.html">Create one</a></p>
+    </div>
 </div>
 
 <script>
+    const API = 'https://ada-relay.andrewdinglearchive.workers.dev';
+    const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+    /* Topbar clock */
+    function tickClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        const ss = String(now.getSeconds()).padStart(2,'0');
+        const el = document.getElementById('topbar-clock');
+        if (el) el.textContent = `${hh}:${mm}:${ss}`;
+    }
+    tickClock(); setInterval(tickClock, 1000);
+
+    /* Hide boot screen */
+    setTimeout(() => {
+        document.getElementById('boot-screen').classList.add('hidden');
+    }, 1500);
+
+    /* Saved user */
+    function renderSavedUser() {
+        const savedName = localStorage.getItem('ada_user_name');
+        const savedEmail = localStorage.getItem('ada_user_email');
+        const savedPic = localStorage.getItem('ada_user_pic');
+
+        if (!savedEmail) return;
+
+        const section = document.getElementById('saved-user-section');
+        const divider = document.getElementById('divider');
+        section.innerHTML = `
+            <div class="saved-user selected" id="saved-user-card">
+                <div class="saved-user-avatar">
+                    <img src="${savedPic || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">
+                </div>
+                <div class="saved-user-info">
+                    <div class="saved-user-name">${savedName || 'Welcome back'}</div>
+                    <div class="saved-user-email">${savedEmail}</div>
+                </div>
+                <div class="saved-user-status"></div>
+                <button class="saved-user-clear" id="clear-saved" title="Sign out">✕</button>
+            </div>
+        `;
+        divider.style.display = 'flex';
+
+        // Pre-fill the form with the saved email
+        document.getElementById('email').value = savedEmail;
+
+        // Auto-attempt resume: if we have a session, just go
+        if (localStorage.getItem('ada_session') === 'active') {
+            // Quick revalidation in background; if it fails, user signs in again
+            fetch(`${API}/sync?email=${encodeURIComponent(savedEmail)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.user) {
+                        location.href = '/dash.html';
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Click saved user to use it (faster: just fill the email)
+        document.getElementById('saved-user-card').addEventListener('click', (e) => {
+            if (e.target.closest('#clear-saved')) return;
+            document.getElementById('email').value = savedEmail;
+            document.getElementById('password').focus();
+        });
+
+        // Clear saved user
+        document.getElementById('clear-saved').addEventListener('click', (e) => {
+            e.stopPropagation();
+            localStorage.removeItem('ada_user_name');
+            localStorage.removeItem('ada_user_pic');
+            localStorage.removeItem('ada_user_email');
+            localStorage.removeItem('ada_session');
+            localStorage.removeItem('ada_admin');
+            location.reload();
+        });
+    }
+
+    /* Login submit */
     const form = document.getElementById('login-form');
     const msg = document.getElementById('msg');
+    const btn = document.getElementById('btn-submit');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        msg.innerText = "Verifying...";
-    
+        msg.classList.remove('show');
+        btn.disabled = true;
+        btn.textContent = 'Signing in…';
+
         const email = document.getElementById('email').value;
         const pass = document.getElementById('password').value;
 
         try {
-            // FIXED URL: Added https:// to make it an absolute path
-            const response = await fetch('https://ada-relay.andrewdinglearchive.workers.dev/auth', {
+            const response = await fetch(`${API}/auth`, {
                 method: 'POST',
                 body: JSON.stringify({ email, pass }),
                 headers: { 'Content-Type': 'application/json' }
             });
-
             const result = await response.json();
 
             if (result.success) {
                 localStorage.setItem('ada_session', 'active');
                 localStorage.setItem('ada_user_email', result.email);
-                localStorage.setItem('ada_admin', result.admin); // Store admin status
-                window.location.href = '/dash.html'; // Redirect to dashboard
+                localStorage.setItem('ada_admin', result.admin);
+
+                // Pull the profile pic + name for next time
+                try {
+                    const profileRes = await fetch(`${API}/profile/get?email=${encodeURIComponent(result.email)}`);
+                    const profileData = await profileRes.json();
+                    if (profileData && profileData.user) {
+                        if (profileData.user.profile_picture) {
+                            localStorage.setItem('ada_user_pic', profileData.user.profile_picture);
+                        }
+                        if (profileData.user.display_name) {
+                            localStorage.setItem('ada_user_name', profileData.user.display_name);
+                        }
+                    }
+                } catch (e) {}
+
+                location.href = '/dash.html';
             } else {
-                msg.innerText = 'Invalid email or password.';
+                msg.textContent = 'Invalid email or password.';
+                msg.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Sign in';
             }
         } catch (err) {
-            msg.innerText = 'Connection error. Try again.';
-            console.error(err);
+            msg.textContent = 'Connection error. Try again.';
+            msg.classList.add('show');
+            btn.disabled = false;
+            btn.textContent = 'Sign in';
         }
     });
+
+    renderSavedUser();
 </script>
+
 </body>
 </html>

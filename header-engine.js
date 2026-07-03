@@ -33,6 +33,7 @@
                 <header class="ada-header">
                     <div class="ada-nav-group">
                         <a href="/dash.html" style="text-decoration:none; font-weight:600; color:white;">ADA ARCHIVE</a>
+                        <a href="/index.html" class="ada-btn">Index</a>
                         ${isAdmin ? `<a href="/account-manager.html" class="ada-btn">Manager</a>` : ''}
                     </div>
                     <div class="ada-nav-group">
