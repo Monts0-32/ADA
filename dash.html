@@ -12,537 +12,738 @@
 
     <style>
         :root {
+            /* GitHub dark palette - refined */
             --bg: #0d1117;
+            --bg-elevated: #010409;
             --panel: #161b22;
-            --panel-2: #0d1117;
-            --panel-3: #1c2128;
+            --panel-2: #1c2128;
+            --panel-3: #22272e;
             --btn-bg: #21262d;
+            --btn-hover: #30363d;
             --border: #30363d;
-            --border-hover: #444c56;
-            --text: #c9d1d9;
+            --border-soft: #21262d;
+            --border-strong: #444c56;
+            --text: #e6edf3;
+            --text-2: #c9d1d9;
             --muted: #8b949e;
             --muted-2: #6e7681;
+
+            /* GitHub accent colors */
             --blue: #58a6ff;
             --blue-dim: #1f6feb;
-            --green: #238636;
-            --green-hover: #2ea043;
+            --blue-deep: #0d419d;
+            --green: #3fb950;
+            --green-dim: #238636;
             --red: #f85149;
+            --red-dim: #da3633;
             --orange: #d29922;
             --purple: #a371f7;
+            --pink: #db61a2;
+            --cyan: #39c5cf;
+
+            /* Effects */
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.55);
+            --glow-blue: 0 0 0 1px rgba(88,166,255,0.3), 0 0 24px rgba(88,166,255,0.15);
         }
 
-        /* GitHub-style scrollbar */
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+        * { box-sizing: border-box; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
         body {
-            background: var(--bg); color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            margin: 0; height: 100vh; overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            font-feature-settings: "cv11", "ss01", "ss03";
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* ===================== OS SHELL ===================== */
-        .os-shell { display: flex; height: 100vh; width: 100%; flex-direction: column; }
+        .os-shell {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.5s ease 0.1s;
+        }
+        .os-shell.visible { opacity: 1; }
 
-        /* ===================== BOOT-UP ANIMATION ===================== */
+        /* ===================== BOOT SCREEN ===================== */
         .boot-screen {
-            position: fixed; inset: 0; z-index: 10000;
-            background: var(--bg);
+            position: fixed; inset: 0; z-index: 100000;
+            background: var(--bg-elevated);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
         }
         .boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        .boot-logo {
-            font-size: 72px; font-weight: 600; letter-spacing: 14px;
-            color: var(--text); margin: 0;
-            opacity: 0; transform: translateY(8px);
-            animation: boot-logo-in 0.7s ease-out forwards;
+
+        .boot-glyph {
+            width: 88px; height: 88px;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; font-weight: 800; color: white;
+            letter-spacing: -1px;
+            box-shadow: 0 8px 32px rgba(88,166,255,0.3);
+            opacity: 0; transform: scale(0.8) translateY(8px);
+            animation: boot-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes boot-logo-in {
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes boot-in {
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .boot-title {
+            font-size: 14px; font-weight: 600; letter-spacing: 6px;
+            color: var(--text); margin: 24px 0 4px;
+            opacity: 0; animation: boot-fade 0.4s ease 0.4s forwards;
         }
         .boot-sub {
-            font-size: 11px; color: var(--muted);
-            letter-spacing: 4px; text-transform: uppercase;
-            margin-top: 12px; opacity: 0;
-            animation: boot-fade-in 0.4s ease 0.3s forwards;
+            font-size: 10px; color: var(--muted);
+            letter-spacing: 3px; text-transform: uppercase;
+            opacity: 0; animation: boot-fade 0.4s ease 0.5s forwards;
         }
-        @keyframes boot-fade-in { to { opacity: 1; } }
-        .boot-bar {
-            width: 220px; height: 3px; background: var(--btn-bg);
-            border-radius: 2px; margin-top: 40px; overflow: hidden;
-            opacity: 0; animation: boot-fade-in 0.3s ease 0.4s forwards;
+        @keyframes boot-fade { to { opacity: 1; } }
+
+        .boot-progress {
+            width: 200px; height: 2px; background: var(--border);
+            border-radius: 2px; margin-top: 32px; overflow: hidden;
+            opacity: 0; animation: boot-fade 0.3s ease 0.6s forwards;
         }
-        .boot-bar-fill {
-            width: 0; height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple));
-            animation: boot-fill 1.0s ease 0.4s forwards;
+        .boot-progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple));
+            transform: translateX(-100%);
+            animation: boot-slide 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
         }
-        @keyframes boot-fill { to { width: 100%; } }
+        @keyframes boot-slide { to { transform: translateX(0); } }
+
         .boot-status {
-            margin-top: 16px; font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 10px; color: var(--muted-2); letter-spacing: 1.5px;
-            opacity: 0; animation: boot-fade-in 0.3s ease 0.8s forwards;
-            min-height: 14px;
+            margin-top: 14px;
+            font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+            font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
+            min-height: 14px; min-width: 200px; text-align: center;
+            opacity: 0; animation: boot-fade 0.3s ease 0.8s forwards;
         }
-        .boot-blink {
-            display: inline-block; width: 6px; height: 10px;
-            background: var(--text); margin-left: 4px; vertical-align: middle;
+        .boot-status::after {
+            content: '_';
             animation: blink 1s steps(2) infinite;
+            margin-left: 2px;
         }
         @keyframes blink { 50% { opacity: 0; } }
 
-        /* Page entrance (after boot screen lifts) */
-        .os-shell { opacity: 0; transition: opacity 0.4s ease 0.1s; }
-        .os-shell.visible { opacity: 1; }
-
-        /* ===================== TOP-RIGHT CLOCK ===================== */
-        .topbar-clock {
-            position: fixed; top: 8px; right: 14px; z-index: 10000;
-            display: flex; flex-direction: column; align-items: flex-end;
-            font-family: 'SFMono-Regular', Consolas, monospace;
-            color: var(--text); line-height: 1.2;
-            padding: 5px 11px; border-radius: 6px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            pointer-events: none;
-            backdrop-filter: blur(8px);
-        }
-        .topbar-clock-time { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--text); }
-        .topbar-clock-date { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
-
-        /* DESKTOP — flat dark, no gradients */
+        /* ===================== DESKTOP WALLPAPER ===================== */
         .os-desktop {
             flex: 1; position: relative; overflow: hidden;
-            background: var(--bg);
+            background:
+                radial-gradient(ellipse 800px 600px at 20% 20%, rgba(88,166,255,0.10), transparent 50%),
+                radial-gradient(ellipse 700px 500px at 85% 80%, rgba(163,113,247,0.08), transparent 55%),
+                radial-gradient(ellipse 600px 400px at 60% 30%, rgba(57,197,207,0.05), transparent 50%),
+                var(--bg);
         }
         .os-grid-bg {
-            position: absolute; inset: 0;
+            position: absolute; inset: 0; pointer-events: none;
             background-image:
-                radial-gradient(circle at 20% 30%, rgba(88, 166, 255, 0.06), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(163, 113, 247, 0.05), transparent 40%),
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 80px 80px, 80px 80px;
-            opacity: 0.5; pointer-events: none;
+                linear-gradient(rgba(48,54,61,0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(48,54,61,0.25) 1px, transparent 1px);
+            background-size: 64px 64px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
         }
 
-        /* DESKTOP ICONS */
+        /* ===================== DESKTOP ICONS ===================== */
         .desktop-icons {
-            position: absolute; top: 16px; left: 16px;
-            display: grid; grid-template-columns: repeat(auto-fill, 90px);
-            gap: 16px 8px; z-index: 1;
+            position: absolute; top: 24px; left: 24px;
+            display: grid; grid-template-columns: repeat(auto-fill, 96px);
+            gap: 8px 6px; z-index: 1;
         }
         .desktop-icon {
-            width: 90px; padding: 8px 4px; border-radius: 6px;
-            display: flex; flex-direction: column; align-items: center;
-            gap: 6px; cursor: pointer; transition: 0.12s;
+            width: 96px; padding: 12px 6px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; transition: background 0.12s, transform 0.12s;
             user-select: none; text-align: center;
+            border-radius: 8px;
             border: 1px solid transparent;
         }
-        .desktop-icon:hover { background: rgba(33, 38, 45, 0.7); border-color: var(--border); }
-        .desktop-icon.active { background: rgba(33, 38, 45, 0.9); border-color: var(--blue); }
+        .desktop-icon:hover {
+            background: rgba(33,38,45,0.6);
+            border-color: rgba(48,54,61,0.5);
+        }
+        .desktop-icon:active { transform: scale(0.96); }
         .desktop-icon-img {
-            width: 48px; height: 48px; background: var(--panel);
-            border: 1px solid var(--border); border-radius: 10px;
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, var(--panel-2) 0%, var(--panel) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            transition: 0.15s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            color: var(--blue);
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+            box-shadow: var(--shadow-sm);
         }
         .desktop-icon:hover .desktop-icon-img {
+            transform: translateY(-2px);
             border-color: var(--blue);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(88,166,255,0.25), var(--shadow);
         }
-        .desktop-icon-img svg { width: 26px; height: 26px; color: var(--blue); }
+        .desktop-icon-img svg { width: 26px; height: 26px; }
         .desktop-icon-label {
-            font-size: 11px; color: var(--text); line-height: 1.2;
-            font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            font-size: 11px; font-weight: 500;
+            color: var(--text);
+            line-height: 1.25;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            letter-spacing: 0.1px;
         }
+        .desktop-icon.active .desktop-icon-img {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 2px rgba(88,166,255,0.2), var(--shadow);
+        }
+        .desktop-icon.active .desktop-icon-label { color: var(--blue); }
 
         /* ===================== WINDOWS ===================== */
         .os-window {
-            position: absolute; background: var(--panel);
-            border: 1px solid var(--border); border-radius: 8px;
-            box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.2);
-            min-width: 300px; display: flex; flex-direction: column;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            position: absolute;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            min-width: 300px;
+            display: flex; flex-direction: column;
             overflow: hidden;
+            backdrop-filter: blur(20px);
         }
         .os-window.opening {
-            animation: window-open 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transform-origin: center center;
+            animation: win-open 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes window-open {
-            0% {
-                opacity: 0;
-                transform: scale(0.85) translateY(20px);
-                filter: blur(4px);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-                filter: blur(0);
-            }
+        @keyframes win-open {
+            0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .os-window.focused { border-color: var(--border-hover); }
-        .os-window-header {
-            background: linear-gradient(180deg, #1c2128 0%, #161b22 100%);
-            padding: 8px 12px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 10px;
-            cursor: grab; user-select: none;
+        .os-window.closing {
+            animation: win-close 0.18s ease forwards;
         }
-        .os-window-header:active { cursor: grabbing; }
-        .os-window-icon { width: 14px; height: 14px; color: var(--blue); flex-shrink: 0; }
-        .os-window-title {
-            font-size: 12px; color: var(--text); flex: 1; font-weight: 600;
-            letter-spacing: 0.2px;
-        }
-        .os-window-controls { display: flex; height: 30px; margin: -8px -12px 0 auto; align-items: stretch; }
-        .os-window-btn {
-            width: 40px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.1s; color: var(--muted);
-        }
-        .os-window-btn:hover { background: var(--btn-bg); color: var(--text); }
-        .os-window-btn.close:hover { background: var(--red); color: white; }
-        .os-window-btn svg { width: 11px; height: 11px; }
-        .os-window-content {
-            padding: 16px; overflow: auto; max-height: 70vh;
-            background: var(--panel);
+        @keyframes win-close {
+            to { opacity: 0; transform: scale(0.95); }
         }
         .os-window.minimizing {
-            animation: window-minimize 0.25s ease forwards;
+            animation: win-min 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
-        @keyframes window-minimize {
-            to {
-                opacity: 0;
-                transform: scale(0.5) translateY(40px);
-                filter: blur(2px);
-            }
+        @keyframes win-min {
+            to { opacity: 0; transform: scale(0.4) translateY(60px); }
         }
-        .os-window.minimized { display: none; }
-        .os-window.closed { display: none; }
-        .os-window.closing {
-            animation: window-close 0.2s ease forwards;
+        .os-window.maximizing {
+            animation: win-max 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes window-close {
-            to {
-                opacity: 0;
-                transform: scale(0.92);
-            }
-        }
-        .os-window.maximized {
-            top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100%;
-            border-radius: 0;
-            animation: window-maximize 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            transform-origin: bottom right;
-        }
-        @keyframes window-maximize {
+        @keyframes win-max {
             from { transform: scale(0.95); }
             to { transform: scale(1); }
         }
-        .os-window.maximized .os-window-content { max-height: calc(100% - 40px); }
+        .os-window.closed, .os-window.minimized { display: none; }
+        .os-window.maximized {
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: calc(100% - 56px) !important;
+            border-radius: 0;
+            border: none;
+        }
+        .os-window.maximized .os-window-content { max-height: calc(100vh - 56px - 48px); }
+
+        .os-window-header {
+            background: var(--panel-2);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+            cursor: grab; user-select: none;
+        }
+        .os-window-header:active { cursor: grabbing; }
+        .os-window.focused .os-window-header { background: var(--panel-3); }
+        .os-window-icon { width: 16px; height: 16px; color: var(--blue); flex-shrink: 0; }
+        .os-window-title {
+            font-size: 12px; font-weight: 600; color: var(--text-2); flex: 1;
+            letter-spacing: 0.2px;
+        }
+        .os-window-controls {
+            display: flex; margin: -10px -14px 0 auto; align-items: stretch;
+            height: 38px;
+        }
+        .os-window-btn {
+            width: 42px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.1s, color 0.1s;
+            color: var(--muted);
+        }
+        .os-window-btn:hover { background: var(--btn-bg); color: var(--text); }
+        .os-window-btn.close:hover { background: var(--red-dim); color: white; }
+        .os-window-btn svg { width: 11px; height: 11px; stroke-width: 2.5; }
+
+        .os-window-content {
+            padding: 18px; overflow: auto; max-height: 70vh;
+            background: var(--panel);
+        }
 
         /* ===================== TASKBAR ===================== */
         .os-taskbar {
-            height: 48px; background: linear-gradient(180deg, #1c2128 0%, #161b22 100%);
+            height: 56px;
+            background: rgba(22,27,34,0.75);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
             border-top: 1px solid var(--border);
             display: flex; align-items: center; padding: 0 8px;
             z-index: 5000; flex-shrink: 0; gap: 4px;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 -1px 0 rgba(0,0,0,0.2);
         }
+
+        /* Start button — Apple/Windows 11 style "logo" */
         .taskbar-start {
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 14px; border-radius: 4px; cursor: pointer;
-            transition: 0.1s; color: var(--text); font-size: 12px; font-weight: 600;
-            height: 38px;
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer; transition: 0.12s;
+            background: transparent;
         }
         .taskbar-start:hover { background: var(--btn-bg); }
-        .taskbar-start.active { background: var(--btn-bg); border: 1px solid var(--border-hover); }
-        .taskbar-start .win-icon {
-            font-size: 16px; color: var(--blue);
-            font-weight: 900; line-height: 1;
+        .taskbar-start.active { background: var(--btn-bg); }
+        .taskbar-start-logo {
+            width: 26px; height: 26px;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 14px;
+            box-shadow: 0 2px 8px rgba(88,166,255,0.3);
+            transition: transform 0.2s;
         }
-        .taskbar-divider { width: 1px; height: 26px; background: var(--border); margin: 0 6px; }
+        .taskbar-start:hover .taskbar-start-logo { transform: rotate(-8deg) scale(1.05); }
+
+        .taskbar-search {
+            display: flex; align-items: center; gap: 8px;
+            height: 36px; padding: 0 12px;
+            background: var(--btn-bg);
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            margin: 0 6px;
+            min-width: 220px;
+            transition: 0.12s;
+            cursor: text;
+        }
+        .taskbar-search:hover { background: var(--btn-hover); border-color: var(--border); }
+        .taskbar-search svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+        .taskbar-search input {
+            background: transparent; border: none; outline: none;
+            color: var(--text); font-size: 12px; flex: 1;
+            font-family: inherit;
+        }
+        .taskbar-search input::placeholder { color: var(--muted); }
+
         .taskbar-apps { display: flex; gap: 4px; align-items: center; flex: 1; }
         .taskbar-app {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 4px; cursor: pointer; transition: 0.1s; position: relative;
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer; transition: 0.12s; position: relative;
+            color: var(--text-2);
         }
         .taskbar-app:hover { background: var(--btn-bg); }
         .taskbar-app.active { background: var(--btn-bg); }
         .taskbar-app.active::after {
-            content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
-            width: 18px; height: 2px; background: var(--blue); border-radius: 1px;
+            content: ''; position: absolute; bottom: 2px; left: 50%;
+            transform: translateX(-50%);
+            width: 16px; height: 2px;
+            background: var(--blue);
+            border-radius: 2px;
         }
-        .taskbar-app svg { width: 22px; height: 22px; color: var(--text); }
+        .taskbar-app svg { width: 20px; height: 20px; }
+        .taskbar-app.running::after {
+            content: ''; position: absolute; bottom: 2px; left: 50%;
+            transform: translateX(-50%);
+            width: 4px; height: 4px;
+            background: var(--muted);
+            border-radius: 50%;
+        }
+        .taskbar-app.running.active::after {
+            width: 16px; height: 2px; border-radius: 2px; background: var(--blue);
+        }
 
-        /* ===================== SYSTEM TRAY ===================== */
+        /* System tray */
         .system-tray {
-            display: flex; align-items: center; gap: 4px;
+            display: flex; align-items: center; gap: 2px;
             margin-left: auto; padding: 0 4px;
         }
+        .tray-cluster {
+            display: flex; align-items: center;
+            background: var(--btn-bg);
+            border-radius: 8px;
+            padding: 0 4px;
+            height: 36px;
+        }
         .tray-icon {
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-            border-radius: 4px; cursor: pointer; transition: 0.1s; color: var(--muted);
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; cursor: pointer; transition: 0.1s; color: var(--text-2);
         }
-        .tray-icon:hover { background: var(--btn-bg); color: var(--text); }
-        .tray-icon svg { width: 16px; height: 16px; }
+        .tray-icon:hover { background: var(--btn-hover); color: var(--text); }
+        .tray-icon svg { width: 15px; height: 15px; }
+
         .tray-clock {
-            display: flex; flex-direction: column; align-items: flex-end;
-            padding: 0 10px; cursor: pointer; border-radius: 4px; line-height: 1.2;
-            height: 38px; justify-content: center; transition: 0.1s;
+            display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+            padding: 0 12px; cursor: pointer; border-radius: 8px;
+            line-height: 1.2; height: 36px; transition: 0.1s;
+            background: var(--btn-bg);
+            margin-left: 4px;
+            min-width: 80px;
         }
-        .tray-clock:hover { background: var(--btn-bg); }
-        .tray-clock-time { font-size: 12px; color: var(--text); font-weight: 500; }
-        .tray-clock-date { font-size: 10px; color: var(--muted); }
+        .tray-clock:hover { background: var(--btn-hover); }
+        .tray-clock-time {
+            font-size: 12px; color: var(--text);
+            font-weight: 500; letter-spacing: 0.3px;
+        }
+        .tray-clock-date {
+            font-size: 10px; color: var(--muted);
+            letter-spacing: 0.3px;
+        }
+
+        /* Show desktop button (last) */
+        .show-desktop {
+            width: 6px; height: 36px;
+            border-left: 1px solid var(--border);
+            margin-left: 4px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .show-desktop:hover { background: var(--btn-bg); }
 
         /* ===================== START MENU ===================== */
         .start-menu {
-            position: fixed; bottom: 56px; left: 8px; width: 360px;
-            background: var(--panel);
+            position: fixed; bottom: 64px; left: 8px;
+            width: 560px; height: 580px;
+            background: rgba(22,27,34,0.85);
+            backdrop-filter: blur(32px) saturate(180%);
+            -webkit-backdrop-filter: blur(32px) saturate(180%);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
             z-index: 6000;
             display: none;
-            flex-direction: column;
             overflow: hidden;
-            animation: start-menu-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             transform-origin: bottom left;
         }
-        .start-menu.open { display: flex; }
-        @keyframes start-menu-in {
+        .start-menu.open { display: flex; flex-direction: column; }
+        @keyframes menu-in {
             from { opacity: 0; transform: scale(0.95) translateY(8px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .start-menu-header {
-            padding: 18px 18px 14px;
-            border-bottom: 1px solid var(--border);
-            background: var(--panel-3);
-        }
-        .start-menu-user {
-            display: flex; align-items: center; gap: 12px;
-        }
-        .start-menu-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--blue), var(--purple));
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: 700; font-size: 16px;
-        }
-        .start-menu-user-info { flex: 1; }
-        .start-menu-user-name { font-size: 13px; font-weight: 600; color: var(--text); }
-        .start-menu-user-status { font-size: 10px; color: var(--green); letter-spacing: 1px; text-transform: uppercase; }
+
         .start-menu-search {
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--border);
+            padding: 18px 18px 12px;
         }
-        .start-menu-search input {
-            width: 100%; background: var(--bg);
+        .start-menu-search-input {
+            width: 100%; height: 36px;
+            background: var(--btn-bg);
+            border: 1px solid var(--border-soft);
+            color: var(--text); padding: 0 12px 0 36px;
+            font-size: 13px; border-radius: 8px; outline: none;
+            font-family: inherit;
+            transition: 0.12s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+        .start-menu-search-input:focus { border-color: var(--blue); background-color: var(--bg); }
+
+        .start-menu-body {
+            display: grid; grid-template-columns: 1fr 220px;
+            gap: 0; flex: 1; overflow: hidden;
+        }
+        .start-menu-pinned {
+            padding: 4px 8px 12px 18px;
+            overflow-y: auto;
+        }
+        .start-menu-section-title {
+            font-size: 11px; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            padding: 8px 0 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .start-menu-section-title a {
+            font-size: 10px; color: var(--blue); text-decoration: none;
+            text-transform: none; letter-spacing: 0; font-weight: 500;
+        }
+        .start-menu-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+        .start-menu-tile {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; padding: 12px 4px;
+            border-radius: 8px; cursor: pointer;
+            text-decoration: none; color: var(--text);
+            transition: background 0.1s;
+        }
+        .start-menu-tile:hover { background: var(--btn-bg); }
+        .start-menu-tile-icon {
+            width: 36px; height: 36px;
+            background: var(--bg);
             border: 1px solid var(--border);
-            color: var(--text); padding: 7px 10px; font-size: 12px;
-            border-radius: 4px; outline: none;
-        }
-        .start-menu-search input:focus { border-color: var(--blue); }
-        .start-menu-apps {
-            padding: 8px 0;
-            max-height: 320px; overflow-y: auto;
-        }
-        .start-menu-section-label {
-            font-size: 10px; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 1.5px;
-            padding: 8px 18px 4px; font-weight: 600;
-        }
-        .start-menu-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 8px 18px; cursor: pointer; transition: 0.1s;
-            color: var(--text); font-size: 13px; text-decoration: none;
-        }
-        .start-menu-item:hover { background: var(--btn-bg); }
-        .start-menu-item-icon {
-            width: 28px; height: 28px; background: var(--bg);
-            border: 1px solid var(--border); border-radius: 6px;
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             color: var(--blue);
         }
-        .start-menu-item-icon svg { width: 16px; height: 16px; }
+        .start-menu-tile-icon svg { width: 20px; height: 20px; }
+        .start-menu-tile-label {
+            font-size: 11px; color: var(--text-2);
+            text-align: center; line-height: 1.2;
+        }
+
+        .start-menu-recommended {
+            padding: 4px 18px 12px 8px;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+            background: rgba(13,17,23,0.4);
+        }
+        .start-menu-recommended .start-menu-section-title { padding-left: 4px; padding-right: 4px; }
+        .recommended-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 8px 10px; border-radius: 6px;
+            cursor: pointer; transition: background 0.1s;
+            text-decoration: none; color: var(--text-2);
+        }
+        .recommended-item:hover { background: var(--btn-bg); }
+        .recommended-item-icon {
+            width: 32px; height: 32px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--blue); flex-shrink: 0;
+        }
+        .recommended-item-icon svg { width: 16px; height: 16px; }
+        .recommended-item-text { flex: 1; min-width: 0; }
+        .recommended-item-name {
+            font-size: 12px; color: var(--text); font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .recommended-item-meta {
+            font-size: 10px; color: var(--muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
         .start-menu-footer {
             border-top: 1px solid var(--border);
-            padding: 8px 12px;
+            padding: 10px 18px;
             display: flex; justify-content: space-between; align-items: center;
-            background: var(--panel-3);
+            background: rgba(13,17,23,0.4);
         }
+        .start-menu-user {
+            display: flex; align-items: center; gap: 10px;
+            padding: 4px 8px; border-radius: 6px;
+            cursor: pointer; transition: 0.1s;
+        }
+        .start-menu-user:hover { background: var(--btn-bg); }
+        .start-menu-user-avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 12px;
+        }
+        .start-menu-user-name { font-size: 12px; font-weight: 500; color: var(--text); }
+        .start-menu-footer-actions { display: flex; gap: 4px; }
         .start-menu-footer-btn {
-            padding: 6px 10px; border-radius: 4px; cursor: pointer;
-            color: var(--muted); font-size: 12px; display: flex;
-            align-items: center; gap: 6px; transition: 0.1s;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; cursor: pointer; transition: 0.1s;
+            color: var(--muted); background: transparent;
             text-decoration: none;
         }
         .start-menu-footer-btn:hover { background: var(--btn-bg); color: var(--text); }
-        .start-menu-footer-btn.danger:hover { background: var(--red); color: white; }
+        .start-menu-footer-btn.danger:hover { background: var(--red-dim); color: white; }
+        .start-menu-footer-btn svg { width: 14px; height: 14px; }
 
-        /* ===================== ACTION CENTER / NOTIFICATIONS ===================== */
+        /* ===================== ACTION CENTER ===================== */
         .action-center {
-            position: fixed; bottom: 56px; right: 8px; width: 360px;
-            background: var(--panel);
+            position: fixed; bottom: 64px; right: 8px;
+            width: 380px;
+            background: rgba(22,27,34,0.85);
+            backdrop-filter: blur(32px) saturate(180%);
+            -webkit-backdrop-filter: blur(32px) saturate(180%);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
             z-index: 6000;
             display: none;
             flex-direction: column;
             overflow: hidden;
-            animation: start-menu-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             transform-origin: bottom right;
         }
         .action-center.open { display: flex; }
-        .action-center-header {
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border);
-            font-size: 11px; font-weight: 600; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 1.5px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
         .action-center-tiles {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-            padding: 12px;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 8px; padding: 18px;
         }
         .ac-tile {
-            aspect-ratio: 1.6; background: var(--btn-bg);
-            border: 1px solid var(--border); border-radius: 4px;
+            aspect-ratio: 1; background: var(--btn-bg);
+            border: 1px solid var(--border-soft); border-radius: 10px;
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 6px; cursor: pointer;
-            transition: 0.1s; color: var(--text);
+            transition: 0.12s; color: var(--text-2);
         }
-        .ac-tile:hover { background: var(--border); }
-        .ac-tile.active { background: var(--blue-dim); border-color: var(--blue); color: white; }
-        .ac-tile svg { width: 18px; height: 18px; }
-        .ac-tile-label { font-size: 10px; font-weight: 500; }
+        .ac-tile:hover { background: var(--btn-hover); border-color: var(--border); }
+        .ac-tile.active {
+            background: var(--blue-dim); border-color: var(--blue); color: white;
+        }
+        .ac-tile svg { width: 20px; height: 20px; }
+        .ac-tile-label { font-size: 10px; font-weight: 500; letter-spacing: 0.2px; }
+
+        .ac-slider-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 18px;
+            border-top: 1px solid var(--border);
+        }
+        .ac-slider-icon { color: var(--text-2); display: flex; }
+        .ac-slider-icon svg { width: 16px; height: 16px; }
+        .ac-slider {
+            flex: 1; -webkit-appearance: none; appearance: none;
+            height: 4px; border-radius: 2px;
+            background: var(--border);
+            outline: none;
+        }
+        .ac-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 14px; height: 14px;
+            background: var(--blue);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid var(--panel);
+        }
+        .ac-slider::-moz-range-thumb {
+            width: 14px; height: 14px;
+            background: var(--blue);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid var(--panel);
+        }
 
         /* ===================== CONTEXT MENU ===================== */
         .context-menu {
             position: fixed; z-index: 7000;
-            background: var(--panel);
+            background: rgba(28,33,40,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            min-width: 180px; padding: 4px 0;
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            min-width: 220px; padding: 6px;
             display: none;
-            animation: context-in 0.12s ease forwards;
+            animation: ctx-in 0.14s ease forwards;
+            transform-origin: top left;
         }
         .context-menu.open { display: block; }
-        @keyframes context-in {
-            from { opacity: 0; transform: scale(0.95); }
+        @keyframes ctx-in {
+            from { opacity: 0; transform: scale(0.96); }
             to { opacity: 1; transform: scale(1); }
         }
         .context-menu-item {
-            padding: 7px 14px; cursor: pointer; font-size: 12px;
-            color: var(--text); display: flex; align-items: center; gap: 10px;
-            transition: 0.08s;
+            padding: 8px 12px; cursor: pointer; font-size: 12px;
+            color: var(--text-2); display: flex; align-items: center; gap: 12px;
+            border-radius: 6px; transition: 0.08s;
         }
         .context-menu-item:hover { background: var(--blue-dim); color: white; }
-        .context-menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+        .context-menu-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .context-menu-sep { height: 1px; background: var(--border); margin: 4px 8px; }
 
-        /* ===================== APP OPENING TRANSITION (NEW) ===================== */
-        .app-transition-overlay {
+        /* ===================== APP TRANSITION (Windows-style) ===================== */
+        .app-transition {
             position: fixed; inset: 0; z-index: 9999;
-            background: var(--bg);
-            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-elevated);
             opacity: 0; visibility: hidden;
             transition: opacity 0.18s ease, visibility 0.18s ease;
-            perspective: 1200px;
             pointer-events: none;
         }
-        .app-transition-overlay.active {
+        .app-transition.active {
             opacity: 1; visibility: visible; pointer-events: auto;
         }
-        /* The opening window: starts as a small icon card, scales to fill the screen */
         .app-transition-card {
             position: absolute;
-            width: 88px; height: 88px;
+            width: 80px; height: 80px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             color: var(--blue);
-            transform: translate(var(--start-x), var(--start-y)) scale(1);
-            transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+            transform: translate(var(--start-x, -9999px), var(--start-y, -9999px)) scale(1);
+            transition: transform 0.65s cubic-bezier(0.32, 0.72, 0, 1),
+                        border-radius 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+                        width 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+                        height 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
-        .app-transition-overlay.active .app-transition-card {
-            /* expand to fill viewport */
-            transform: translate(-50%, -50%) scale(var(--end-scale, 14));
-            top: 50%; left: 50%;
+        .app-transition.active .app-transition-card {
+            top: 50% !important; left: 50% !important;
+            transform: translate(-50%, -50%) scale(var(--scale, 12));
             border-radius: 0;
-            border-color: var(--border-hover);
-            box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.3), 0 20px 60px rgba(0,0,0,0.6);
+            width: 100vw;
+            height: 100vh;
+            border: none;
         }
-        .app-transition-card svg { width: 44px; height: 44px; transition: opacity 0.2s ease 0.2s; }
-        .app-transition-overlay.active .app-transition-card svg { opacity: 0; }
-        .app-transition-label {
-            position: absolute; left: 50%; top: calc(50% + 60px);
-            transform: translateX(-50%) translateY(8px);
-            font-size: 13px; font-weight: 600; color: var(--text);
-            letter-spacing: 2px; text-transform: uppercase;
+        .app-transition-icon {
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.2s ease 0.2s, transform 0.3s ease;
+        }
+        .app-transition-icon svg { width: 100%; height: 100%; }
+        .app-transition.active .app-transition-icon {
             opacity: 0;
-            transition: opacity 0.18s ease 0.1s, transform 0.18s ease 0.1s;
+            transform: scale(0.5);
+        }
+        .app-transition-meta {
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-        }
-        .app-transition-overlay.active .app-transition-label {
-            opacity: 1; transform: translateX(-50%) translateY(0);
-        }
-        .app-transition-spinner {
-            position: absolute; bottom: calc(50% - 80px); left: 50%;
-            transform: translateX(-50%);
-            width: 24px; height: 24px;
             opacity: 0;
-            transition: opacity 0.2s ease 0.2s;
+            transition: opacity 0.3s ease 0.3s;
         }
-        .app-transition-overlay.active .app-transition-spinner { opacity: 1; }
-        .app-transition-spinner::after {
-            content: ''; display: block; width: 100%; height: 100%;
-            border: 2px solid var(--border);
-            border-top-color: var(--blue);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .app-transition.active .app-transition-meta { opacity: 1; }
+        .app-transition-name {
+            font-size: 14px; font-weight: 600; color: var(--text);
+            letter-spacing: 1px; text-transform: uppercase;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Loader dots */
         .app-transition-status {
-            position: absolute; left: 50%; top: calc(50% + 110px);
-            transform: translateX(-50%);
-            font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
-            opacity: 0;
-            transition: opacity 0.2s ease 0.25s;
+            margin-top: 16px;
+            font-family: ui-monospace, "SF Mono", Consolas, monospace;
+            font-size: 10px; color: var(--muted); letter-spacing: 2px;
         }
-        .app-transition-overlay.active .app-transition-status { opacity: 1; }
+        .app-transition-bar {
+            width: 140px; height: 2px; background: var(--border);
+            border-radius: 2px; margin: 10px auto 0; overflow: hidden;
+        }
+        .app-transition-bar-fill {
+            width: 0; height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--purple));
+            animation: fill 0.7s ease forwards;
+        }
+        @keyframes fill { to { width: 100%; } }
 
         /* ===================== WIDGET STYLES ===================== */
         .widget-title {
             font-size: 11px; font-weight: 600; color: var(--muted);
             text-transform: uppercase; margin-bottom: 14px;
             display: flex; justify-content: space-between; align-items: center;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
-
         .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
         .day-card {
             text-align: center; background: var(--bg);
-            border: 1px solid var(--border); padding: 10px; border-radius: 6px;
+            border: 1px solid var(--border); padding: 12px 8px; border-radius: 8px;
         }
-        .day-name { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+        .day-name { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px; }
         .day-img { width: 32px; height: 32px; margin: 5px auto; display: block; object-fit: contain; }
-        .day-status { font-size: 10px; color: var(--blue); font-family: 'SFMono-Regular', monospace; margin-top: 5px; }
+        .day-status { font-size: 10px; color: var(--blue); font-family: ui-monospace, monospace; margin-top: 6px; }
 
         .cal-note {
             font-size: 11px; color: var(--muted); margin-top: 14px;
             font-style: italic; border-top: 1px solid var(--border);
-            padding-top: 12px; line-height: 1.4;
+            padding-top: 12px; line-height: 1.5;
         }
 
         .edit-overlay {
@@ -552,23 +753,13 @@
             border: 1px solid var(--blue);
         }
         .edit-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .edit-group label { font-size: 9px; color: var(--blue); font-weight: 600; }
+        .edit-group label { font-size: 9px; color: var(--blue); font-weight: 600; letter-spacing: 0.5px; }
         .edit-group input {
             background: var(--bg); border: 1px solid var(--border);
-            color: var(--text); padding: 6px; font-size: 11px;
+            color: var(--text); padding: 7px 10px; font-size: 11px;
             border-radius: 4px; outline: none;
         }
         .edit-group input:focus { border-color: var(--blue); }
-
-        .card-img-placeholder {
-            width: 100%; height: 120px; border-radius: 4px;
-            background: var(--bg); margin-bottom: 15px;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--muted-2); font-weight: 600; border: 1px solid var(--border);
-            font-size: 12px; letter-spacing: 2px;
-        }
-        .card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
-        .card p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
 
         .btn-action {
             padding: 9px 16px; border-radius: 6px;
@@ -579,12 +770,12 @@
             box-sizing: border-box; transition: 0.12s;
         }
         .btn-action:hover { background: var(--border); }
-        .btn-green { background: var(--green); border-color: var(--green); color: white; }
-        .btn-green:hover { background: var(--green-hover); border-color: var(--green-hover); }
+        .btn-green { background: var(--green-dim); border-color: var(--green-dim); color: white; }
+        .btn-green:hover { background: var(--green); border-color: var(--green); }
         .btn-edit {
             background: var(--btn-bg); border: 1px solid var(--border);
-            color: var(--muted); padding: 2px 8px; border-radius: 4px;
-            font-size: 10px; cursor: pointer;
+            color: var(--muted); padding: 3px 10px; border-radius: 4px;
+            font-size: 10px; cursor: pointer; font-weight: 500;
         }
         .btn-edit:hover { color: var(--blue); border-color: var(--blue); }
         .btn-disabled { opacity: 0.4; cursor: not-allowed !important; }
@@ -602,114 +793,157 @@
             letter-spacing: 1px; margin: 0 0 8px 0; font-weight: 600;
         }
         .note-content p:last-child {
-            font-size: 13px; line-height: 1.6; color: var(--text); margin: 0;
+            font-size: 13px; line-height: 1.7; color: var(--text); margin: 0;
         }
     </style>
 </head>
 <body>
 
 <div class="boot-screen" id="boot-screen">
-    <h1 class="boot-logo">ADA</h1>
-    <p class="boot-sub">Archive OS</p>
-    <div class="boot-bar"><div class="boot-bar-fill"></div></div>
-    <div class="boot-status" id="boot-status">UPLINKING…<span class="boot-blink"></span></div>
+    <div class="boot-glyph">A</div>
+    <div class="boot-title">ADA</div>
+    <div class="boot-sub">Archive Operating System</div>
+    <div class="boot-progress"><div class="boot-progress-fill"></div></div>
+    <div class="boot-status" id="boot-status">UPLINKING</div>
 </div>
 
 <div id="ada-header-anchor"></div>
 
-<div class="topbar-clock" id="topbar-clock">
-    <div class="topbar-clock-time" id="topbar-clock-time">--:--:--</div>
-    <div class="topbar-clock-date" id="topbar-clock-date">--/--/----</div>
-</div>
-
-<!-- ===================== APP TRANSITION OVERLAY (NEW) ===================== -->
-<div class="app-transition-overlay" id="app-transition">
+<!-- ===================== APP TRANSITION ===================== -->
+<div class="app-transition" id="app-transition">
     <div class="app-transition-card" id="app-transition-card">
-        <svg id="app-transition-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        <div class="app-transition-icon" id="app-transition-icon"></div>
+        <div class="app-transition-meta">
+            <div class="app-transition-name" id="app-transition-name">Loading</div>
+            <div class="app-transition-bar"><div class="app-transition-bar-fill"></div></div>
+            <div class="app-transition-status" id="app-transition-status">INITIALIZING</div>
+        </div>
     </div>
-    <div class="app-transition-spinner"></div>
-    <div class="app-transition-label" id="app-transition-label">Launching</div>
-    <div class="app-transition-status" id="app-transition-status">INITIALIZING APPLICATION</div>
 </div>
 
 <!-- ===================== START MENU ===================== -->
 <div class="start-menu" id="start-menu">
-    <div class="start-menu-header">
-        <div class="start-menu-user">
-            <div class="start-menu-avatar" id="start-menu-avatar">A</div>
-            <div class="start-menu-user-info">
-                <div class="start-menu-user-name" id="start-menu-user-name">Archive User</div>
-                <div class="start-menu-user-status">● Online</div>
+    <div class="start-menu-search">
+        <input type="text" class="start-menu-search-input" placeholder="Search apps, files, settings...">
+    </div>
+    <div class="start-menu-body">
+        <div class="start-menu-pinned">
+            <div class="start-menu-section-title">
+                <span>Pinned</span>
+                <a href="#">All apps ›</a>
+            </div>
+            <div class="start-menu-grid">
+                <a class="start-menu-tile" data-href="/dash.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Dashboard</span>
+                </a>
+                <a class="start-menu-tile" data-href="/wikiselector.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Wiki Records</span>
+                </a>
+                <a class="start-menu-tile" data-href="/visuals.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Content</span>
+                </a>
+                <a class="start-menu-tile" data-href="/ADAP.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">ADAP Terminal</span>
+                </a>
+                <a class="start-menu-tile" data-href="/wiki.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Wiki</span>
+                </a>
+                <a class="start-menu-tile" data-href="/chan.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Chan</span>
+                </a>
+                <a class="start-menu-tile" data-href="/profile.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Profile</span>
+                </a>
+                <a class="start-menu-tile" data-href="/index.html">
+                    <div class="start-menu-tile-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg>
+                    </div>
+                    <span class="start-menu-tile-label">Index</span>
+                </a>
             </div>
         </div>
-    </div>
-    <div class="start-menu-search">
-        <input type="text" placeholder="Type to search…" id="start-menu-search-input">
-    </div>
-    <div class="start-menu-apps">
-        <div class="start-menu-section-label">Pinned</div>
-        <a class="start-menu-item" data-href="/dash.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <div class="start-menu-recommended">
+            <div class="start-menu-section-title">
+                <span>Recent</span>
+                <a href="#">More ›</a>
             </div>
-            <span>Dashboard</span>
-        </a>
-        <a class="start-menu-item" data-href="/wikiselector.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
-            </div>
-            <span>Wiki Records</span>
-        </a>
-        <a class="start-menu-item" data-href="/visuals.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
-            </div>
-            <span>Content Page</span>
-        </a>
-        <a class="start-menu-item" data-href="/ADAP.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
-            </div>
-            <span>ADAP Terminal</span>
-        </a>
-        <div class="start-menu-section-label">System</div>
-        <a class="start-menu-item" data-href="/profile.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-            <span>Profile</span>
-        </a>
-        <a class="start-menu-item" data-href="/index.html">
-            <div class="start-menu-item-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            </div>
-            <span>Index</span>
-        </a>
+            <a class="recommended-item" data-href="/dash.html">
+                <div class="recommended-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                </div>
+                <div class="recommended-item-text">
+                    <div class="recommended-item-name">Dashboard</div>
+                    <div class="recommended-item-meta">Pinned</div>
+                </div>
+            </a>
+            <a class="recommended-item" data-href="/wikiselector.html">
+                <div class="recommended-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
+                </div>
+                <div class="recommended-item-text">
+                    <div class="recommended-item-name">Wiki Records</div>
+                    <div class="recommended-item-meta">Added recently</div>
+                </div>
+            </a>
+            <a class="recommended-item" data-href="/profile.html">
+                <div class="recommended-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="recommended-item-text">
+                    <div class="recommended-item-name">User Profile</div>
+                    <div class="recommended-item-meta">Account settings</div>
+                </div>
+            </a>
+        </div>
     </div>
     <div class="start-menu-footer">
-        <a class="start-menu-footer-btn" data-href="/profile.html">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Account
-        </a>
-        <a class="start-menu-footer-btn danger" id="start-menu-logout">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Sign out
-        </a>
+        <div class="start-menu-user" data-href="/profile.html">
+            <div class="start-menu-user-avatar" id="start-menu-avatar">A</div>
+            <span class="start-menu-user-name" id="start-menu-user-name">Archive User</span>
+        </div>
+        <div class="start-menu-footer-actions">
+            <a class="start-menu-footer-btn" data-href="/account-manager.html" title="Account Manager">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </a>
+            <a class="start-menu-footer-btn" href="/index.html" title="Documents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </a>
+            <a class="start-menu-footer-btn danger" id="start-menu-logout" title="Sign out">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </a>
+        </div>
     </div>
 </div>
 
 <!-- ===================== ACTION CENTER ===================== -->
 <div class="action-center" id="action-center">
-    <div class="action-center-header">
-        <span>Quick Settings</span>
-        <span style="font-size: 10px; color: var(--muted);">ADA OS</span>
-    </div>
     <div class="action-center-tiles">
-        <div class="ac-tile" id="ac-wifi">
+        <div class="ac-tile active" id="ac-wifi">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             <span class="ac-tile-label">Wi-Fi</span>
         </div>
-        <div class="ac-tile active" id="ac-bluetooth">
+        <div class="ac-tile" id="ac-bluetooth">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
             <span class="ac-tile-label">Bluetooth</span>
         </div>
@@ -717,18 +951,56 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
             <span class="ac-tile-label">Airplane</span>
         </div>
-        <div class="ac-tile active" id="ac-notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span class="ac-tile-label">Notifs</span>
+        <div class="ac-tile active" id="ac-battery">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
+            <span class="ac-tile-label">Battery saver</span>
         </div>
-        <div class="ac-tile" id="ac-theme">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            <span class="ac-tile-label">Theme</span>
+        <div class="ac-tile" id="ac-nightlight">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span class="ac-tile-label">Night light</span>
         </div>
-        <div class="ac-tile" id="ac-power">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
-            <span class="ac-tile-label">Power</span>
+        <div class="ac-tile" id="ac-accessibility">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M19 13V8c0-.6-.4-1-1-1H6c-.6 0-1 .4-1 1v5"/><path d="m12 9 3 6-3 6-3-6 3-6z"/></svg>
+            <span class="ac-tile-label">Accessibility</span>
         </div>
+    </div>
+    <div class="ac-slider-row">
+        <div class="ac-slider-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </div>
+        <input type="range" min="0" max="100" value="70" class="ac-slider" id="ac-volume">
+    </div>
+    <div class="ac-slider-row">
+        <div class="ac-slider-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+        </div>
+        <input type="range" min="0" max="100" value="85" class="ac-slider" id="ac-brightness">
+    </div>
+</div>
+
+<!-- ===================== CONTEXT MENU ===================== -->
+<div class="context-menu" id="context-menu">
+    <div class="context-menu-item" data-action="refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+    </div>
+    <div class="context-menu-item" data-action="terminal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
+        Open in ADAP Terminal
+    </div>
+    <div class="context-menu-sep"></div>
+    <div class="context-menu-item" data-action="display">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Display settings
+    </div>
+    <div class="context-menu-item" data-action="personalize">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        Personalize
+    </div>
+    <div class="context-menu-sep"></div>
+    <div class="context-menu-item" data-action="about">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        About ADA OS
     </div>
 </div>
 
@@ -814,22 +1086,9 @@
                 </div>
                 <div class="desktop-icon-label">Chan</div>
             </div>
-
-            <div class="desktop-icon" data-href="/visuals.html" data-launchable="true">
-                <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <line x1="9" y1="9" x2="9" y2="9"/>
-                        <line x1="15" y1="9" x2="15" y2="9"/>
-                        <line x1="9" y1="15" x2="9" y2="15"/>
-                        <line x1="15" y1="15" x2="15" y2="15"/>
-                    </svg>
-                </div>
-                <div class="desktop-icon-label">Visuals</div>
-            </div>
         </div>
 
-        <div class="os-window" id="win-note" data-title="Note to Max" style="left: 220px; top: 80px; width: 420px;">
+        <div class="os-window" id="win-note" data-title="Note to Max" style="left: 240px; top: 80px; width: 420px;">
             <div class="os-window-header">
                 <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 <div class="os-window-title">Note to Max</div>
@@ -845,7 +1104,7 @@
             </div>
         </div>
 
-        <div class="os-window" id="win-forecast" data-title="Mood Forecast" style="left: 280px; top: 120px; width: 560px;">
+        <div class="os-window" id="win-forecast" data-title="Mood Forecast" style="left: 300px; top: 120px; width: 560px;">
             <div class="os-window-header">
                 <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="3"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="9" y1="14" x2="9" y2="16"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="14" y1="9" x2="16" y2="9"/></svg>
                 <div class="os-window-title">Chan's Mood Forecast</div>
@@ -873,13 +1132,17 @@
     </main>
 
     <div class="os-taskbar">
-        <div class="taskbar-start" id="taskbar-start">
-            <span class="win-icon">⊞</span>
-            <span>Start</span>
+        <div class="taskbar-start" id="taskbar-start" title="Start">
+            <div class="taskbar-start-logo">A</div>
         </div>
-        <div class="taskbar-divider"></div>
+
+        <div class="taskbar-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search" id="taskbar-search-input">
+        </div>
+
         <div class="taskbar-apps">
-            <div class="taskbar-app" data-target="win-note" title="Note to Max">
+            <div class="taskbar-app active" data-target="win-note" title="Note to Max">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </div>
             <div class="taskbar-app" data-target="win-forecast" title="Mood Forecast">
@@ -894,47 +1157,23 @@
             <div class="taskbar-app" data-href="/ADAP.html" title="ADAP Terminal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
             </div>
+            <div class="taskbar-app" data-href="/chan.html" title="Chan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
         </div>
+
         <div class="system-tray">
-            <div class="tray-icon" title="Network">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-            </div>
-            <div class="tray-icon" title="Volume">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            </div>
-            <div class="tray-icon" title="Battery">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>
-            </div>
-            <div class="tray-icon" id="tray-action-center" title="Action Center">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <div class="tray-cluster">
+                <div class="tray-icon" id="tray-action-center" title="Network, Volume, Battery">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
             </div>
             <div class="tray-clock" id="tray-clock">
-                <span class="tray-clock-time" id="tray-clock-time">--:--:--</span>
-                <span class="tray-clock-date" id="tray-clock-date">--/--/----</span>
+                <span class="tray-clock-time" id="tray-clock-time">--:--</span>
+                <span class="tray-clock-date" id="tray-clock-date">-- --- ----</span>
             </div>
+            <div class="show-desktop" id="show-desktop" title="Show desktop"></div>
         </div>
-    </div>
-</div>
-
-<!-- ===================== CONTEXT MENU ===================== -->
-<div class="context-menu" id="context-menu">
-    <div class="context-menu-item" data-action="refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Refresh Desktop
-    </div>
-    <div class="context-menu-sep"></div>
-    <div class="context-menu-item" data-action="display">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Display settings
-    </div>
-    <div class="context-menu-item" data-action="personalize">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-        Personalize
-    </div>
-    <div class="context-menu-sep"></div>
-    <div class="context-menu-item" data-action="terminal">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-        Open in ADAP Terminal
     </div>
 </div>
 
@@ -942,118 +1181,102 @@
     var ADA_API = "https://ada-relay.andrewdinglearchive.workers.dev";
     var forecastData = {};
 
-    /* =================== BOOT-UP ANIMATION =================== */
+    /* =================== BOOT =================== */
     const bootScreen = document.getElementById('boot-screen');
     const bootStatus = document.getElementById('boot-status');
     const osShell = document.getElementById('os-shell');
-    const bootMessages = [
-        'UPLINKING…',
-        'LOADING KERNEL…',
-        'MOUNTING ARCHIVE…',
-        'READY'
-    ];
+    const bootMessages = ['UPLINKING', 'LOADING KERNEL', 'MOUNTING ARCHIVE', 'INITIALIZING UI', 'READY'];
     let msgIdx = 0;
     const bootInterval = setInterval(() => {
         msgIdx++;
-        if (msgIdx < bootMessages.length) {
-            bootStatus.innerHTML = bootMessages[msgIdx] + '<span class="boot-blink"></span>';
-        }
+        if (msgIdx < bootMessages.length) bootStatus.textContent = bootMessages[msgIdx];
     }, 320);
-    setTimeout(() => {
-        clearInterval(bootInterval);
-        bootStatus.innerHTML = 'READY';
-    }, 1280);
+    setTimeout(() => { clearInterval(bootInterval); bootStatus.textContent = 'READY'; }, 1600);
     setTimeout(() => {
         bootScreen.classList.add('hidden');
         osShell.classList.add('visible');
-    }, 1600);
+    }, 1900);
 
-    /* =================== CLOCKS =================== */
+    /* =================== CLOCK =================== */
     function startClocks() {
-        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const topTime = document.getElementById('topbar-clock-time');
-        const topDate = document.getElementById('topbar-clock-date');
         const trayTime = document.getElementById('tray-clock-time');
         const trayDate = document.getElementById('tray-clock-date');
         function tick() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2,'0');
             const mm = String(now.getMinutes()).padStart(2,'0');
-            const ss = String(now.getSeconds()).padStart(2,'0');
             const date = now.getDate();
             const month = MONTHS[now.getMonth()];
             const year = now.getFullYear();
-            const dayShort = DAYS[now.getDay()].slice(0,3).toUpperCase();
-            if (topTime) topTime.textContent = `${hh}:${mm}:${ss}`;
-            if (topDate) topDate.textContent = `${dayShort} ${date} ${month} ${year}`;
+            const dayShort = DAYS[now.getDay()];
             if (trayTime) trayTime.textContent = `${hh}:${mm}`;
-            if (trayDate) trayDate.textContent = `${dayShort} ${date} ${month}`;
+            if (trayDate) trayDate.textContent = `${dayShort} ${date} ${month} ${year}`;
         }
         tick();
         setInterval(tick, 1000);
     }
     startClocks();
 
-    /* =================== APP TRANSITION (NEW) =================== */
+    /* =================== APP TRANSITION (Windows-style) =================== */
     const appTransition = document.getElementById('app-transition');
     const appTransitionCard = document.getElementById('app-transition-card');
-    const appTransitionSvg = document.getElementById('app-transition-svg');
-    const appTransitionLabel = document.getElementById('app-transition-label');
+    const appTransitionIcon = document.getElementById('app-transition-icon');
+    const appTransitionName = document.getElementById('app-transition-name');
     const appTransitionStatus = document.getElementById('app-transition-status');
-
     let transitionInProgress = false;
 
     function launchPage(href, name, svgHTML, originEl) {
         if (transitionInProgress) return;
         transitionInProgress = true;
 
-        // Determine the start position from the origin element (icon or taskbar app)
-        let startX = '50%', startY = '50%';
+        let startX = 0, startY = 0;
         if (originEl) {
             const rect = originEl.getBoundingClientRect();
-            const cardW = 88, cardH = 88;
-            startX = (rect.left + rect.width/2 - cardW/2) + 'px';
-            startY = (rect.top + rect.height/2 - cardH/2) + 'px';
+            startX = rect.left + rect.width/2 - 40;
+            startY = rect.top + rect.height/2 - 40;
+        } else {
+            startX = window.innerWidth/2 - 40;
+            startY = window.innerHeight/2 - 40;
         }
-        appTransitionCard.style.setProperty('--start-x', startX);
-        appTransitionCard.style.setProperty('--start-y', startY);
-        appTransitionCard.style.transform = `translate(${startX}, ${startY}) scale(1)`;
-        appTransitionSvg.innerHTML = svgHTML || '';
-        appTransitionLabel.textContent = name || 'Loading…';
-        appTransitionStatus.textContent = 'INITIALIZING APPLICATION';
 
-        // Calculate end scale to fill viewport from a 88px card
-        const endScale = Math.max(window.innerWidth, window.innerHeight) / 88 * 1.2;
-        appTransitionCard.style.setProperty('--end-scale', endScale);
+        appTransitionCard.style.setProperty('--start-x', startX + 'px');
+        appTransitionCard.style.setProperty('--start-y', startY + 'px');
+        appTransitionCard.style.transform = `translate(${startX}px, ${startY}px) scale(1)`;
+        appTransitionCard.style.width = '80px';
+        appTransitionCard.style.height = '80px';
 
-        // Force reflow
+        const scale = Math.max(window.innerWidth, window.innerHeight) / 60;
+        appTransitionCard.style.setProperty('--scale', scale);
+
+        appTransitionIcon.innerHTML = svgHTML || '';
+        appTransitionName.textContent = (name || 'Application').toUpperCase();
+        appTransitionStatus.textContent = 'INITIALIZING';
+
         void appTransition.offsetWidth;
-
         appTransition.classList.add('active');
 
-        // Status text progression
-        const statuses = [
-            'INITIALIZING APPLICATION',
-            'LOADING RESOURCES',
-            'ESTABLISHING HANDSHAKE',
-            'READY'
-        ];
+        const statuses = ['INITIALIZING', 'LOADING MODULES', 'ESTABLISHING LINK', 'READY'];
         let sIdx = 0;
         const statusInterval = setInterval(() => {
             sIdx++;
-            if (sIdx < statuses.length) {
-                appTransitionStatus.textContent = statuses[sIdx];
-            }
-        }, 200);
+            if (sIdx < statuses.length) appTransitionStatus.textContent = statuses[sIdx];
+        }, 180);
 
         setTimeout(() => {
             clearInterval(statusInterval);
             window.location.href = href;
-        }, 700);
+        }, 750);
     }
 
-    /* =================== OS WINDOW ENGINE =================== */
+    function launchFromNode(node, href, name) {
+        const svg = node.querySelector('svg');
+        const svgHTML = svg ? svg.outerHTML : '';
+        launchPage(href, name, svgHTML, node);
+    }
+
+    /* =================== OS WINDOWS =================== */
     let zCounter = 1000;
     const windows = document.querySelectorAll('.os-window');
     const desktopIcons = document.querySelectorAll('.desktop-icon[data-launchable]');
@@ -1109,51 +1332,38 @@
                     win.classList.add('closed');
                     win.classList.remove('closing');
                     syncActiveState(null);
-                }, 200);
-            }
-            else if (action === 'minimize') {
+                }, 180);
+            } else if (action === 'minimize') {
                 win.classList.add('minimizing');
                 setTimeout(() => {
                     win.classList.add('minimized');
                     win.classList.remove('minimizing');
                     syncActiveState(null);
-                }, 250);
-            }
-            else if (action === 'maximize') {
+                }, 280);
+            } else if (action === 'maximize') {
+                win.classList.add('maximizing');
+                setTimeout(() => win.classList.remove('maximizing'), 280);
                 win.classList.toggle('maximized');
                 if (win.classList.contains('maximized')) bringToFront(win);
             }
         });
     });
 
-    // Helper: launch a page from a node (icon or taskbar)
-    function launchFromNode(node, href, name) {
-        const svgHTML = node.querySelector('svg') ? node.querySelector('svg').outerHTML : '';
-        launchPage(href, name, svgHTML, node);
-    }
-
     desktopIcons.forEach(icon => {
-        icon.addEventListener('click', (e) => {
-            if (icon.dataset.href) {
-                launchFromNode(icon, icon.dataset.href, icon.querySelector('.desktop-icon-label').textContent);
-            } else {
-                const target = document.getElementById(icon.dataset.target);
-                if (target) bringToFront(target);
-            }
-        });
-        icon.addEventListener('dblclick', () => {
+        const handler = (e) => {
             if (icon.dataset.href) {
                 launchFromNode(icon, icon.dataset.href, icon.querySelector('.desktop-icon-label').textContent);
             } else {
                 const target = document.getElementById(icon.dataset.target);
                 if (target) { target.classList.remove('closed', 'minimized'); bringToFront(target); }
             }
-        });
+        };
+        icon.addEventListener('dblclick', handler);
+        icon.addEventListener('click', handler);
     });
     taskbarApps.forEach(app => {
         app.addEventListener('click', () => {
             if (app.dataset.href) {
-                const matchingIcon = Array.from(desktopIcons).find(ic => ic.dataset.href === app.dataset.href);
                 const name = app.getAttribute('title') || 'Application';
                 launchFromNode(app, app.dataset.href, name);
                 return;
@@ -1166,7 +1376,7 @@
                     target.classList.add('minimized');
                     target.classList.remove('minimizing');
                     syncActiveState(null);
-                }, 250);
+                }, 280);
             } else {
                 target.classList.remove('closed', 'minimized'); bringToFront(target);
             }
@@ -1175,14 +1385,14 @@
     windows.forEach(win => {
         win.addEventListener('mousedown', () => bringToFront(win));
         makeDraggable(win);
-        // Opening animation: re-trigger when first made visible
         win.classList.add('opening');
-        setTimeout(() => win.classList.remove('opening'), 350);
+        setTimeout(() => win.classList.remove('opening'), 360);
     });
 
     /* =================== START MENU =================== */
     const startMenu = document.getElementById('start-menu');
     const taskbarStart = document.getElementById('taskbar-start');
+    const actionCenter = document.getElementById('action-center');
 
     function closeStartMenu() {
         startMenu.classList.remove('open');
@@ -1192,49 +1402,49 @@
         const isOpen = startMenu.classList.contains('open');
         if (isOpen) closeStartMenu();
         else {
-            // Close other panels
-            document.getElementById('action-center').classList.remove('open');
+            actionCenter.classList.remove('open');
             startMenu.classList.add('open');
             taskbarStart.classList.add('active');
-            setTimeout(() => {
-                const input = document.getElementById('start-menu-search-input');
-                if (input) input.focus();
-            }, 50);
         }
     }
-    taskbarStart.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleStartMenu();
-    });
+    taskbarStart.addEventListener('click', (e) => { e.stopPropagation(); toggleStartMenu(); });
 
-    // Start menu items launch like desktop icons
-    document.querySelectorAll('.start-menu-item').forEach(item => {
+    // All items that launch (tiles, recommended, user)
+    document.querySelectorAll('.start-menu-tile, .recommended-item, .start-menu-user').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const href = item.dataset.href;
-            const name = item.querySelector('span').textContent;
-            const svgHTML = item.querySelector('svg') ? item.querySelector('svg').outerHTML : '';
+            if (!href) return;
+            const name = item.querySelector('.start-menu-tile-label, .recommended-item-name, .start-menu-user-name')?.textContent || 'App';
+            const svg = item.querySelector('svg');
             closeStartMenu();
             setTimeout(() => launchFromNode(item, href, name), 50);
         });
     });
 
-    // Start menu logout
-    document.getElementById('start-menu-logout').addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.clear();
-        location.href = '/login.html';
+    // Footer buttons (icon-only)
+    document.querySelectorAll('.start-menu-footer-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (btn.id === 'start-menu-logout') {
+                localStorage.clear();
+                location.href = '/login.html';
+                return;
+            }
+            const href = btn.dataset.href || btn.getAttribute('href');
+            if (!href) return;
+            closeStartMenu();
+            setTimeout(() => launchFromNode(btn, href, btn.getAttribute('title') || 'App'), 50);
+        });
     });
 
     /* =================== ACTION CENTER =================== */
-    const actionCenter = document.getElementById('action-center');
     document.getElementById('tray-action-center').addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = actionCenter.classList.contains('open');
         if (isOpen) actionCenter.classList.remove('open');
         else {
-            startMenu.classList.remove('open');
-            taskbarStart.classList.remove('active');
+            closeStartMenu();
             actionCenter.classList.add('open');
         }
     });
@@ -1242,20 +1452,23 @@
         tile.addEventListener('click', () => tile.classList.toggle('active'));
     });
 
-    // Close menus when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.start-menu') && !e.target.closest('#taskbar-start')) {
-            closeStartMenu();
-        }
-        if (!e.target.closest('.action-center') && !e.target.closest('#tray-action-center')) {
-            actionCenter.classList.remove('open');
-        }
-        if (!e.target.closest('.context-menu')) {
-            document.getElementById('context-menu').classList.remove('open');
-        }
+    // Show desktop
+    document.getElementById('show-desktop').addEventListener('click', () => {
+        windows.forEach(w => {
+            w.classList.add('minimizing');
+            setTimeout(() => {
+                w.classList.add('minimized');
+                w.classList.remove('minimizing');
+            }, 280);
+        });
     });
 
-    // ESC closes menus
+    /* =================== CLOSE PANELS =================== */
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.start-menu') && !e.target.closest('#taskbar-start')) closeStartMenu();
+        if (!e.target.closest('.action-center') && !e.target.closest('#tray-action-center')) actionCenter.classList.remove('open');
+        if (!e.target.closest('.context-menu')) document.getElementById('context-menu').classList.remove('open');
+    });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeStartMenu();
@@ -1268,11 +1481,10 @@
     const contextMenu = document.getElementById('context-menu');
     const osDesktop = document.getElementById('os-desktop');
     osDesktop.addEventListener('contextmenu', (e) => {
-        // Only on empty desktop, not on icons/windows
         if (e.target.closest('.desktop-icon') || e.target.closest('.os-window')) return;
         e.preventDefault();
-        const x = Math.min(e.clientX, window.innerWidth - 200);
-        const y = Math.min(e.clientY, window.innerHeight - 200);
+        const x = Math.min(e.clientX, window.innerWidth - 230);
+        const y = Math.min(e.clientY, window.innerHeight - 240);
         contextMenu.style.left = x + 'px';
         contextMenu.style.top = y + 'px';
         contextMenu.classList.add('open');
@@ -1284,9 +1496,24 @@
             else if (action === 'terminal') {
                 contextMenu.classList.remove('open');
                 launchFromNode(item, '/ADAP.html', 'ADAP Terminal');
+            } else if (action === 'about') {
+                alert('ADA Archive OS\nVersion 1.0\nBuilt on GitHub-themed interface');
             }
             contextMenu.classList.remove('open');
         });
+    });
+
+    /* =================== TASKBAR SEARCH =================== */
+    document.getElementById('taskbar-search-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const q = e.target.value.toLowerCase().trim();
+            if (q.includes('wiki')) launchPage('/wikiselector.html', 'Wiki', '', null);
+            else if (q.includes('chan')) launchPage('/chan.html', 'Chan', '', null);
+            else if (q.includes('profile')) launchPage('/profile.html', 'Profile', '', null);
+            else if (q.includes('terminal') || q.includes('adap')) launchPage('/ADAP.html', 'Terminal', '', null);
+            else if (q.includes('visual') || q.includes('content')) launchPage('/visuals.html', 'Content', '', null);
+            else if (q) launchPage('/index.html', 'Search', '', null);
+        }
     });
 
     /* =================== APP LOGIC =================== */
@@ -1297,11 +1524,11 @@
         const isAdmin = data.user.is_admin === 1;
         if (isAdmin) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
         if (data.user) {
-            const userName = data.user.display_name || data.user.email;
+            const userName = data.user.display_name || data.user.email || 'User';
             const nameEl = document.getElementById('start-menu-user-name');
             if (nameEl) nameEl.textContent = userName;
             const avatar = document.getElementById('start-menu-avatar');
-            if (avatar) avatar.textContent = (userName || 'A').charAt(0).toUpperCase();
+            if (avatar) avatar.textContent = userName.charAt(0).toUpperCase();
         }
         if (data.widgets) {
             forecastData = JSON.parse(data.widgets.forecast || "{}");
