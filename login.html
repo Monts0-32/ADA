@@ -1,195 +1,394 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in — ADA</title>
+
     <style>
         :root {
             --bg: #0d1117;
+            --bg-elevated: #010409;
             --panel: #161b22;
+            --panel-2: #1c2128;
+            --panel-3: #22272e;
             --btn-bg: #21262d;
+            --btn-hover: #30363d;
             --border: #30363d;
-            --border-hover: #444c56;
-            --text: #c9d1d9;
+            --border-soft: #21262d;
+            --border-strong: #444c56;
+            --text: #e6edf3;
+            --text-2: #c9d1d9;
             --muted: #8b949e;
             --muted-2: #6e7681;
+
             --blue: #58a6ff;
-            --green: #238636;
-            --green-hover: #2ea043;
+            --blue-dim: #1f6feb;
+            --blue-deep: #0d419d;
+            --green: #3fb950;
+            --green-dim: #238636;
             --red: #f85149;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; height: 100vh; overflow: hidden;
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            display: flex; flex-direction: column;
+            --red-dim: #da3633;
+            --orange: #d29922;
+            --purple: #a371f7;
+            --cyan: #39c5cf;
+
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.55);
         }
 
-        /* Right side: clock + shortcuts (Windows login-style) */
+        * { box-sizing: border-box; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+        body {
+            margin: 0; min-height: 100vh; overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-image:
+                radial-gradient(ellipse 700px 500px at 20% 25%, rgba(88,166,255,0.10), transparent 55%),
+                radial-gradient(ellipse 600px 400px at 80% 75%, rgba(163,113,247,0.07), transparent 55%);
+        }
+
+        /* ============== BOOT SCREEN (matches dash.html) ============== */
+        .boot-screen {
+            position: fixed; inset: 0; z-index: 100000;
+            background: var(--bg-elevated);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .boot-glyph {
+            width: 88px; height: 88px;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; font-weight: 800; color: var(--blue);
+            letter-spacing: -1px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            opacity: 0; transform: scale(0.8) translateY(8px);
+            animation: boot-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes boot-in {
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .boot-title {
+            font-size: 14px; font-weight: 600; letter-spacing: 6px;
+            color: var(--text); margin: 24px 0 4px;
+            opacity: 0; animation: boot-fade 0.4s ease 0.4s forwards;
+        }
+        .boot-sub {
+            font-size: 10px; color: var(--muted);
+            letter-spacing: 3px; text-transform: uppercase;
+            opacity: 0; animation: boot-fade 0.4s ease 0.5s forwards;
+        }
+        @keyframes boot-fade { to { opacity: 1; } }
+        .boot-progress {
+            width: 200px; height: 2px; background: var(--border);
+            border-radius: 2px; margin-top: 32px; overflow: hidden;
+            opacity: 0; animation: boot-fade 0.3s ease 0.6s forwards;
+        }
+        .boot-progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple));
+            transform: translateX(-100%);
+            animation: boot-slide 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+        }
+        @keyframes boot-slide { to { transform: translateX(0); } }
+        .boot-status {
+            margin-top: 14px;
+            font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+            font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
+            min-height: 14px; min-width: 200px; text-align: center;
+            opacity: 0; animation: boot-fade 0.3s ease 0.8s forwards;
+        }
+        .boot-status::after {
+            content: '_';
+            animation: blink 1s steps(2) infinite;
+            margin-left: 2px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ============== RIGHT-SIDE SYSTEM TRAY ============== */
         .login-right {
             position: fixed; right: 0; top: 0; bottom: 0; width: 48px;
-            background: transparent;
             display: flex; flex-direction: column; align-items: center;
-            padding: 18px 0; gap: 14px; z-index: 10;
+            padding: 18px 0; gap: 6px; z-index: 10;
         }
-        .login-right-icon {
-            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        .tray-icon {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
             color: var(--muted); cursor: pointer; transition: 0.1s;
+            border-radius: 6px;
         }
-        .login-right-icon:hover { color: var(--text); }
-        .login-right-icon svg { width: 16px; height: 16px; }
-        .login-clock-strip {
+        .tray-icon:hover { background: var(--btn-bg); color: var(--text); }
+        .tray-icon svg { width: 16px; height: 16px; }
+        .tray-clock-strip {
             position: absolute; bottom: 24px; right: 8px;
             writing-mode: vertical-rl; text-orientation: mixed;
-            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-family: 'SFMono-Regular', ui-monospace, Consolas, monospace;
             font-size: 11px; color: var(--muted); letter-spacing: 2px;
         }
 
-        /* Main center: Windows 10/11 style user tile + password */
+        /* ============== STAGE ============== */
         .login-stage {
-            flex: 1; display: flex; flex-direction: column;
+            position: relative; z-index: 1;
+            min-height: 100vh; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             padding: 40px 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .login-stage.visible { opacity: 1; }
+
+        /* ============== LOGIN CARD ============== */
+        .login-card {
+            width: 380px; max-width: calc(100vw - 48px);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes card-in {
+            from { opacity: 0; transform: translateY(8px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* Lock icon at top, like Windows "click the lock to switch" */
-        .lock-hint {
-            display: flex; align-items: center; gap: 8px;
-            margin-bottom: 32px; color: var(--muted);
-            font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+        .card-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px;
+            background: var(--panel-2);
+            border-bottom: 1px solid var(--border);
         }
-        .lock-hint svg { width: 12px; height: 12px; }
+        .card-header-glyph {
+            width: 28px; height: 28px;
+            background: var(--panel-3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--blue);
+        }
+        .card-header-glyph svg { width: 15px; height: 15px; }
+        .card-header-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+        .card-header-title {
+            font-size: 13px; font-weight: 600; color: var(--text);
+            letter-spacing: 0.2px;
+        }
+        .card-header-sub {
+            font-size: 10px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500;
+        }
+        .card-header-status {
+            margin-left: auto;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 10px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500;
+        }
+        .card-header-status::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
 
-        /* User tile (avatar circle) */
+        .card-body {
+            padding: 24px 24px 22px;
+        }
+
+        /* ============== USER TILE (inside the card) ============== */
         .user-tile {
             display: flex; flex-direction: column; align-items: center;
-            gap: 18px;
+            gap: 14px; margin-bottom: 22px;
         }
         .user-avatar {
-            width: 128px; height: 128px; border-radius: 50%;
-            background: var(--panel); border: 2px solid var(--border);
+            width: 88px; height: 88px; border-radius: 50%;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
             overflow: hidden; position: relative;
             transition: 0.15s;
         }
-        .user-avatar:hover { border-color: var(--border-hover); }
+        .user-avatar:hover { border-color: var(--blue); }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .user-avatar .avatar-letter {
-            font-size: 56px; font-weight: 300; color: var(--muted);
-            text-transform: uppercase;
+            font-size: 36px; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; letter-spacing: -0.5px;
         }
         .user-name {
-            font-size: 24px; font-weight: 300; color: var(--text);
-            letter-spacing: 0.5px;
+            font-size: 18px; font-weight: 600; color: var(--text);
+            letter-spacing: 0.2px;
+        }
+        .user-email {
+            font-size: 11px; color: var(--muted);
+            margin-top: -8px;
         }
 
-        /* Password input row (Windows-style) */
-        .pwd-row {
-            margin-top: 18px; display: flex; align-items: center; gap: 10px;
+        /* ============== FORM FIELDS ============== */
+        .field {
+            display: flex; flex-direction: column; gap: 6px;
+            margin-bottom: 12px;
         }
-        .pwd-input {
-            width: 260px; padding: 8px 12px;
+        .field-label {
+            font-size: 10px; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+        }
+        .input {
+            width: 100%;
+            padding: 10px 12px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 6px;
             color: var(--text);
-            font-size: 14px; outline: none;
-            transition: 0.1s;
+            font-size: 13px; font-family: inherit;
+            outline: none;
+            transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
         }
-        .pwd-input:focus {
+        .input:focus {
             border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(88,166,255,0.3);
+            background: var(--bg-elevated);
+            box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
         }
-        .pwd-submit {
-            width: 36px; height: 36px; border-radius: 4px;
-            background: var(--btn-bg);
+        .input::placeholder { color: var(--muted-2); }
+
+        /* ============== BUTTONS ============== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 6px;
             border: 1px solid var(--border);
-            color: var(--muted);
+            background: var(--btn-bg);
+            color: var(--text);
+            font-size: 13px; font-weight: 600; font-family: inherit;
             cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.1s;
+            transition: 0.12s;
+            text-decoration: none;
         }
-        .pwd-submit:hover {
-            background: var(--border);
-            color: var(--text);
-            border-color: var(--blue);
-        }
-        .pwd-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-        .pwd-submit svg { width: 14px; height: 14px; }
+        .btn:hover { background: var(--border); border-color: var(--border-strong); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn svg { width: 14px; height: 14px; }
 
-        /* Email input (for "other user" flow) */
-        .email-row {
-            margin-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        .btn-primary {
+            background: var(--green-dim);
+            border-color: var(--green-dim);
+            color: white;
         }
-        .email-input {
-            width: 300px; padding: 8px 12px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--text);
-            font-size: 14px; outline: none;
+        .btn-primary:hover {
+            background: var(--green);
+            border-color: var(--green);
         }
-        .email-input:focus {
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(88,166,255,0.3);
-        }
+        .btn-block { width: 100%; }
 
-        /* Bottom options (Sign-in options, etc.) */
-        .login-options {
-            position: fixed; bottom: 24px; left: 24px;
-            display: flex; gap: 8px;
-        }
-        .login-option {
-            display: flex; align-items: center; gap: 6px;
-            padding: 6px 10px; border-radius: 4px;
-            color: var(--muted); font-size: 11px;
-            cursor: pointer; transition: 0.1s;
-            background: transparent; border: 1px solid transparent;
-        }
-        .login-option:hover {
-            background: var(--btn-bg);
-            border-color: var(--border);
-            color: var(--text);
-        }
-        .login-option svg { width: 12px; height: 12px; }
-
-        /* Switch user (Windows-style) */
-        .switch-user {
-            margin-top: 28px;
-            color: var(--muted); font-size: 12px;
-            cursor: pointer; padding: 4px 10px; border-radius: 4px;
-            transition: 0.1s;
-        }
-        .switch-user:hover { color: var(--text); background: var(--btn-bg); }
-
-        /* Error */
+        /* ============== ERROR ============== */
         .login-msg {
-            margin-top: 14px; color: var(--red); font-size: 12px;
-            padding: 6px 12px; background: rgba(248,81,73,0.08);
+            margin-top: 12px;
+            color: var(--red);
+            font-size: 12px;
+            padding: 8px 12px;
+            background: rgba(248,81,73,0.08);
             border: 1px solid rgba(248,81,73,0.3);
-            border-radius: 4px; display: none;
+            border-radius: 6px;
+            display: none;
             text-align: center;
         }
         .login-msg.show { display: block; }
 
-        /* Right-side status text */
+        /* ============== SWITCH USER LINK ============== */
+        .switch-user {
+            display: block; text-align: center;
+            margin-top: 16px;
+            color: var(--blue);
+            font-size: 12px; font-weight: 500;
+            cursor: pointer; padding: 6px 10px; border-radius: 6px;
+            transition: 0.1s;
+            text-decoration: none;
+        }
+        .switch-user:hover {
+            background: rgba(88,166,255,0.08);
+            text-decoration: underline;
+        }
+
+        /* ============== LOCK HINT (above the card) ============== */
+        .lock-hint {
+            display: inline-flex; align-items: center; gap: 8px;
+            margin-bottom: 18px;
+            padding: 6px 12px;
+            color: var(--muted);
+            font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+            font-weight: 500;
+            background: rgba(22,27,34,0.6);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .lock-hint svg { width: 12px; height: 12px; color: var(--orange); }
+
+        /* ============== BOTTOM OPTIONS (left side) ============== */
+        .login-options {
+            position: fixed; bottom: 24px; left: 24px;
+            display: flex; gap: 8px; z-index: 5;
+        }
+        .login-option {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 6px;
+            color: var(--muted); font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: 0.1s;
+            background: rgba(22,27,34,0.6);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            text-decoration: none;
+        }
+        .login-option:hover {
+            background: var(--btn-bg);
+            border-color: var(--border-strong);
+            color: var(--text);
+        }
+        .login-option svg { width: 13px; height: 13px; }
+
+        /* ============== STATUS PILL (top right) ============== */
         .status-pill {
             position: fixed; top: 16px; right: 16px;
-            display: flex; align-items: center; gap: 8px;
-            color: var(--muted); font-size: 11px;
-            padding: 4px 10px; border-radius: 12px;
-            background: var(--panel); border: 1px solid var(--border);
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--muted); font-size: 11px; font-weight: 500;
+            padding: 5px 12px; border-radius: 20px;
+            background: rgba(22,27,34,0.85);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 5;
         }
         .status-pill-dot {
             width: 6px; height: 6px; border-radius: 50%;
             background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        @media (max-width: 520px) {
+            .login-card { width: 100%; }
+            .login-right { display: none; }
         }
     </style>
 </head>
 <body>
+
+<!-- ============== BOOT SCREEN ============== -->
+<div class="boot-screen" id="boot-screen">
+    <div class="boot-glyph">A</div>
+    <div class="boot-title">ADA</div>
+    <div class="boot-sub">Archive Operating System</div>
+    <div class="boot-progress"><div class="boot-progress-fill"></div></div>
+    <div class="boot-status" id="boot-status">UPLINKING</div>
+</div>
 
 <div class="status-pill">
     <span class="status-pill-dot"></span>
@@ -197,22 +396,22 @@
 </div>
 
 <div class="login-right">
-    <div class="login-right-icon" title="Accessibility">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"/><path d="M19 9c-2 1-4 1-7 1s-5 0-7-1"/><path d="M12 10v6m-3 6l3-6 3 6"/></svg>
+    <div class="tray-icon" title="Accessibility">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M19 9c-2 1-4 1-7 1s-5 0-7-1"/><path d="M12 10v6m-3 6 3-6 3 6"/></svg>
     </div>
-    <div class="login-right-icon" title="Network">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    <div class="tray-icon" title="Network">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
     </div>
-    <div class="login-right-icon" title="Power">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+    <div class="tray-icon" title="Power">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
     </div>
-    <div class="login-clock-strip" id="clock-strip">--:--:--</div>
+    <div class="tray-clock-strip" id="clock-strip">--:--:--</div>
 </div>
 
-<div class="login-stage">
+<div class="login-stage" id="login-stage">
 
     <div class="lock-hint" id="lock-hint" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
         <span>Locked</span>
     </div>
 
@@ -220,41 +419,60 @@
     <div id="saved-tile-section"></div>
 
     <!-- Other-user form (default) -->
-    <div id="other-user-section" style="display:none; text-align:center;">
-        <div class="user-tile">
-            <div class="user-avatar">
-                <span class="avatar-letter">?</span>
+    <div id="other-user-section" style="display:none;">
+        <div class="login-card">
+            <div class="card-header">
+                <div class="card-header-glyph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="card-header-text">
+                    <div class="card-header-title">ADA Archive</div>
+                    <div class="card-header-sub">Sign in to continue</div>
+                </div>
+                <div class="card-header-status">Online</div>
             </div>
-            <div class="user-name">Sign in to ADA</div>
-        </div>
+            <div class="card-body">
+                <div class="user-tile">
+                    <div class="user-avatar">
+                        <span class="avatar-letter">?</span>
+                    </div>
+                    <div class="user-name">Sign in</div>
+                </div>
 
-        <form id="login-form-other" style="margin-top: 24px;">
-            <div class="email-row">
-                <input type="email" id="email-other" class="email-input" placeholder="Email address" required autocomplete="email">
-                <input type="password" id="password-other" class="pwd-input" placeholder="Password" required autocomplete="current-password" style="margin-top:8px;">
-                <button type="submit" class="pwd-submit" id="btn-submit-other" style="margin-top:10px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
+                <form id="login-form-other">
+                    <div class="field">
+                        <label class="field-label" for="email-other">Email</label>
+                        <input type="email" id="email-other" class="input" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="password-other">Password</label>
+                        <input type="password" id="password-other" class="input" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="btn-submit-other">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        Sign in
+                    </button>
+                    <div class="login-msg" id="msg-other"></div>
+                </form>
             </div>
-            <div class="login-msg" id="msg-other"></div>
-        </form>
+        </div>
     </div>
 
 </div>
 
 <div class="login-options">
     <div class="login-option" id="switch-back" style="display:none;" onclick="location.reload()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         <span>Back</span>
     </div>
     <div class="login-option" id="sign-in-options" onclick="showOtherUser()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Sign-in options</span>
     </div>
-    <div class="login-option" onclick="location.href='/account-creator.html'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+    <a class="login-option" href="/account-creator.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
         <span>Create account</span>
-    </div>
+    </a>
 </div>
 
 <script src="/config.js"></script>
@@ -262,7 +480,7 @@
 
 <script>
     const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
-    const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+    const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
     /* Right-side clock */
     function tickClock() {
@@ -274,6 +492,27 @@
         if (el) el.textContent = `${hh}:${mm}:${ss}`;
     }
     tickClock(); setInterval(tickClock, 1000);
+
+    /* Boot screen — same animation/sequence as dash.html.
+       Stages an "UPLINKING" → "READY" status text, then fades out
+       and reveals the login stage. Total runtime ~2.2s. */
+    (function boot() {
+        const bootEl = document.getElementById('boot-screen');
+        const statusEl = document.getElementById('boot-status');
+        const stage = document.getElementById('login-stage');
+        const stages = ['UPLINKING', 'LOADING MODULES', 'ESTABLISHING LINK', 'READY'];
+        const step = Math.floor(1600 / stages.length);
+        let i = 0;
+        const tick = setInterval(() => {
+            i++;
+            if (i < stages.length) statusEl.textContent = stages[i];
+        }, step);
+        setTimeout(() => {
+            clearInterval(tick);
+            bootEl.classList.add('hidden');
+            stage.classList.add('visible');
+        }, 1800);
+    })();
 
     /* Render saved user as a Windows-style tile */
     function renderSavedTile() {
@@ -293,24 +532,40 @@
         // Has saved user — show the user tile
         const initial = (savedName || savedEmail)[0].toUpperCase();
         section.innerHTML = `
-            <div class="user-tile" id="user-tile">
-                <div class="user-avatar" id="user-avatar">
-                    <img id="user-avatar-img" src="${savedPic || DEFAULT_AVATAR}" onerror="this.style.display='none'">
+            <div class="login-card">
+                <div class="card-header">
+                    <div class="card-header-glyph">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="card-header-text">
+                        <div class="card-header-title">${savedName || savedEmail.split('@')[0]}</div>
+                        <div class="card-header-sub">${savedEmail}</div>
+                    </div>
+                    <div class="card-header-status">Online</div>
                 </div>
-                <div class="user-name">${savedName || savedEmail.split('@')[0]}</div>
+                <div class="card-body">
+                    <div class="user-tile">
+                        <div class="user-avatar" id="user-avatar">
+                            <img id="user-avatar-img" src="${savedPic || DEFAULT_AVATAR}" onerror="this.style.display='none'">
+                        </div>
+                        <div class="user-name">${savedName || savedEmail.split('@')[0]}</div>
+                    </div>
+
+                    <form id="login-form-saved">
+                        <div class="field">
+                            <label class="field-label" for="password-saved">Password</label>
+                            <input type="password" id="password-saved" class="input" placeholder="••••••••" required autocomplete="current-password" autofocus>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-saved">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                            Sign in
+                        </button>
+                        <div class="login-msg" id="msg-saved"></div>
+                    </form>
+
+                    <div class="switch-user" id="switch-user">Switch user</div>
+                </div>
             </div>
-
-            <form id="login-form-saved">
-                <div class="pwd-row">
-                    <input type="password" id="password-saved" class="pwd-input" placeholder="Password" required autocomplete="current-password" autofocus>
-                    <button type="submit" class="pwd-submit" id="btn-submit-saved" title="Sign in">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                </div>
-                <div class="login-msg" id="msg-saved"></div>
-            </form>
-
-            <div class="switch-user" id="switch-user">← Switch user</div>
         `;
 
         // Auto-resume if already signed in
@@ -331,14 +586,14 @@
         document.getElementById('switch-user').addEventListener('click', () => {
             section.style.display = 'none';
             otherSection.style.display = 'block';
-            document.getElementById('switch-back').style.display = 'flex';
+            document.getElementById('switch-back').style.display = 'inline-flex';
         });
     }
 
     function showOtherUser() {
         document.getElementById('saved-tile-section').style.display = 'none';
         document.getElementById('other-user-section').style.display = 'block';
-        document.getElementById('switch-back').style.display = 'flex';
+        document.getElementById('switch-back').style.display = 'inline-flex';
     }
 
     /* Shared login flow */
@@ -395,6 +650,5 @@
 
     renderSavedTile();
 </script>
-
 </body>
 </html>
