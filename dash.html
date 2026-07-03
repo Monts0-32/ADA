@@ -16,7 +16,6 @@
             --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149;
         }
 
-        /* THEMED SCROLLBAR */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
@@ -30,6 +29,71 @@
 
         /* ===================== OS SHELL ===================== */
         .os-shell { display: flex; height: 100vh; width: 100%; flex-direction: column; }
+
+        /* ===================== BOOT-UP ANIMATION ===================== */
+        .boot-screen {
+            position: fixed; inset: 0; z-index: 10000;
+            background: #0d1117;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        .boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .boot-logo {
+            font-size: 72px; font-weight: 200; letter-spacing: 14px;
+            color: var(--blue); margin: 0;
+            opacity: 0; transform: scale(0.8);
+            animation: boot-logo-in 1.2s ease-out forwards;
+        }
+        @keyframes boot-logo-in {
+            0% { opacity: 0; transform: scale(0.8); letter-spacing: 24px; }
+            100% { opacity: 1; transform: scale(1); letter-spacing: 14px; }
+        }
+        .boot-sub {
+            font-size: 11px; color: var(--muted, #8b949e);
+            letter-spacing: 6px; text-transform: uppercase;
+            margin-top: 16px; opacity: 0;
+            animation: boot-fade-in 0.8s ease 0.6s forwards;
+        }
+        @keyframes boot-fade-in { to { opacity: 1; } }
+        .boot-bar {
+            width: 220px; height: 2px; background: #21262d;
+            border-radius: 2px; margin-top: 40px; overflow: hidden;
+            opacity: 0; animation: boot-fade-in 0.4s ease 0.8s forwards;
+        }
+        .boot-bar-fill {
+            width: 0; height: 100%; background: var(--blue);
+            animation: boot-fill 1.4s ease 0.8s forwards;
+        }
+        @keyframes boot-fill { to { width: 100%; } }
+        .boot-status {
+            margin-top: 18px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 10px; color: #6e7681; letter-spacing: 2px;
+            opacity: 0; animation: boot-fade-in 0.4s ease 1.4s forwards;
+            min-height: 14px;
+        }
+
+        /* Page entrance (after boot screen lifts) */
+        .os-shell { opacity: 0; transition: opacity 0.5s ease 0.2s; }
+        .os-shell.visible { opacity: 1; }
+
+        /* ===================== TOP BAR (from header-engine) leaves room for top-right clock ===================== */
+        /* The header-engine.js injects a sticky bar; we want our clock in the top-right corner.
+           The header bar itself sits above us, so we treat the area beneath the header as the desktop. */
+
+        /* ===================== TOP-RIGHT CLOCK WIDGET ===================== */
+        .topbar-clock {
+            position: fixed; top: 4px; right: 14px; z-index: 10000;
+            display: flex; flex-direction: column; align-items: flex-end;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            color: var(--text); line-height: 1.15;
+            padding: 4px 10px; border-radius: 6px;
+            background: rgba(22,27,34,0.85);
+            border: 1px solid rgba(48,54,61,0.6);
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .topbar-clock-time { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--text); }
+        .topbar-clock-date { font-size: 9px; color: #8b949e; letter-spacing: 1.5px; text-transform: uppercase; }
 
         /* DESKTOP */
         .os-desktop {
@@ -46,11 +110,11 @@
             background-size: 80px 80px; pointer-events: none;
         }
 
-        /* DESKTOP ICONS (small, scattered) */
+        /* DESKTOP ICONS */
         .desktop-icons {
-            position: absolute; top: 16px; left: 16px;
+            position: absolute; top: 60px; left: 16px;
             display: grid; grid-template-columns: repeat(auto-fill, 90px);
-            gap: 8px 8px; z-index: 1;
+            gap: 14px 8px; z-index: 1;
         }
         .desktop-icon {
             width: 90px; padding: 8px 4px; border-radius: 6px;
@@ -64,14 +128,16 @@
             width: 44px; height: 44px; background: #161b22;
             border: 1px solid var(--border); border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
+            transition: 0.15s;
         }
+        .desktop-icon:hover .desktop-icon-img { border-color: var(--blue); transform: scale(1.05); }
         .desktop-icon-img svg { width: 24px; height: 24px; }
         .desktop-icon-label {
             font-size: 11px; color: var(--text); line-height: 1.2;
             text-shadow: 0 1px 2px rgba(0,0,0,0.9); font-weight: 500;
         }
 
-        /* WINDOWS */
+        /* WINDOWS (only for non-link apps) */
         .os-window {
             position: absolute; background: #161b22;
             border: 1px solid var(--border); border-radius: 8px;
@@ -87,9 +153,7 @@
         }
         .os-window-header:active { cursor: grabbing; }
         .os-window-icon { width: 14px; height: 14px; }
-        .os-window-title {
-            font-size: 12px; color: var(--text); flex: 1; font-weight: 500;
-        }
+        .os-window-title { font-size: 12px; color: var(--text); flex: 1; font-weight: 500; }
         .os-window-controls { display: flex; height: 30px; margin: -8px -12px 0 auto; align-items: stretch; }
         .os-window-btn {
             width: 44px; display: flex; align-items: center; justify-content: center;
@@ -101,13 +165,10 @@
         .os-window-content { padding: 16px; overflow: auto; max-height: 70vh; }
         .os-window.minimized { display: none; }
         .os-window.closed { display: none; }
-        .os-window.maximized {
-            top: 0 !important; left: 0 !important; width: 100% !important;
-            border-radius: 0; height: 100%;
-        }
+        .os-window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; border-radius: 0; height: 100%; }
         .os-window.maximized .os-window-content { max-height: calc(100% - 40px); }
 
-        /* TASKBAR (Windows-style bottom) */
+        /* TASKBAR */
         .os-taskbar {
             height: 48px; background: rgba(13,17,23,0.92);
             backdrop-filter: blur(12px); border-top: 1px solid var(--border);
@@ -134,17 +195,50 @@
             width: 18px; height: 2px; background: var(--blue); border-radius: 1px;
         }
         .taskbar-app svg { width: 20px; height: 20px; }
-        .taskbar-tray {
-            margin-left: auto; display: flex; align-items: center; gap: 10px;
-            padding: 0 12px; height: 40px; border-radius: 4px; cursor: pointer;
-            color: #8b949e; font-size: 11px; font-family: 'SFMono-Regular', Consolas, monospace;
+
+        /* ===================== LAUNCH TRANSITION ===================== */
+        .launch-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(13,17,23,0.96);
+            backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .taskbar-tray:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-        .taskbar-tray-icons { display: flex; gap: 8px; }
-        .taskbar-tray-icons svg { width: 14px; height: 14px; }
-        .taskbar-time-block { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
-        .taskbar-time { font-size: 12px; color: var(--text); font-weight: 600; }
-        .taskbar-date { font-size: 10px; color: #8b949e; }
+        .launch-overlay.active { opacity: 1; visibility: visible; }
+        .launch-icon {
+            width: 96px; height: 96px; border-radius: 20px;
+            background: #161b22; border: 1px solid var(--blue);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 40px rgba(88,166,255,0.3);
+            transform: scale(0.6);
+            animation: launch-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes launch-pop {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .launch-icon svg { width: 48px; height: 48px; }
+        .launch-name {
+            margin-top: 24px; font-size: 18px; font-weight: 300;
+            letter-spacing: 4px; color: var(--text); text-transform: uppercase;
+            animation: launch-fade-up 0.4s ease 0.2s both;
+        }
+        @keyframes launch-fade-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .launch-status {
+            margin-top: 12px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 10px; color: #8b949e; letter-spacing: 2px;
+            animation: launch-fade-up 0.4s ease 0.3s both;
+        }
+        .launch-spinner {
+            margin-top: 24px; width: 32px; height: 32px;
+            border: 2px solid #21262d; border-top-color: var(--blue);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ===================== EXISTING WIDGET STYLES ===================== */
         .widget-title { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
@@ -155,9 +249,6 @@
         .day-img { width: 32px; height: 32px; margin: 5px auto; display: block; object-fit: contain; }
         .day-status { font-size: 10px; color: var(--blue); font-family: 'SFMono-Regular', monospace; margin-top: 5px; }
 
-        #clock-day { font-size: 12px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 2px; }
-        #clock-date { font-size: 14px; color: var(--text); font-weight: 600; }
-        #clock-time { font-size: 36px; font-family: 'SFMono-Regular',Consolas,monospace; font-weight: 700; color: var(--blue); letter-spacing: 3px; margin: 4px 0; }
         .cal-note { font-size: 11px; color: #8b949e; margin-top: 15px; font-style: italic; border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.4; }
 
         .edit-overlay { display: none; background: rgba(13, 17, 23, 0.98); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 50; border-radius: 8px; padding: 20px; box-sizing: border-box; border: 1px solid var(--blue); }
@@ -186,9 +277,31 @@
 </head>
 <body>
 
+<!-- ============= BOOT SCREEN ============= -->
+<div class="boot-screen" id="boot-screen">
+    <h1 class="boot-logo">ADA</h1>
+    <p class="boot-sub">Archive OS</p>
+    <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+    <div class="boot-status" id="boot-status">UPLINKING…</div>
+</div>
+
 <div id="ada-header-anchor"></div>
 
-<div class="os-shell">
+<!-- ============= TOP-RIGHT CLOCK ============= -->
+<div class="topbar-clock">
+    <div class="topbar-clock-time" id="topbar-clock-time">--:--:--</div>
+    <div class="topbar-clock-date" id="topbar-clock-date">--/--/----</div>
+</div>
+
+<!-- ============= LAUNCH OVERLAY ============= -->
+<div class="launch-overlay" id="launch-overlay">
+    <div class="launch-icon" id="launch-icon"></div>
+    <div class="launch-name" id="launch-name">Launching</div>
+    <div class="launch-status" id="launch-status">Connecting…</div>
+    <div class="launch-spinner"></div>
+</div>
+
+<div class="os-shell" id="os-shell">
 
     <!-- ============ DESKTOP ============ -->
     <main class="os-desktop">
@@ -196,7 +309,8 @@
 
         <!-- Desktop icons -->
         <div class="desktop-icons">
-            <div class="desktop-icon" data-target="win-note">
+
+            <div class="desktop-icon" data-target="win-note" data-launchable="true">
                 <div class="desktop-icon-img">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="4" y="3" width="16" height="18" rx="2"/>
@@ -208,7 +322,7 @@
                 <div class="desktop-icon-label">Note to Max</div>
             </div>
 
-            <div class="desktop-icon" data-target="win-forecast">
+            <div class="desktop-icon" data-target="win-forecast" data-launchable="true">
                 <div class="desktop-icon-img">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="9" cy="9" r="3"/>
@@ -222,17 +336,7 @@
                 <div class="desktop-icon-label">Mood Forecast</div>
             </div>
 
-            <div class="desktop-icon" data-target="win-clock">
-                <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"/>
-                        <polyline points="12 7 12 12 16 14"/>
-                    </svg>
-                </div>
-                <div class="desktop-icon-label">System Time</div>
-            </div>
-
-            <div class="desktop-icon" data-target="win-wiki">
+            <div class="desktop-icon" data-href="/wikiselector.html" data-launchable="true">
                 <div class="desktop-icon-img">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/>
@@ -242,7 +346,7 @@
                 <div class="desktop-icon-label">Wiki Records</div>
             </div>
 
-            <div class="desktop-icon" data-target="win-content">
+            <div class="desktop-icon" data-href="/visuals.html" data-launchable="true">
                 <div class="desktop-icon-img">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="5" y="11" width="14" height="10" rx="2"/>
@@ -252,7 +356,7 @@
                 <div class="desktop-icon-label">Content Page</div>
             </div>
 
-            <div class="desktop-icon" data-target="win-adap">
+            <div class="desktop-icon" data-href="/ADAP.html" data-launchable="true">
                 <div class="desktop-icon-img">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="16" rx="2"/>
@@ -264,8 +368,8 @@
             </div>
         </div>
 
-        <!-- WINDOWS -->
-        <div class="os-window" id="win-note" data-title="Note to Max" style="left: 220px; top: 60px; width: 420px;">
+        <!-- WINDOW: Note to Max -->
+        <div class="os-window" id="win-note" data-title="Note to Max" style="left: 220px; top: 80px; width: 420px;">
             <div class="os-window-header">
                 <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 <div class="os-window-title">Note to Max</div>
@@ -281,7 +385,8 @@
             </div>
         </div>
 
-        <div class="os-window" id="win-forecast" data-title="Mood Forecast" style="left: 280px; top: 100px; width: 560px;">
+        <!-- WINDOW: Forecast -->
+        <div class="os-window" id="win-forecast" data-title="Mood Forecast" style="left: 280px; top: 120px; width: 560px;">
             <div class="os-window-header">
                 <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="9" cy="9" r="3"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="9" y1="14" x2="9" y2="16"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="14" y1="9" x2="16" y2="9"/></svg>
                 <div class="os-window-title">Chan's Mood Forecast</div>
@@ -306,109 +411,11 @@
                 </div>
             </div>
         </div>
-
-        <div class="os-window" id="win-clock" data-title="System Time" style="left: 720px; top: 60px; width: 360px;">
-            <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
-                <div class="os-window-title">System Time</div>
-                <div class="os-window-controls">
-                    <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                    <div class="os-window-btn" data-action="maximize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg></div>
-                    <div class="os-window-btn close" data-action="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></div>
-                </div>
-            </div>
-            <div class="os-window-content" style="position: relative;">
-                <div class="widget-title">
-                    Local Time
-                    <button class="btn-edit admin-only" onclick="toggleOverlay('edit-calendar')">Edit Note</button>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 0;">
-                    <div id="clock-day"></div>
-                    <div id="clock-date"></div>
-                    <div id="clock-time"></div>
-                </div>
-                <div id="calendar-note-display" class="cal-note"></div>
-                <div class="edit-overlay" id="edit-calendar">
-                    <label style="font-size:10px; color:var(--blue); font-weight:bold; display:block; margin-bottom:5px;">GLOBAL SYSTEM NOTE</label>
-                    <textarea id="in-cal-note" style="width:100%; height:120px; background:#000; color:white; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; padding:10px; box-sizing:border-box;"></textarea>
-                    <div style="display:flex; gap:10px; margin-top:15px;">
-                        <button class="btn-action btn-green" style="font-size:11px; padding:6px;" onclick="saveCalendarNote()">Update</button>
-                        <button class="btn-action" style="font-size:11px; padding:6px;" onclick="toggleOverlay('edit-calendar')">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="os-window" id="win-wiki" data-title="Wiki Records" style="left: 320px; top: 380px; width: 340px;">
-            <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
-                <div class="os-window-title">Wiki Records</div>
-                <div class="os-window-controls">
-                    <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                    <div class="os-window-btn" data-action="maximize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg></div>
-                    <div class="os-window-btn close" data-action="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></div>
-                </div>
-            </div>
-            <div class="os-window-content" style="position: relative;">
-                <span class="lock-badge" id="lock-page1">🔒 Restricted</span>
-                <div class="card-img-placeholder" style="border-left: 4px solid var(--blue);">SEC_WIKI_NET</div>
-                <div class="card">
-                    <h3>Wiki Records</h3>
-                    <p>Publicly editable documentation partitions for archive data and system logs.</p>
-                    <button class="btn-action btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Launch Archives</button>
-                    <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page1')">Toggle System Lock</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="os-window" id="win-content" data-title="Content Page" style="left: 700px; top: 400px; width: 340px;">
-            <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
-                <div class="os-window-title">Content Page</div>
-                <div class="os-window-controls">
-                    <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                    <div class="os-window-btn" data-action="maximize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg></div>
-                    <div class="os-window-btn close" data-action="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></div>
-                </div>
-            </div>
-            <div class="os-window-content" style="position: relative;">
-                <span class="lock-badge" id="lock-page2">🔒 Restricted</span>
-                <div class="card-img-placeholder" style="border-left: 4px solid var(--btn-green);">SEC_SPEC_OPS</div>
-                <div class="card">
-                    <h3>Content Page</h3>
-                    <p>Shhh...</p>
-                    <button class="btn-action btn-green" id="nav-page2" onclick="location.href='/visuals.html'">Access Content</button>
-                    <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page2')">Toggle System Lock</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="os-window" id="win-adap" data-title="ADAP Terminal" style="left: 1000px; top: 380px; width: 340px;">
-            <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
-                <div class="os-window-title">ADAP Terminal</div>
-                <div class="os-window-controls">
-                    <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                    <div class="os-window-btn" data-action="maximize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg></div>
-                    <div class="os-window-btn close" data-action="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></div>
-                </div>
-            </div>
-            <div class="os-window-content" style="position: relative;">
-                <span class="lock-badge" id="lock-page3">🔒 Restricted</span>
-                <div class="card-img-placeholder" style="border-left: 4px solid var(--btn-green);">SEC_SPEC_OPS</div>
-                <div class="card">
-                    <h3>ADAP</h3>
-                    <p>Access ADAP</p>
-                    <button class="btn-action btn-green" id="nav-page3" onclick="location.href='/ADAP.html'">Access Special</button>
-                    <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page3')">Toggle System Lock</button>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- ============ TASKBAR ============ -->
     <div class="os-taskbar">
-        <div class="taskbar-start">
+        <div class="taskbar-start" onclick="location.href='/index.html'">
             <span class="win-icon">⊞</span>
             <span>Start</span>
         </div>
@@ -420,28 +427,14 @@
             <div class="taskbar-app" data-target="win-forecast" title="Mood Forecast">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="9" cy="9" r="3"/><path d="M14 14a4 4 0 1 1 3 6.8H8a3.5 3.5 0 0 1-.8-6.9"/></svg>
             </div>
-            <div class="taskbar-app" data-target="win-clock" title="System Time">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
-            </div>
-            <div class="taskbar-app" data-target="win-wiki" title="Wiki Records">
+            <div class="taskbar-app" data-href="/wikiselector.html" title="Wiki Records">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
             </div>
-            <div class="taskbar-app" data-target="win-content" title="Content Page">
+            <div class="taskbar-app" data-href="/visuals.html" title="Content Page">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
             </div>
-            <div class="taskbar-app" data-target="win-adap" title="ADAP Terminal">
+            <div class="taskbar-app" data-href="/ADAP.html" title="ADAP Terminal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
-            </div>
-        </div>
-        <div class="taskbar-tray">
-            <div class="taskbar-tray-icons">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/></svg>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4z"/></svg>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
-            </div>
-            <div class="taskbar-time-block">
-                <div class="taskbar-time" id="taskbar-time">--:--:--</div>
-                <div class="taskbar-date" id="taskbar-date">--/--/----</div>
             </div>
         </div>
     </div>
@@ -451,10 +444,106 @@
     var ADA_API = "https://ada-relay.andrewdinglearchive.workers.dev";
     var forecastData = {};
 
+    /* =================== BOOT-UP ANIMATION =================== */
+    const bootScreen = document.getElementById('boot-screen');
+    const bootStatus = document.getElementById('boot-status');
+    const osShell = document.getElementById('os-shell');
+    const bootMessages = [
+        'UPLINKING…',
+        'LOADING KERNEL…',
+        'MOUNTING ARCHIVE…',
+        'VERIFYING SESSION…',
+        'READY'
+    ];
+    let msgIdx = 0;
+    const bootInterval = setInterval(() => {
+        msgIdx++;
+        if (msgIdx < bootMessages.length) bootStatus.textContent = bootMessages[msgIdx];
+    }, 350);
+
+    setTimeout(() => {
+        clearInterval(bootInterval);
+        bootStatus.textContent = 'READY';
+    }, 1750);
+
+    setTimeout(() => {
+        bootScreen.classList.add('hidden');
+        osShell.classList.add('visible');
+    }, 2200);
+
+    /* =================== TOP-RIGHT CLOCK =================== */
+    function startClock() {
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const timeEl = document.getElementById('topbar-clock-time');
+        const dateEl = document.getElementById('topbar-clock-date');
+        function tick() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2,'0');
+            const mm = String(now.getMinutes()).padStart(2,'0');
+            const ss = String(now.getSeconds()).padStart(2,'0');
+            const date = now.getDate();
+            const month = MONTHS[now.getMonth()];
+            const year = now.getFullYear();
+            const dayShort = DAYS[now.getDay()].slice(0,3).toUpperCase();
+            if (timeEl) timeEl.textContent = `${hh}:${mm}:${ss}`;
+            if (dateEl) dateEl.textContent = `${dayShort} ${date} ${month}`;
+        }
+        tick();
+        setInterval(tick, 1000);
+    }
+    startClock();
+
+    /* =================== LAUNCH TRANSITION =================== */
+    const launchOverlay = document.getElementById('launch-overlay');
+    const launchIcon = document.getElementById('launch-icon');
+    const launchName = document.getElementById('launch-name');
+    const launchStatus = document.getElementById('launch-status');
+
+    function launchApp(iconEl) {
+        // Get the SVG and label from the icon
+        const svg = iconEl.querySelector('.desktop-icon-img').innerHTML;
+        const name = iconEl.querySelector('.desktop-icon-label').textContent;
+        const href = iconEl.dataset.href;
+
+        // Reset animation by reflowing
+        launchIcon.innerHTML = svg;
+        launchIcon.style.animation = 'none';
+        launchName.style.animation = 'none';
+        launchStatus.style.animation = 'none';
+        // Force reflow
+        void launchIcon.offsetWidth;
+        launchIcon.style.animation = '';
+        launchName.style.animation = '';
+        launchStatus.style.animation = '';
+
+        launchName.textContent = name;
+        launchStatus.textContent = 'Launching…';
+
+        launchOverlay.classList.add('active');
+
+        // Cycle through boot messages during transition
+        const messages = ['Connecting…', 'Authenticating…', 'Loading…', 'Almost there…'];
+        let i = 0;
+        const msgTimer = setInterval(() => {
+            i++;
+            if (i < messages.length) launchStatus.textContent = messages[i];
+        }, 350);
+
+        setTimeout(() => {
+            clearInterval(msgTimer);
+            launchStatus.textContent = 'Opening…';
+        }, 1400);
+
+        setTimeout(() => {
+            window.location.href = href;
+        }, 1700);
+    }
+
     /* =================== OS WINDOW ENGINE =================== */
     let zCounter = 1000;
     const windows = document.querySelectorAll('.os-window');
-    const desktopIcons = document.querySelectorAll('.desktop-icon');
+    const desktopIcons = document.querySelectorAll('.desktop-icon[data-launchable]');
     const taskbarApps = document.querySelectorAll('.taskbar-app');
 
     function bringToFront(win) {
@@ -516,21 +605,37 @@
         });
     });
 
+    // Desktop icons: link apps go through launch transition; windowed apps open windows
     desktopIcons.forEach(icon => {
         icon.addEventListener('dblclick', () => {
-            const target = document.getElementById(icon.dataset.target);
-            if (!target) return;
-            target.classList.remove('closed', 'minimized');
-            bringToFront(target);
+            if (icon.dataset.href) {
+                launchApp(icon);
+            } else {
+                const target = document.getElementById(icon.dataset.target);
+                if (!target) return;
+                target.classList.remove('closed', 'minimized');
+                bringToFront(target);
+            }
         });
         icon.addEventListener('click', () => {
-            const target = document.getElementById(icon.dataset.target);
-            if (target) bringToFront(target);
+            if (icon.dataset.href) {
+                launchApp(icon);
+            } else {
+                const target = document.getElementById(icon.dataset.target);
+                if (target) bringToFront(target);
+            }
         });
     });
 
     taskbarApps.forEach(app => {
         app.addEventListener('click', () => {
+            if (app.dataset.href) {
+                // Find the desktop icon that has the same href and use its icon
+                const matchingIcon = Array.from(desktopIcons).find(ic => ic.dataset.href === app.dataset.href);
+                if (matchingIcon) launchApp(matchingIcon);
+                else window.location.href = app.dataset.href;
+                return;
+            }
             const target = document.getElementById(app.dataset.target);
             if (!target) return;
             if (target.classList.contains('focused') && !target.classList.contains('minimized')) {
@@ -558,27 +663,20 @@
         if (data.widgets) {
             forecastData = JSON.parse(data.widgets.forecast || "{}");
             renderForecast();
-            document.getElementById('calendar-note-display').innerText = data.widgets.calendar_note || "System running nominal parameters.";
-            document.getElementById('in-cal-note').value = data.widgets.calendar_note || "";
+            const calNote = document.getElementById('calendar-note-display');
+            if (calNote) calNote.innerText = data.widgets.calendar_note || "System running nominal parameters.";
+            const inCal = document.getElementById('in-cal-note');
+            if (inCal) inCal.value = data.widgets.calendar_note || "";
         }
-        startClock();
-        data.locks.forEach(l => {
-            const badge = document.getElementById(`lock-${l.page_id}`);
-            const btn = document.getElementById(`nav-${l.page_id}`);
-            if(badge) badge.style.display = l.is_locked ? 'block' : 'none';
-            if (l.is_locked && !isAdmin && btn) {
-                btn.classList.add('btn-disabled');
-                btn.innerText = "Access Restricted";
-                btn.onclick = (e) => { e.preventDefault(); alert("Cleared personnel only."); };
-            }
-        });
+        // (Clock already running above)
     }
 
     function renderForecast() {
         const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
         const display = document.getElementById('forecast-display');
         const editor = document.getElementById('forecast-editor-inputs');
-        display.innerHTML = ''; editor.innerHTML = '';
+        if (!display) return;
+        display.innerHTML = ''; if (editor) editor.innerHTML = '';
         days.forEach(d => {
             const day = forecastData[d] || { text: "Stable", img: "" };
             display.innerHTML += `
@@ -587,39 +685,15 @@
                     <img src="${day.img || ''}" class="day-img" onerror="this.style.opacity='0'">
                     <div class="day-status">${day.text}</div>
                 </div>`;
-            editor.innerHTML += `
-                <div class="edit-group">
-                    <label>${d.toUpperCase()} CONFIG</label>
-                    <input type="text" id="edit-text-${d}" value="${day.text}" placeholder="Status Text">
-                    <input type="text" id="edit-img-${d}" value="${day.img}" placeholder="Icon URL / Base64">
-                </div>`;
+            if (editor) {
+                editor.innerHTML += `
+                    <div class="edit-group">
+                        <label>${d.toUpperCase()} CONFIG</label>
+                        <input type="text" id="edit-text-${d}" value="${day.text}" placeholder="Status Text">
+                        <input type="text" id="edit-img-${d}" value="${day.img}" placeholder="Icon URL / Base64">
+                    </div>`;
+            }
         });
-    }
-
-    function startClock() {
-        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-        const taskbarTime = document.getElementById('taskbar-time');
-        const taskbarDate = document.getElementById('taskbar-date');
-        function tick() {
-            const now = new Date();
-            const date = now.getDate();
-            const month = MONTHS[now.getMonth()];
-            const year = now.getFullYear();
-            const hh = String(now.getHours()).padStart(2,'0');
-            const mm = String(now.getMinutes()).padStart(2,'0');
-            const ss = String(now.getSeconds()).padStart(2,'0');
-            const dayEl = document.getElementById('clock-day');
-            const dateEl = document.getElementById('clock-date');
-            const timeEl = document.getElementById('clock-time');
-            if (dayEl) dayEl.textContent = DAYS[now.getDay()];
-            if (dateEl) dateEl.textContent = `${date} ${month} ${year}`;
-            if (timeEl) timeEl.textContent = `${hh} : ${mm} : ${ss}`;
-            if (taskbarTime) taskbarTime.textContent = `${hh}:${mm}`;
-            if (taskbarDate) taskbarDate.textContent = `${date}/${month}/${year}`;
-        }
-        tick();
-        setInterval(tick, 1000);
     }
 
     function toggleOverlay(id) {
