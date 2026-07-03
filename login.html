@@ -21,168 +21,296 @@
         }
         * { box-sizing: border-box; }
         body {
-            margin: 0; min-height: 100vh;
+            margin: 0; height: 100vh; overflow: hidden;
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* Right side: clock + shortcuts (Windows login-style) */
+        .login-right {
+            position: fixed; right: 0; top: 0; bottom: 0; width: 48px;
+            background: transparent;
             display: flex; flex-direction: column; align-items: center;
-            padding-top: 60px;
+            padding: 18px 0; gap: 14px; z-index: 10;
+        }
+        .login-right-icon {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            color: var(--muted); cursor: pointer; transition: 0.1s;
+        }
+        .login-right-icon:hover { color: var(--text); }
+        .login-right-icon svg { width: 16px; height: 16px; }
+        .login-clock-strip {
+            position: absolute; bottom: 24px; right: 8px;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 11px; color: var(--muted); letter-spacing: 2px;
         }
 
-        /* Logo / wordmark */
-        .logo {
-            font-size: 28px; font-weight: 600;
-            color: var(--text); text-decoration: none;
-            margin-bottom: 24px; letter-spacing: 1px;
+        /* Main center: Windows 10/11 style user tile + password */
+        .login-stage {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 40px 20px;
         }
 
-        /* The sign-in box (GitHub-style) */
-        .box {
-            width: 320px;
-            background-color: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 20px;
+        /* Lock icon at top, like Windows "click the lock to switch" */
+        .lock-hint {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 32px; color: var(--muted);
+            font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
         }
+        .lock-hint svg { width: 12px; height: 12px; }
 
-        /* Saved user card */
-        .saved-user {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px; background: var(--bg);
-            border: 1px solid var(--border); border-radius: 6px;
-            margin-bottom: 16px; cursor: pointer; transition: 0.12s;
+        /* User tile (avatar circle) */
+        .user-tile {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 18px;
         }
-        .saved-user:hover { border-color: var(--border-hover); background: var(--btn-bg); }
-        .saved-user-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--btn-bg); overflow: hidden; flex-shrink: 0;
+        .user-avatar {
+            width: 128px; height: 128px; border-radius: 50%;
+            background: var(--panel); border: 2px solid var(--border);
             display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative;
+            transition: 0.15s;
         }
-        .saved-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .saved-user-info { flex: 1; min-width: 0; }
-        .saved-user-name { font-size: 14px; font-weight: 600; color: var(--text); }
-        .saved-user-email { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .saved-user-status {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: var(--green);
+        .user-avatar:hover { border-color: var(--border-hover); }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-avatar .avatar-letter {
+            font-size: 56px; font-weight: 300; color: var(--muted);
+            text-transform: uppercase;
         }
-        .saved-user-clear {
-            background: transparent; border: 1px solid transparent;
-            color: var(--muted); cursor: pointer;
-            padding: 4px 8px; border-radius: 4px; font-size: 12px; line-height: 1;
-        }
-        .saved-user-clear:hover { color: var(--red); border-color: var(--red); }
-
-        .divider {
-            display: flex; align-items: center; gap: 10px;
-            margin: 16px 0; color: var(--muted-2);
-            font-size: 11px; letter-spacing: 0.3px;
-        }
-        .divider::before, .divider::after {
-            content: ''; flex: 1; height: 1px; background: var(--border);
+        .user-name {
+            font-size: 24px; font-weight: 300; color: var(--text);
+            letter-spacing: 0.5px;
         }
 
-        label {
-            display: block; margin-bottom: 6px;
-            font-size: 14px; font-weight: 400; text-align: left;
+        /* Password input row (Windows-style) */
+        .pwd-row {
+            margin-top: 18px; display: flex; align-items: center; gap: 10px;
         }
-        input {
-            width: 100%; padding: 5px 12px; margin-bottom: 16px;
-            background-color: var(--bg);
+        .pwd-input {
+            width: 260px; padding: 8px 12px;
+            background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 4px;
             color: var(--text);
-            box-sizing: border-box; outline: none;
-            font-size: 14px; line-height: 20px;
+            font-size: 14px; outline: none;
+            transition: 0.1s;
         }
-        input:focus {
+        .pwd-input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(88,166,255,0.3);
+        }
+        .pwd-submit {
+            width: 36px; height: 36px; border-radius: 4px;
+            background: var(--btn-bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.1s;
+        }
+        .pwd-submit:hover {
+            background: var(--border);
+            color: var(--text);
+            border-color: var(--blue);
+        }
+        .pwd-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pwd-submit svg { width: 14px; height: 14px; }
+
+        /* Email input (for "other user" flow) */
+        .email-row {
+            margin-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .email-input {
+            width: 300px; padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 14px; outline: none;
+        }
+        .email-input:focus {
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(88,166,255,0.3);
         }
 
-        .btn-go {
-            width: 100%; background-color: var(--green);
-            color: white; padding: 5px 16px;
-            border: 1px solid rgba(240,246,252,0.1);
-            border-radius: 6px; font-weight: 500;
-            cursor: pointer; font-size: 14px; line-height: 20px;
+        /* Bottom options (Sign-in options, etc.) */
+        .login-options {
+            position: fixed; bottom: 24px; left: 24px;
+            display: flex; gap: 8px;
+        }
+        .login-option {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; border-radius: 4px;
+            color: var(--muted); font-size: 11px;
+            cursor: pointer; transition: 0.1s;
+            background: transparent; border: 1px solid transparent;
+        }
+        .login-option:hover {
+            background: var(--btn-bg);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .login-option svg { width: 12px; height: 12px; }
+
+        /* Switch user (Windows-style) */
+        .switch-user {
+            margin-top: 28px;
+            color: var(--muted); font-size: 12px;
+            cursor: pointer; padding: 4px 10px; border-radius: 4px;
             transition: 0.1s;
         }
-        .btn-go:hover { background-color: var(--green-hover); }
-        .btn-go:disabled { opacity: 0.5; cursor: not-allowed; }
+        .switch-user:hover { color: var(--text); background: var(--btn-bg); }
 
-        #msg {
-            color: var(--red); font-size: 13px; margin-top: 10px;
-            text-align: center; padding: 8px;
-            background: rgba(248,81,73,0.08);
+        /* Error */
+        .login-msg {
+            margin-top: 14px; color: var(--red); font-size: 12px;
+            padding: 6px 12px; background: rgba(248,81,73,0.08);
             border: 1px solid rgba(248,81,73,0.3);
-            border-radius: 6px; display: none;
+            border-radius: 4px; display: none;
+            text-align: center;
         }
-        #msg.show { display: block; }
+        .login-msg.show { display: block; }
 
-        .alt-link {
-            margin-top: 16px; padding: 16px 0 0; font-size: 14px;
-            color: var(--muted); text-align: center;
-            border-top: 1px solid var(--border);
+        /* Right-side status text */
+        .status-pill {
+            position: fixed; top: 16px; right: 16px;
+            display: flex; align-items: center; gap: 8px;
+            color: var(--muted); font-size: 11px;
+            padding: 4px 10px; border-radius: 12px;
+            background: var(--panel); border: 1px solid var(--border);
         }
-        .alt-link a { color: var(--blue); text-decoration: none; }
-        .alt-link a:hover { text-decoration: underline; }
+        .status-pill-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--green);
+        }
     </style>
 </head>
 <body>
 
-<a href="/" class="logo">ADA</a>
+<div class="status-pill">
+    <span class="status-pill-dot"></span>
+    <span>ADA · Online</span>
+</div>
 
-<div class="box">
-    <form id="login-form">
-        <div id="saved-user-section"></div>
+<div class="login-right">
+    <div class="login-right-icon" title="Accessibility">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"/><path d="M19 9c-2 1-4 1-7 1s-5 0-7-1"/><path d="M12 10v6m-3 6l3-6 3 6"/></svg>
+    </div>
+    <div class="login-right-icon" title="Network">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+    </div>
+    <div class="login-right-icon" title="Power">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+    </div>
+    <div class="login-clock-strip" id="clock-strip">--:--:--</div>
+</div>
 
-        <div class="divider" id="divider" style="display:none;">OR SIGN IN WITH ANOTHER ACCOUNT</div>
+<div class="login-stage">
 
-        <label for="email">Email address</label>
-        <input type="email" id="email" required autocomplete="email">
+    <div class="lock-hint" id="lock-hint" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
+        <span>Locked</span>
+    </div>
 
-        <label for="password">Password</label>
-        <input type="password" id="password" required autocomplete="current-password">
+    <!-- Saved user tile (Windows 10/11 style) -->
+    <div id="saved-tile-section"></div>
 
-        <button type="submit" class="btn-go" id="btn-submit">Sign in</button>
-        <div id="msg"></div>
-    </form>
+    <!-- Other-user form (default) -->
+    <div id="other-user-section" style="display:none; text-align:center;">
+        <div class="user-tile">
+            <div class="user-avatar">
+                <span class="avatar-letter">?</span>
+            </div>
+            <div class="user-name">Sign in to ADA</div>
+        </div>
 
-    <p class="alt-link">
-        New to ADA? <a href="/account-creator.html">Create an account</a>.
-    </p>
+        <form id="login-form-other" style="margin-top: 24px;">
+            <div class="email-row">
+                <input type="email" id="email-other" class="email-input" placeholder="Email address" required autocomplete="email">
+                <input type="password" id="password-other" class="pwd-input" placeholder="Password" required autocomplete="current-password" style="margin-top:8px;">
+                <button type="submit" class="pwd-submit" id="btn-submit-other" style="margin-top:10px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+            <div class="login-msg" id="msg-other"></div>
+        </form>
+    </div>
+
+</div>
+
+<div class="login-options">
+    <div class="login-option" id="switch-back" style="display:none;" onclick="location.reload()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Back</span>
+    </div>
+    <div class="login-option" id="sign-in-options" onclick="showOtherUser()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Sign-in options</span>
+    </div>
+    <div class="login-option" onclick="location.href='/account-creator.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        <span>Create account</span>
+    </div>
 </div>
 
 <script>
     const API = 'https://ada-relay.andrewdinglearchive.workers.dev';
     const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
-    function renderSavedUser() {
+    /* Right-side clock */
+    function tickClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        const ss = String(now.getSeconds()).padStart(2,'0');
+        const el = document.getElementById('clock-strip');
+        if (el) el.textContent = `${hh}:${mm}:${ss}`;
+    }
+    tickClock(); setInterval(tickClock, 1000);
+
+    /* Render saved user as a Windows-style tile */
+    function renderSavedTile() {
         const savedName = localStorage.getItem('ada_user_name');
         const savedEmail = localStorage.getItem('ada_user_email');
         const savedPic = localStorage.getItem('ada_user_pic');
 
-        if (!savedEmail) return;
+        const section = document.getElementById('saved-tile-section');
+        const otherSection = document.getElementById('other-user-section');
 
-        const section = document.getElementById('saved-user-section');
-        const divider = document.getElementById('divider');
+        if (!savedEmail) {
+            // No saved user — show other-user form
+            otherSection.style.display = 'block';
+            return;
+        }
+
+        // Has saved user — show the user tile
+        const initial = (savedName || savedEmail)[0].toUpperCase();
         section.innerHTML = `
-            <div class="saved-user" id="saved-user-card">
-                <div class="saved-user-avatar">
-                    <img src="${savedPic || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">
+            <div class="user-tile" id="user-tile">
+                <div class="user-avatar" id="user-avatar">
+                    <img id="user-avatar-img" src="${savedPic || DEFAULT_AVATAR}" onerror="this.style.display='none'">
                 </div>
-                <div class="saved-user-info">
-                    <div class="saved-user-name">${savedName || 'Welcome back'}</div>
-                    <div class="saved-user-email">${savedEmail}</div>
-                </div>
-                <div class="saved-user-status"></div>
-                <button type="button" class="saved-user-clear" id="clear-saved" title="Sign out">✕</button>
+                <div class="user-name">${savedName || savedEmail.split('@')[0]}</div>
             </div>
-        `;
-        divider.style.display = 'flex';
-        document.getElementById('email').value = savedEmail;
 
+            <form id="login-form-saved">
+                <div class="pwd-row">
+                    <input type="password" id="password-saved" class="pwd-input" placeholder="Password" required autocomplete="current-password" autofocus>
+                    <button type="submit" class="pwd-submit" id="btn-submit-saved" title="Sign in">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+                <div class="login-msg" id="msg-saved"></div>
+            </form>
+
+            <div class="switch-user" id="switch-user">← Switch user</div>
+        `;
+
+        // Auto-resume if already signed in
         if (localStorage.getItem('ada_session') === 'active') {
             fetch(`${API}/sync?email=${encodeURIComponent(savedEmail)}`)
                 .then(r => r.json())
@@ -190,35 +318,32 @@
                 .catch(() => {});
         }
 
-        document.getElementById('saved-user-card').addEventListener('click', (e) => {
-            if (e.target.closest('#clear-saved')) return;
-            document.getElementById('email').value = savedEmail;
-            document.getElementById('password').focus();
+        // Submit saved-user form
+        document.getElementById('login-form-saved').addEventListener('submit', (e) => {
+            e.preventDefault();
+            doLogin(savedEmail, document.getElementById('password-saved').value, 'msg-saved', 'btn-submit-saved');
         });
 
-        document.getElementById('clear-saved').addEventListener('click', (e) => {
-            e.stopPropagation();
-            localStorage.removeItem('ada_user_name');
-            localStorage.removeItem('ada_user_pic');
-            localStorage.removeItem('ada_user_email');
-            localStorage.removeItem('ada_session');
-            localStorage.removeItem('ada_admin');
-            location.reload();
+        // Switch user — show the other-user form
+        document.getElementById('switch-user').addEventListener('click', () => {
+            section.style.display = 'none';
+            otherSection.style.display = 'block';
+            document.getElementById('switch-back').style.display = 'flex';
         });
     }
 
-    const form = document.getElementById('login-form');
-    const msg = document.getElementById('msg');
-    const btn = document.getElementById('btn-submit');
+    function showOtherUser() {
+        document.getElementById('saved-tile-section').style.display = 'none';
+        document.getElementById('other-user-section').style.display = 'block';
+        document.getElementById('switch-back').style.display = 'flex';
+    }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    /* Shared login flow */
+    async function doLogin(email, pass, msgId, btnId) {
+        const msg = document.getElementById(msgId);
+        const btn = document.getElementById(btnId);
         msg.classList.remove('show');
         btn.disabled = true;
-        btn.textContent = 'Signing in…';
-
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('password').value;
 
         try {
             const response = await fetch(`${API}/auth`, {
@@ -232,7 +357,6 @@
                 localStorage.setItem('ada_session', 'active');
                 localStorage.setItem('ada_user_email', result.email);
                 localStorage.setItem('ada_admin', result.admin);
-
                 try {
                     const profileRes = await fetch(`${API}/profile/get?email=${encodeURIComponent(result.email)}`);
                     const profileData = await profileRes.json();
@@ -241,23 +365,32 @@
                         if (profileData.user.display_name) localStorage.setItem('ada_user_name', profileData.user.display_name);
                     }
                 } catch (e) {}
-
                 location.href = '/dash.html';
             } else {
-                msg.textContent = 'Invalid email or password.';
+                msg.textContent = 'Incorrect password.';
                 msg.classList.add('show');
                 btn.disabled = false;
-                btn.textContent = 'Sign in';
             }
         } catch (err) {
-            msg.textContent = 'Connection error. Try again.';
+            msg.textContent = 'Connection error.';
             msg.classList.add('show');
             btn.disabled = false;
-            btn.textContent = 'Sign in';
         }
+    }
+
+    /* Other-user form submit */
+    const otherForm = document.getElementById('login-form-other');
+    otherForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        doLogin(
+            document.getElementById('email-other').value,
+            document.getElementById('password-other').value,
+            'msg-other',
+            'btn-submit-other'
+        );
     });
 
-    renderSavedUser();
+    renderSavedTile();
 </script>
 
 </body>
