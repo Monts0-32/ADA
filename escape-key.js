@@ -4,14 +4,14 @@
  * Include with: <script src="/escape-key.js"></script>
  */
 (function() {
-    const ESCAPE_URL = "https://www.google.com";
+    const ESCAPE_URL = (window.ADA_CONFIG && window.ADA_CONFIG.escapeURL) || "https://www.google.com";
 
     // ── BADGE UI ──
     const style = document.createElement('style');
     style.textContent = `
         #ada-escape-badge {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 20px;
             background: #161b22;
             border: 1px solid #30363d;

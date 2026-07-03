@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,6 +12,8 @@
     </style>
 </head>
 <body>
+    <script src="/config.js"></script>
+    <script src="/page-transition.js"></script>
     <script src="/uplink.js"></script>
     <script src="/announcement-engine.js"></script>
     <script src="/escape-key.js"></script>
@@ -66,7 +68,7 @@
     </style>
     <script src="/chat-widget.js"></script>
     <script>
-        const CHAT_API = "https://ada-relay.andrewdinglearchive.workers.dev";
+        const CHAT_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
         const myChatEmail = localStorage.getItem('ada_user_email');
         let isChatOpen = false;
         let lastChatId = 0;
@@ -136,7 +138,7 @@
 
     <script>
         async function saveUser() {
-            const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+            const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
             await fetch(`${API}/admin/create-user`, {
                 method: 'POST',
                 body: JSON.stringify({

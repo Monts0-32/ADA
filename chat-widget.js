@@ -1,6 +1,6 @@
 (function() {
     // --- CONFIGURATION ---
-    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
     const email = localStorage.getItem('ada_user_email');
     const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
@@ -10,7 +10,7 @@
     // --- 1. INJECT CSS ---
     const style = document.createElement('style');
     style.innerHTML = `
-        #ada-chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 99999; font-family: -apple-system, sans-serif; }
+        #ada-chat-widget { position: fixed; bottom: 80px; right: 25px; z-index: 99999; font-family: -apple-system, sans-serif; }
         #chat-icon { width: 56px; height: 56px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; transition: transform 0.2s; }
         #chat-icon:hover { transform: scale(1.05); }
         #chat-notif { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }

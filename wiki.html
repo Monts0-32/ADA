@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -93,7 +93,9 @@
 </head>
 <body>
 <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
-<script src="/uplink.js"></script>
+<script src="/config.js"></script>
+    <script src="/page-transition.js"></script>
+    <script src="/uplink.js"></script>
 <script src="/announcement-engine.js"></script>
 <script src="/chat-widget.js"></script>
 <script src="/escape-key.js"></script>
@@ -134,7 +136,7 @@
     init();
 </script>
 <script>
-    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
     const urlParams = new URLSearchParams(window.location.search);
     const wikiId = urlParams.get('id') || 'wiki1';
     const visual = document.getElementById('visual-editor');

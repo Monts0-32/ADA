@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -33,6 +33,8 @@
     <!-- bare-mux and epoxy loaded from your Railway server -->
     <script src="/uv/baremux.js"></script>
 
+    <script src="/config.js"></script>
+    <script src="/page-transition.js"></script>
     <script src="/uplink.js"></script>
     <script src="/announcement-engine.js"></script>
     <script src="/header-engine.js"></script>
@@ -76,7 +78,7 @@
 </div>
 
 <script>
-    const API       = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
     const RAILWAY   = "https://dev.ada-access.co.uk";
     const WISP_URL = 'wss://dev.ada-access.co.uk/wisp/';
 

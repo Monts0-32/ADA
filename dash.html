@@ -5,6 +5,8 @@
     <title>ADA | Archive OS</title>
 
     <!-- MASTER SCRIPTS -->
+    <script src="/config.js"></script>
+    <script src="/page-transition.js"></script>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/announcement-engine.js"></script>
@@ -78,9 +80,11 @@
             width: 100%;
             flex-direction: column;
             opacity: 0;
-            transition: opacity 0.5s ease 0.1s;
+            transform: scale(0.98);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s,
+                        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
         }
-        .os-shell.visible { opacity: 1; }
+        .os-shell.visible { opacity: 1; transform: scale(1); }
 
         /* ===================== BOOT SCREEN ===================== */
         .boot-screen {
@@ -171,16 +175,30 @@
         .desktop-icon {
             width: 96px; padding: 12px 6px;
             display: flex; flex-direction: column; align-items: center; gap: 8px;
-            cursor: pointer; transition: background 0.12s, transform 0.12s;
+            cursor: pointer; transition: background 0.12s, transform 0.12s, opacity 0.4s ease;
             user-select: none; text-align: center;
             border-radius: 8px;
             border: 1px solid transparent;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: desktop-icon-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .os-shell.visible .desktop-icon:nth-child(1) { animation-delay: 0.2s; }
+        .os-shell.visible .desktop-icon:nth-child(2) { animation-delay: 0.25s; }
+        .os-shell.visible .desktop-icon:nth-child(3) { animation-delay: 0.3s; }
+        .os-shell.visible .desktop-icon:nth-child(4) { animation-delay: 0.35s; }
+        .os-shell.visible .desktop-icon:nth-child(5) { animation-delay: 0.4s; }
+        .os-shell.visible .desktop-icon:nth-child(6) { animation-delay: 0.45s; }
+        .os-shell.visible .desktop-icon:nth-child(7) { animation-delay: 0.5s; }
+        .os-shell.visible .desktop-icon:nth-child(8) { animation-delay: 0.55s; }
+        @keyframes desktop-icon-in {
+            to { opacity: 1; transform: translateY(0); }
         }
         .desktop-icon:hover {
             background: rgba(33,38,45,0.6);
             border-color: rgba(48,54,61,0.5);
         }
-        .desktop-icon:active { transform: scale(0.96); }
+        .desktop-icon:active { transform: scale(0.94); transition: transform 0.08s ease; }
         .desktop-icon-img {
             width: 52px; height: 52px;
             background: linear-gradient(135deg, var(--panel-2) 0%, var(--panel) 100%);
@@ -661,72 +679,85 @@
             position: fixed; inset: 0; z-index: 9999;
             background: var(--bg-elevated);
             opacity: 0; visibility: hidden;
-            transition: opacity 0.18s ease, visibility 0.18s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
             pointer-events: none;
         }
         .app-transition.active {
             opacity: 1; visibility: visible; pointer-events: auto;
         }
         .app-transition-card {
-            position: absolute;
+            position: fixed;
+            top: 0; left: 0;
             width: 80px; height: 80px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 16px;
             display: flex; align-items: center; justify-content: center;
             color: var(--blue);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(88,166,255,0.1);
             transform: translate(var(--start-x, -9999px), var(--start-y, -9999px)) scale(1);
-            transition: transform 0.65s cubic-bezier(0.32, 0.72, 0, 1),
-                        border-radius 0.5s cubic-bezier(0.32, 0.72, 0, 1),
-                        width 0.5s cubic-bezier(0.32, 0.72, 0, 1),
-                        height 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            will-change: transform, width, height, border-radius;
+            transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+                        width 0.55s cubic-bezier(0.32, 0.72, 0, 1),
+                        height 0.55s cubic-bezier(0.32, 0.72, 0, 1),
+                        border-radius 0.55s cubic-bezier(0.32, 0.72, 0, 1),
+                        background 0.4s ease 0.15s,
+                        border-color 0.4s ease 0.15s,
+                        box-shadow 0.4s ease;
+            overflow: hidden;
         }
         .app-transition.active .app-transition-card {
-            top: 50% !important; left: 50% !important;
             transform: translate(-50%, -50%) scale(var(--scale, 12));
-            border-radius: 0;
-            width: 100vw;
-            height: 100vh;
-            border: none;
+            top: 50%; left: 50%;
+            width: 100vmax; height: 100vmax;
+            border-radius: 32px;
+            background: var(--bg-elevated);
+            border-color: var(--border-hover);
+            box-shadow: 0 0 0 1px rgba(88,166,255,0.2), 0 20px 60px rgba(0,0,0,0.6);
         }
         .app-transition-icon {
-            width: 38px; height: 38px;
+            width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.2s ease 0.2s, transform 0.3s ease;
+            transition: opacity 0.25s ease 0.15s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .app-transition-icon svg { width: 100%; height: 100%; }
         .app-transition.active .app-transition-icon {
             opacity: 0;
-            transform: scale(0.5);
+            transform: scale(0.4);
         }
         .app-transition-meta {
-            position: absolute; left: 50%; top: 50%;
-            transform: translate(-50%, -50%);
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -30px);
             text-align: center;
             opacity: 0;
-            transition: opacity 0.3s ease 0.3s;
+            transition: opacity 0.3s ease 0.25s;
+            width: 240px;
         }
         .app-transition.active .app-transition-meta { opacity: 1; }
+
         .app-transition-name {
-            font-size: 14px; font-weight: 600; color: var(--text);
-            letter-spacing: 1px; text-transform: uppercase;
-        }
-        .app-transition-status {
-            margin-top: 16px;
-            font-family: ui-monospace, "SF Mono", Consolas, monospace;
-            font-size: 10px; color: var(--muted); letter-spacing: 2px;
+            font-size: 13px; font-weight: 600; color: var(--text);
+            letter-spacing: 1.5px; text-transform: uppercase;
+            margin-bottom: 16px;
         }
         .app-transition-bar {
-            width: 140px; height: 2px; background: var(--border);
-            border-radius: 2px; margin: 10px auto 0; overflow: hidden;
+            width: 180px; height: 2px;
+            background: var(--border);
+            border-radius: 2px; margin: 0 auto 10px;
+            overflow: hidden;
         }
         .app-transition-bar-fill {
             width: 0; height: 100%;
             background: linear-gradient(90deg, var(--blue), var(--purple));
-            animation: fill 0.7s ease forwards;
+            animation: fill-bar 0.65s ease forwards;
         }
-        @keyframes fill { to { width: 100%; } }
+        @keyframes fill-bar { to { width: 100%; } }
+        .app-transition-status {
+            font-family: ui-monospace, "SF Mono", Consolas, monospace;
+            font-size: 9px; color: var(--muted);
+            letter-spacing: 2px;
+        }
 
         /* ===================== WIDGET STYLES ===================== */
         .widget-title {
@@ -801,7 +832,7 @@
         }
     </style>
 </head>
-<body>
+<body class="ada-no-entry-anim">
 
 <div class="boot-screen" id="boot-screen">
     <div class="boot-glyph">A</div>
@@ -1182,7 +1213,7 @@
 </div>
 
 <script>
-    var ADA_API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    var ADA_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
     var forecastData = {};
 
     /* =================== BOOT =================== */
@@ -1254,9 +1285,23 @@
         const scale = Math.max(window.innerWidth, window.innerHeight) / 60;
         appTransitionCard.style.setProperty('--scale', scale);
 
+        // Re-trigger the progress-bar animation
+        const bar = appTransitionCard.querySelector('.app-transition-bar-fill');
+        if (bar) {
+            bar.style.animation = 'none';
+            void bar.offsetWidth;
+            bar.style.animation = '';
+        }
+
         appTransitionIcon.innerHTML = svgHTML || '';
         appTransitionName.textContent = (name || 'Application').toUpperCase();
         appTransitionStatus.textContent = 'INITIALIZING';
+
+        // Small click pulse at origin
+        if (originEl) {
+            const rect = originEl.getBoundingClientRect();
+            showPulse(rect.left + rect.width/2, rect.top + rect.height/2);
+        }
 
         void appTransition.offsetWidth;
         appTransition.classList.add('active');
@@ -1272,6 +1317,27 @@
             clearInterval(statusInterval);
             window.location.href = href;
         }, 750);
+    }
+
+    function showPulse(x, y) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = `
+            position: fixed; z-index: 9998;
+            left: ${x}px; top: ${y}px;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--blue);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0.7;
+            pointer-events: none;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+        `;
+        document.body.appendChild(pulse);
+        requestAnimationFrame(() => {
+            pulse.style.transform = 'translate(-50%, -50%) scale(20)';
+            pulse.style.opacity = '0';
+        });
+        setTimeout(() => pulse.remove(), 550);
     }
 
     function launchFromNode(node, href, name) {

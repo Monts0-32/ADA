@@ -1,5 +1,6 @@
 // Use 'var' to prevent "Identifier already declared" errors if loaded twice
-var ADA_API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
+// Prefer window.ADA_CONFIG.API if config.js loaded first, fall back to default.
+var ADA_API_URL = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
 
 (function() {
     // 1. Function to Inject UI Safely
@@ -66,7 +67,8 @@ var ADA_API_URL = "https://ada-relay.andrewdinglearchive.workers.dev";
             }
 
             clearTimeout(failSafe);
-            window.ADA_CONFIG = data;
+            // Merge: keep our config values, add the user/sync data as well
+            window.ADA_CONFIG = Object.assign({}, window.ADA_CONFIG || {}, data);
             window.clearGuard();
             
             // ✅ Start polling for remote commands
