@@ -67,6 +67,10 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        /* The injected ada-header (from header-engine.js) would push the OS shell
+           down and clip the taskbar. The OS shell provides its own navigation. */
+        .ada-header { display: none !important; }
+
         /* ===================== OS SHELL ===================== */
         .os-shell {
             display: flex;
