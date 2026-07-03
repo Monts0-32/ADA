@@ -9,114 +9,107 @@
 
     <style>
         :root {
-            --bg: #0d1117; --panel: #161b22; --border: #30363d;
-            --text: #c9d1d9; --muted: #8b949e; --blue: #58a6ff;
-            --green: #238636; --red: #f85149; --purple: #a371f7;
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-2: #0d1117;
+            --btn-bg: #21262d;
+            --border: #30363d;
+            --border-hover: #444c56;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --muted-2: #6e7681;
+            --blue: #58a6ff;
+            --green: #238636;
+            --red: #f85149;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0; min-height: 100vh;
-            background: #0d1117;
+            background: var(--bg);
             color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
         }
 
-        /* Ambient gradient background */
-        .ambient {
-            position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background:
-                radial-gradient(circle at 20% 30%, rgba(88,166,255,0.12) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(163,113,247,0.10) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(35,134,54,0.06) 0%, transparent 60%);
-        }
+        /* GitHub-style scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-        /* The page itself, layered over the ambient bg */
         .stage {
-            position: relative; z-index: 1;
-            max-width: 1100px; margin: 0 auto;
-            padding: 80px 32px 120px;
+            max-width: 1000px; margin: 0 auto;
+            padding: 60px 24px 80px;
         }
 
         /* Hero */
-        .hero {
-            text-align: center; margin-bottom: 100px;
-        }
+        .hero { text-align: center; margin-bottom: 80px; }
         .hero-glyph {
-            font-size: 88px; font-weight: 200; letter-spacing: 18px;
+            font-size: 56px; font-weight: 600; letter-spacing: 12px;
             color: var(--text); margin: 0 0 12px 0;
-            animation: drift 8s ease-in-out infinite;
-        }
-        @keyframes drift {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
         }
         .hero-sub {
             font-size: 11px; color: var(--muted);
-            letter-spacing: 6px; text-transform: uppercase; margin: 0;
+            letter-spacing: 4px; text-transform: uppercase; margin: 0;
         }
         .hero-line {
-            display: inline-block; width: 40px; height: 1px;
-            background: var(--blue); margin: 24px auto 0;
+            display: inline-block; width: 48px; height: 2px;
+            background: var(--border); margin: 20px auto 0;
         }
 
         /* Sections */
-        .lab { margin-bottom: 100px; }
+        .lab { margin-bottom: 64px; }
         .lab-label {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 32px; color: var(--muted);
-            font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 8px; color: var(--muted);
+            font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+            font-weight: 600;
         }
-        .lab-label::before { content: ''; width: 4px; height: 4px; background: var(--blue); border-radius: 50%; }
-        .lab-label::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+        .lab-label::before { content: ''; width: 6px; height: 6px; background: var(--blue); border-radius: 50%; }
+        .lab-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
         .lab-title {
-            font-size: 28px; font-weight: 300; letter-spacing: 2px;
-            margin: 0 0 12px 0; color: var(--text);
+            font-size: 22px; font-weight: 600; letter-spacing: 0.5px;
+            margin: 0 0 8px 0; color: var(--text);
         }
         .lab-desc {
-            color: var(--muted); font-size: 14px; line-height: 1.7;
-            max-width: 600px; margin: 0 0 28px 0;
+            color: var(--muted); font-size: 14px; line-height: 1.6;
+            max-width: 640px; margin: 0 0 20px 0;
+        }
+
+        /* Panel (used by every experiment) */
+        .panel {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
         }
 
         /* === EXPERIMENT 1: particle field === */
         #particle-canvas {
-            width: 100%; height: 320px; border-radius: 12px;
-            background: #06080c; border: 1px solid var(--border);
-            display: block;
+            width: 100%; height: 300px; display: block;
+            background: var(--panel-2);
         }
 
         /* === EXPERIMENT 2: gradient type === */
         .type-play {
-            padding: 60px 40px; border-radius: 12px;
-            background: #06080c; border: 1px solid var(--border);
-            text-align: center; overflow: hidden;
+            padding: 60px 24px; text-align: center;
+            background: var(--panel-2);
         }
         .gradient-word {
-            font-size: 72px; font-weight: 900; letter-spacing: 4px;
-            background: linear-gradient(90deg, #58a6ff, #a371f7, #f778ba, #58a6ff);
-            background-size: 200% 100%;
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shimmer 4s linear infinite;
+            font-size: 56px; font-weight: 600; letter-spacing: 3px;
+            color: var(--text);
         }
-        @keyframes shimmer { to { background-position: 200% 0; } }
-        .type-controls {
-            display: flex; gap: 8px; justify-content: center; margin-top: 30px;
-            flex-wrap: wrap;
-        }
+        .type-controls { margin-top: 28px; }
         .type-controls input {
             background: var(--bg); border: 1px solid var(--border);
-            color: var(--text); padding: 8px 14px; border-radius: 6px;
-            font-size: 13px; outline: none; min-width: 200px;
+            color: var(--text); padding: 6px 12px; border-radius: 6px;
+            font-size: 14px; outline: none; min-width: 240px;
         }
-        .type-controls input:focus { border-color: var(--blue); }
+        .type-controls input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(88,166,255,0.3); }
 
         /* === EXPERIMENT 3: noise grid === */
         .noise-grid {
             display: grid; grid-template-columns: repeat(20, 1fr);
-            gap: 2px; padding: 16px; border-radius: 12px;
-            background: #06080c; border: 1px solid var(--border);
+            gap: 2px; padding: 12px; background: var(--panel-2);
         }
         .noise-cell {
             aspect-ratio: 1; background: var(--blue);
@@ -125,16 +118,15 @@
 
         /* === EXPERIMENT 4: mouse trail === */
         #trail-stage {
-            position: relative; height: 280px;
-            border-radius: 12px; background: #06080c;
-            border: 1px solid var(--border); overflow: hidden;
+            position: relative; height: 240px;
+            background: var(--panel-2);
             cursor: crosshair;
         }
         .trail-dot {
-            position: absolute; width: 14px; height: 14px;
+            position: absolute; width: 12px; height: 12px;
             border-radius: 50%; pointer-events: none;
             transform: translate(-50%, -50%);
-            animation: trail-fade 1.2s forwards;
+            animation: trail-fade 1s forwards;
         }
         @keyframes trail-fade {
             0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -143,50 +135,40 @@
 
         /* === EXPERIMENT 5: clock slices === */
         .clock-slices {
-            display: flex; gap: 8px; justify-content: center;
-            padding: 40px; border-radius: 12px;
-            background: #06080c; border: 1px solid var(--border);
+            display: flex; gap: 6px; justify-content: center;
+            padding: 40px; background: var(--panel-2);
         }
         .slice {
             display: flex; flex-direction: column; align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         .slice-cell {
-            width: 56px; height: 80px; border-radius: 8px;
-            background: var(--panel); border: 1px solid var(--border);
+            width: 52px; height: 72px; border-radius: 6px;
+            background: var(--bg); border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 36px; font-weight: 200; color: var(--blue);
+            font-size: 32px; font-weight: 600; color: var(--text);
             font-family: 'SFMono-Regular', Consolas, monospace;
-            position: relative; overflow: hidden;
         }
-        .slice-cell::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(180deg, transparent 0%, rgba(88,166,255,0.05) 50%, transparent 100%);
-            animation: slice-shine 2s linear infinite;
+        .slice-sep {
+            width: 12px; height: 72px; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: 600; color: var(--muted);
+            font-family: 'SFMono-Regular', Consolas, monospace;
         }
-        @keyframes slice-shine {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        .slice-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+        .slice-label { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; }
 
         /* === EXPERIMENT 6: tiny terminal === */
-        .mini-term {
-            background: #06080c; border: 1px solid var(--border);
-            border-radius: 12px; overflow: hidden;
-        }
+        .mini-term { background: var(--panel-2); }
         .mini-term-head {
-            background: #0d1117; padding: 8px 14px;
+            background: var(--panel); padding: 8px 12px;
             display: flex; gap: 6px; align-items: center;
             border-bottom: 1px solid var(--border);
         }
-        .mini-term-head span { width: 10px; height: 10px; border-radius: 50%; }
+        .mini-term-head span { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
         .mini-term-head span:nth-child(1) { background: var(--red); }
-        .mini-term-head span:nth-child(2) { background: #d29922; }
         .mini-term-head span:nth-child(3) { background: var(--green); }
         .mini-term-body {
-            padding: 18px; font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 13px; line-height: 1.7; min-height: 180px;
+            padding: 16px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px; line-height: 1.7; min-height: 200px;
         }
         .term-line { color: var(--text); }
         .term-prompt { color: var(--green); margin-right: 8px; }
@@ -197,22 +179,29 @@
             animation: blink 1s steps(2) infinite; margin-left: 2px;
         }
         @keyframes blink { 50% { opacity: 0; } }
+        .term-hint {
+            margin-top: 8px; color: var(--muted); font-size: 12px;
+        }
+        .term-hint code {
+            background: var(--btn-bg); border: 1px solid var(--border);
+            padding: 1px 6px; border-radius: 4px; color: var(--blue);
+            font-size: 11px;
+        }
 
         /* === EXPERIMENT 7: orbit === */
         #orbit-stage {
-            position: relative; height: 320px;
-            background: #06080c; border: 1px solid var(--border);
-            border-radius: 12px; overflow: hidden;
+            position: relative; height: 280px;
+            background: var(--panel-2);
             display: flex; align-items: center; justify-content: center;
         }
         .orbit-core {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: radial-gradient(circle, #58a6ff, #1f6feb);
-            box-shadow: 0 0 40px rgba(88,166,255,0.6);
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--blue);
+            border: 1px solid var(--border);
         }
         .orbit-ring {
             position: absolute; top: 50%; left: 50%;
-            border: 1px dashed rgba(88,166,255,0.2);
+            border: 1px dashed var(--border);
             border-radius: 50%; transform: translate(-50%, -50%);
         }
         .orbit-body {
@@ -222,16 +211,15 @@
 
         /* Footer */
         .end-mark {
-            text-align: center; margin-top: 80px;
-            color: var(--muted); font-size: 11px; letter-spacing: 3px;
+            text-align: center; margin-top: 60px;
+            color: var(--muted); font-size: 12px;
+            padding-top: 24px; border-top: 1px solid var(--border);
         }
         .end-mark a { color: var(--blue); text-decoration: none; }
         .end-mark a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-
-<div class="ambient"></div>
 
 <div id="ada-header-anchor"></div>
 
@@ -248,18 +236,20 @@
         <div class="lab-label">01 · Field</div>
         <h2 class="lab-title">Particle drift</h2>
         <p class="lab-desc">A simple field of points, slowly drifting, with elastic connections. Pure ambient motion — no interaction required.</p>
-        <canvas id="particle-canvas"></canvas>
+        <div class="panel"><canvas id="particle-canvas"></canvas></div>
     </section>
 
-    <!-- 2. Gradient type -->
+    <!-- 2. Type -->
     <section class="lab">
         <div class="lab-label">02 · Type</div>
-        <h2 class="lab-title">Liquid gradient</h2>
-        <p class="lab-desc">A single word, animated through a moving gradient. Type anything; the gradient follows.</p>
-        <div class="type-play">
-            <div class="gradient-word" id="grad-word">EXPERIMENT</div>
-            <div class="type-controls">
-                <input id="grad-input" type="text" placeholder="Type a word…" maxlength="20">
+        <h2 class="lab-title">Word in motion</h2>
+        <p class="lab-desc">A word, breathing softly. Type anything; the text updates as you go.</p>
+        <div class="panel">
+            <div class="type-play">
+                <div class="gradient-word" id="grad-word">EXPERIMENT</div>
+                <div class="type-controls">
+                    <input id="grad-input" type="text" placeholder="Type a word…" maxlength="20">
+                </div>
             </div>
         </div>
     </section>
@@ -269,31 +259,33 @@
         <div class="lab-label">03 · Field</div>
         <h2 class="lab-title">Static bloom</h2>
         <p class="lab-desc">A grid of dots fading in and out at random. Click the grid to retrigger.</p>
-        <div class="noise-grid" id="noise-grid"></div>
+        <div class="panel"><div class="noise-grid" id="noise-grid"></div></div>
     </section>
 
     <!-- 4. Mouse trail -->
     <section class="lab">
         <div class="lab-label">04 · Interaction</div>
-        <h2 class="lab-title">Mouse trail</h2>
-        <p class="lab-desc">Move your cursor through the panel. Each click drops a fading marker.</p>
-        <div id="trail-stage"></div>
+        <h2 class="lab-title">Click trail</h2>
+        <p class="lab-desc">Click anywhere on the panel to drop a fading marker.</p>
+        <div class="panel"><div id="trail-stage"></div></div>
     </section>
 
     <!-- 5. Sliced clock -->
     <section class="lab">
         <div class="lab-label">05 · Time</div>
         <h2 class="lab-title">Sliced clock</h2>
-        <p class="lab-desc">Time as discrete cells. Each digit sits in its own pane with a slow light sweep.</p>
-        <div class="clock-slices" id="clock-slices">
-            <div class="slice"><div class="slice-cell" id="s-h1">0</div><div class="slice-label">HR</div></div>
-            <div class="slice"><div class="slice-cell" id="s-h2">0</div><div class="slice-label">HR</div></div>
-            <div class="slice"><div class="slice-cell">:</div><div class="slice-label"> </div></div>
-            <div class="slice"><div class="slice-cell" id="s-m1">0</div><div class="slice-label">MIN</div></div>
-            <div class="slice"><div class="slice-cell" id="s-m2">0</div><div class="slice-label">MIN</div></div>
-            <div class="slice"><div class="slice-cell">:</div><div class="slice-label"> </div></div>
-            <div class="slice"><div class="slice-cell" id="s-s1">0</div><div class="slice-label">SEC</div></div>
-            <div class="slice"><div class="slice-cell" id="s-s2">0</div><div class="slice-label">SEC</div></div>
+        <p class="lab-desc">Time as discrete cells. Each digit sits in its own pane.</p>
+        <div class="panel">
+            <div class="clock-slices" id="clock-slices">
+                <div class="slice"><div class="slice-cell" id="s-h1">0</div><div class="slice-label">HR</div></div>
+                <div class="slice"><div class="slice-cell" id="s-h2">0</div><div class="slice-label">HR</div></div>
+                <div class="slice-sep">:</div>
+                <div class="slice"><div class="slice-cell" id="s-m1">0</div><div class="slice-label">MIN</div></div>
+                <div class="slice"><div class="slice-cell" id="s-m2">0</div><div class="slice-label">MIN</div></div>
+                <div class="slice-sep">:</div>
+                <div class="slice"><div class="slice-cell" id="s-s1">0</div><div class="slice-label">SEC</div></div>
+                <div class="slice"><div class="slice-cell" id="s-s2">0</div><div class="slice-label">SEC</div></div>
+            </div>
         </div>
     </section>
 
@@ -301,12 +293,15 @@
     <section class="lab">
         <div class="lab-label">06 · Terminal</div>
         <h2 class="lab-title">Console echoes</h2>
-        <p class="lab-desc">Type a command. It echoes back something small. Try: <code style="color:var(--blue)">hello</code>, <code style="color:var(--blue)">time</code>, <code style="color:var(--blue)">whoami</code>, <code style="color:var(--blue)">color</code>.</p>
-        <div class="mini-term">
-            <div class="mini-term-head"><span></span><span></span><span></span></div>
-            <div class="mini-term-body" id="term-body">
-                <div class="term-line"><span class="term-prompt">ada@archive</span> ready.</div>
+        <p class="lab-desc">Type a command. It echoes back something small.</p>
+        <div class="panel">
+            <div class="mini-term">
+                <div class="mini-term-head"><span></span><span></span><span></span></div>
+                <div class="mini-term-body" id="term-body">
+                    <div class="term-line"><span class="term-prompt">ada@archive</span> ready.</div>
+                </div>
             </div>
+            <div class="term-hint">try: <code>hello</code>, <code>time</code>, <code>whoami</code>, <code>color</code>, <code>clear</code></div>
         </div>
     </section>
 
@@ -315,10 +310,12 @@
         <div class="lab-label">07 · Space</div>
         <h2 class="lab-title">Solar drift</h2>
         <p class="lab-desc">A core with two orbital bodies on nested rings. Just nice to watch.</p>
-        <div id="orbit-stage">
-            <div class="orbit-core"></div>
-            <div class="orbit-ring" id="ring1" style="width: 160px; height: 160px;"></div>
-            <div class="orbit-ring" id="ring2" style="width: 260px; height: 260px;"></div>
+        <div class="panel">
+            <div id="orbit-stage">
+                <div class="orbit-core"></div>
+                <div class="orbit-ring" id="ring1" style="width: 160px; height: 160px;"></div>
+                <div class="orbit-ring" id="ring2" style="width: 260px; height: 260px;"></div>
+            </div>
         </div>
     </section>
 
@@ -342,7 +339,7 @@
         }
         resize(); window.addEventListener('resize', resize);
 
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 50; i++) {
             particles.push({
                 x: Math.random() * w, y: Math.random() * h,
                 vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3
@@ -365,7 +362,7 @@
                     const dx = particles[i].x - particles[j].x;
                     const dy = particles[i].y - particles[j].y;
                     const d = Math.sqrt(dx*dx + dy*dy);
-                    if (d < 110) {
+                    if (d < 100) {
                         ctx.beginPath();
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
@@ -378,7 +375,7 @@
         tick();
     })();
 
-    /* ============= 2. Gradient type ============= */
+    /* ============= 2. Word in motion ============= */
     const gradInput = document.getElementById('grad-input');
     const gradWord = document.getElementById('grad-word');
     gradInput.addEventListener('input', () => {
@@ -397,14 +394,14 @@
     function bloom() {
         cells.forEach(c => { c.style.opacity = 0; });
         let active = new Set();
-        const total = 60 + Math.floor(Math.random() * 40);
+        const total = 50 + Math.floor(Math.random() * 30);
         function pulseOne() {
             if (active.size >= total) return;
             let idx;
             do { idx = Math.floor(Math.random() * cells.length); } while (active.has(idx));
             active.add(idx);
             const cell = cells[idx];
-            cell.style.opacity = (0.4 + Math.random() * 0.6).toString();
+            cell.style.opacity = (0.3 + Math.random() * 0.5).toString();
             setTimeout(() => { cell.style.opacity = '0'; active.delete(idx); }, 400 + Math.random() * 1200);
             if (active.size < total) setTimeout(pulseOne, 30 + Math.random() * 80);
         }
@@ -413,18 +410,18 @@
     bloom();
     noiseGrid.addEventListener('click', bloom);
 
-    /* ============= 4. Mouse trail ============= */
+    /* ============= 4. Click trail ============= */
     const trailStage = document.getElementById('trail-stage');
-    const palette = ['#58a6ff', '#a371f7', '#f778ba', '#3fb950', '#d29922'];
+    // GitHub theme palette: blue, muted, green
+    const trailPalette = ['#58a6ff', '#8b949e', '#3fb950'];
     trailStage.addEventListener('click', (e) => {
         const dot = document.createElement('div');
         dot.className = 'trail-dot';
         dot.style.left = e.clientX - trailStage.getBoundingClientRect().left + 'px';
         dot.style.top = e.clientY - trailStage.getBoundingClientRect().top + 'px';
-        dot.style.background = palette[Math.floor(Math.random() * palette.length)];
-        dot.style.boxShadow = `0 0 16px ${dot.style.background}`;
+        dot.style.background = trailPalette[Math.floor(Math.random() * trailPalette.length)];
         trailStage.appendChild(dot);
-        setTimeout(() => dot.remove(), 1300);
+        setTimeout(() => dot.remove(), 1100);
     });
 
     /* ============= 5. Sliced clock ============= */
@@ -448,7 +445,7 @@
         hello: ['hey there.', 'hi.', 'greetings, archive-walker.'],
         time: () => [`the time is ${new Date().toLocaleTimeString()}.`],
         whoami: () => [`you are: ${localStorage.getItem('ada_user_email') || 'a stranger'}.`],
-        color: ['shifting to violet.', 'a wave of blue, perhaps.', 'try teal.'],
+        color: ['shifting to blue.', 'a wave of muted gray, perhaps.', 'stay in the dark theme.'],
         help: ['try: hello, time, whoami, color, clear.'],
         clear: ['__CLEAR__']
     };
@@ -489,13 +486,11 @@
     const orbit = document.getElementById('orbit-stage');
     const body1 = document.createElement('div'); body1.className = 'orbit-body';
     const body2 = document.createElement('div'); body2.className = 'orbit-body';
-    body1.style.width = body1.style.height = '14px';
-    body2.style.width = body2.style.height = '10px';
+    body1.style.width = body1.style.height = '10px';
+    body2.style.width = body2.style.height = '8px';
     body1.style.background = '#58a6ff';
-    body2.style.background = '#a371f7';
-    body1.style.boxShadow = '0 0 12px #58a6ff';
-    body2.style.boxShadow = '0 0 10px #a371f7';
-    body1.style.borderRadius = body2.style.borderRadius = '50%';
+    body2.style.background = '#8b949e';
+    body1.style.border = body2.style.border = '1px solid #30363d';
     orbit.appendChild(body1); orbit.appendChild(body2);
 
     let angle1 = 0, angle2 = 0;

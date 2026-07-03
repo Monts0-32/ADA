@@ -12,10 +12,23 @@
 
     <style>
         :root {
-            --bg: #0d1117; --header: #161b22; --border: #30363d;
-            --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149;
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-2: #0d1117;
+            --btn-bg: #21262d;
+            --border: #30363d;
+            --border-hover: #444c56;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --muted-2: #6e7681;
+            --blue: #58a6ff;
+            --blue-dim: #1f6feb;
+            --green: #238636;
+            --green-hover: #2ea043;
+            --red: #f85149;
         }
 
+        /* GitHub-style scrollbar */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
@@ -33,133 +46,126 @@
         /* ===================== BOOT-UP ANIMATION ===================== */
         .boot-screen {
             position: fixed; inset: 0; z-index: 10000;
-            background: #0d1117;
+            background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
         .boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .boot-logo {
-            font-size: 72px; font-weight: 200; letter-spacing: 14px;
-            color: var(--blue); margin: 0;
-            opacity: 0; transform: scale(0.8);
-            animation: boot-logo-in 1.2s ease-out forwards;
+            font-size: 64px; font-weight: 600; letter-spacing: 12px;
+            color: var(--text); margin: 0;
+            opacity: 0; transform: translateY(8px);
+            animation: boot-logo-in 0.9s ease-out forwards;
         }
         @keyframes boot-logo-in {
-            0% { opacity: 0; transform: scale(0.8); letter-spacing: 24px; }
-            100% { opacity: 1; transform: scale(1); letter-spacing: 14px; }
+            to { opacity: 1; transform: translateY(0); }
         }
         .boot-sub {
-            font-size: 11px; color: var(--muted, #8b949e);
-            letter-spacing: 6px; text-transform: uppercase;
-            margin-top: 16px; opacity: 0;
-            animation: boot-fade-in 0.8s ease 0.6s forwards;
+            font-size: 11px; color: var(--muted);
+            letter-spacing: 4px; text-transform: uppercase;
+            margin-top: 12px; opacity: 0;
+            animation: boot-fade-in 0.6s ease 0.5s forwards;
         }
         @keyframes boot-fade-in { to { opacity: 1; } }
         .boot-bar {
-            width: 220px; height: 2px; background: #21262d;
-            border-radius: 2px; margin-top: 40px; overflow: hidden;
-            opacity: 0; animation: boot-fade-in 0.4s ease 0.8s forwards;
+            width: 200px; height: 3px; background: var(--btn-bg);
+            border-radius: 2px; margin-top: 36px; overflow: hidden;
+            opacity: 0; animation: boot-fade-in 0.4s ease 0.7s forwards;
         }
         .boot-bar-fill {
             width: 0; height: 100%; background: var(--blue);
-            animation: boot-fill 1.4s ease 0.8s forwards;
+            animation: boot-fill 1.2s ease 0.7s forwards;
         }
         @keyframes boot-fill { to { width: 100%; } }
         .boot-status {
-            margin-top: 18px; font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 10px; color: #6e7681; letter-spacing: 2px;
-            opacity: 0; animation: boot-fade-in 0.4s ease 1.4s forwards;
+            margin-top: 14px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 10px; color: var(--muted-2); letter-spacing: 1.5px;
+            opacity: 0; animation: boot-fade-in 0.4s ease 1.3s forwards;
             min-height: 14px;
         }
 
         /* Page entrance (after boot screen lifts) */
-        .os-shell { opacity: 0; transition: opacity 0.5s ease 0.2s; }
+        .os-shell { opacity: 0; transition: opacity 0.4s ease 0.2s; }
         .os-shell.visible { opacity: 1; }
 
-        /* ===================== TOP BAR (from header-engine) leaves room for top-right clock ===================== */
-        /* The header-engine.js injects a sticky bar; we want our clock in the top-right corner.
-           The header bar itself sits above us, so we treat the area beneath the header as the desktop. */
-
-        /* ===================== TOP-RIGHT CLOCK WIDGET ===================== */
+        /* ===================== TOP-RIGHT CLOCK ===================== */
         .topbar-clock {
-            position: fixed; top: 4px; right: 14px; z-index: 10000;
+            position: fixed; top: 8px; right: 14px; z-index: 10000;
             display: flex; flex-direction: column; align-items: flex-end;
             font-family: 'SFMono-Regular', Consolas, monospace;
-            color: var(--text); line-height: 1.15;
+            color: var(--text); line-height: 1.2;
             padding: 4px 10px; border-radius: 6px;
-            background: rgba(22,27,34,0.85);
-            border: 1px solid rgba(48,54,61,0.6);
+            background: var(--panel);
+            border: 1px solid var(--border);
             pointer-events: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .topbar-clock-time { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--text); }
-        .topbar-clock-date { font-size: 9px; color: #8b949e; letter-spacing: 1.5px; text-transform: uppercase; }
+        .topbar-clock-date { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
 
-        /* DESKTOP */
+        /* DESKTOP — flat dark, no gradients */
         .os-desktop {
             flex: 1; position: relative; overflow: hidden;
-            background:
-                radial-gradient(ellipse at 20% 0%, #1c2128 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 100%, #161b22 0%, transparent 50%),
-                #0d1117;
+            background: var(--bg);
         }
         .os-grid-bg {
             position: absolute; inset: 0;
-            background-image: linear-gradient(rgba(48,54,61,0.18) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(48,54,61,0.18) 1px, transparent 1px);
-            background-size: 80px 80px; pointer-events: none;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                              linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.15; pointer-events: none;
         }
 
         /* DESKTOP ICONS */
         .desktop-icons {
-            position: absolute; top: 60px; left: 16px;
+            position: absolute; top: 56px; left: 16px;
             display: grid; grid-template-columns: repeat(auto-fill, 90px);
-            gap: 14px 8px; z-index: 1;
+            gap: 16px 8px; z-index: 1;
         }
         .desktop-icon {
             width: 90px; padding: 8px 4px; border-radius: 6px;
             display: flex; flex-direction: column; align-items: center;
-            gap: 6px; cursor: pointer; transition: 0.15s;
+            gap: 6px; cursor: pointer; transition: 0.12s;
             user-select: none; text-align: center;
+            border: 1px solid transparent;
         }
-        .desktop-icon:hover { background: rgba(88,166,255,0.12); }
-        .desktop-icon.active { background: rgba(88,166,255,0.2); }
+        .desktop-icon:hover { background: var(--btn-bg); border-color: var(--border); }
+        .desktop-icon.active { background: var(--btn-bg); border-color: var(--blue); }
         .desktop-icon-img {
-            width: 44px; height: 44px; background: #161b22;
-            border: 1px solid var(--border); border-radius: 10px;
+            width: 44px; height: 44px; background: var(--panel);
+            border: 1px solid var(--border); border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            transition: 0.15s;
+            transition: 0.12s;
         }
-        .desktop-icon:hover .desktop-icon-img { border-color: var(--blue); transform: scale(1.05); }
-        .desktop-icon-img svg { width: 24px; height: 24px; }
+        .desktop-icon:hover .desktop-icon-img { border-color: var(--muted); }
+        .desktop-icon-img svg { width: 24px; height: 24px; color: var(--text); }
         .desktop-icon-label {
             font-size: 11px; color: var(--text); line-height: 1.2;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.9); font-weight: 500;
+            font-weight: 400;
         }
 
-        /* WINDOWS (only for non-link apps) */
+        /* WINDOWS */
         .os-window {
-            position: absolute; background: #161b22;
+            position: absolute; background: var(--panel);
             border: 1px solid var(--border); border-radius: 8px;
-            box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
             min-width: 300px; display: flex; flex-direction: column;
         }
-        .os-window.focused { border-color: #58a6ff; box-shadow: 0 18px 50px rgba(0,0,0,0.65), 0 0 0 1px rgba(88,166,255,0.4); }
+        .os-window.focused { border-color: var(--border-hover); }
         .os-window-header {
-            background: linear-gradient(180deg, #1c2128 0%, #161b22 100%);
+            background: var(--panel);
             padding: 8px 12px; border-bottom: 1px solid var(--border);
             display: flex; align-items: center; gap: 10px;
             cursor: grab; user-select: none; border-radius: 8px 8px 0 0;
         }
         .os-window-header:active { cursor: grabbing; }
-        .os-window-icon { width: 14px; height: 14px; }
-        .os-window-title { font-size: 12px; color: var(--text); flex: 1; font-weight: 500; }
+        .os-window-icon { width: 14px; height: 14px; color: var(--muted); }
+        .os-window-title { font-size: 12px; color: var(--text); flex: 1; font-weight: 600; }
         .os-window-controls { display: flex; height: 30px; margin: -8px -12px 0 auto; align-items: stretch; }
         .os-window-btn {
-            width: 44px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.12s; color: #8b949e;
+            width: 40px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.1s; color: var(--muted);
         }
-        .os-window-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+        .os-window-btn:hover { background: var(--btn-bg); color: var(--text); }
         .os-window-btn.close:hover { background: var(--red); color: white; }
         .os-window-btn svg { width: 12px; height: 12px; }
         .os-window-content { padding: 16px; overflow: auto; max-height: 70vh; }
@@ -170,114 +176,153 @@
 
         /* TASKBAR */
         .os-taskbar {
-            height: 48px; background: rgba(13,17,23,0.92);
-            backdrop-filter: blur(12px); border-top: 1px solid var(--border);
+            height: 44px; background: var(--panel);
+            border-top: 1px solid var(--border);
             display: flex; align-items: center; padding: 0 8px;
             z-index: 5000; flex-shrink: 0; gap: 4px;
         }
         .taskbar-start {
             display: flex; align-items: center; gap: 8px;
             padding: 6px 12px; border-radius: 4px; cursor: pointer;
-            transition: 0.15s; color: var(--text); font-size: 12px; font-weight: 600;
+            transition: 0.1s; color: var(--text); font-size: 12px; font-weight: 600;
         }
-        .taskbar-start:hover { background: rgba(255,255,255,0.06); }
-        .taskbar-start .win-icon { font-size: 18px; color: var(--blue); font-weight: 900; }
-        .taskbar-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+        .taskbar-start:hover { background: var(--btn-bg); }
+        .taskbar-start .win-icon { font-size: 14px; color: var(--blue); font-weight: 900; }
+        .taskbar-divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
         .taskbar-apps { display: flex; gap: 2px; align-items: center; }
         .taskbar-app {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 4px; cursor: pointer; transition: 0.12s; position: relative;
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; cursor: pointer; transition: 0.1s; position: relative;
         }
-        .taskbar-app:hover { background: rgba(255,255,255,0.06); }
-        .taskbar-app.active { background: rgba(88,166,255,0.18); }
+        .taskbar-app:hover { background: var(--btn-bg); }
+        .taskbar-app.active { background: var(--btn-bg); }
         .taskbar-app.active::after {
-            content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
-            width: 18px; height: 2px; background: var(--blue); border-radius: 1px;
+            content: ''; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
+            width: 16px; height: 2px; background: var(--blue); border-radius: 1px;
         }
-        .taskbar-app svg { width: 20px; height: 20px; }
+        .taskbar-app svg { width: 20px; height: 20px; color: var(--text); }
 
         /* ===================== LAUNCH TRANSITION ===================== */
         .launch-overlay {
             position: fixed; inset: 0; z-index: 9999;
-            background: rgba(13,17,23,0.96);
-            backdrop-filter: blur(8px);
+            background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
         }
         .launch-overlay.active { opacity: 1; visibility: visible; }
         .launch-icon {
-            width: 96px; height: 96px; border-radius: 20px;
-            background: #161b22; border: 1px solid var(--blue);
+            width: 88px; height: 88px; border-radius: 8px;
+            background: var(--panel); border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 40px rgba(88,166,255,0.3);
-            transform: scale(0.6);
-            animation: launch-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: launch-pop 0.4s ease-out forwards;
         }
         @keyframes launch-pop {
-            0% { transform: scale(0.6); opacity: 0; }
+            0% { transform: scale(0.85); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .launch-icon svg { width: 48px; height: 48px; }
+        .launch-icon svg { width: 44px; height: 44px; color: var(--text); }
         .launch-name {
-            margin-top: 24px; font-size: 18px; font-weight: 300;
-            letter-spacing: 4px; color: var(--text); text-transform: uppercase;
-            animation: launch-fade-up 0.4s ease 0.2s both;
+            margin-top: 22px; font-size: 16px; font-weight: 600;
+            letter-spacing: 2px; color: var(--text); text-transform: uppercase;
+            animation: launch-fade-up 0.3s ease 0.15s both;
         }
         @keyframes launch-fade-up {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .launch-status {
-            margin-top: 12px; font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 10px; color: #8b949e; letter-spacing: 2px;
-            animation: launch-fade-up 0.4s ease 0.3s both;
+            margin-top: 10px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
+            animation: launch-fade-up 0.3s ease 0.25s both;
         }
-        .launch-spinner {
-            margin-top: 24px; width: 32px; height: 32px;
-            border: 2px solid #21262d; border-top-color: var(--blue);
-            border-radius: 50%; animation: spin 0.8s linear infinite;
+
+        /* ===================== WIDGET STYLES ===================== */
+        .widget-title {
+            font-size: 11px; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; margin-bottom: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+            letter-spacing: 0.5px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===================== EXISTING WIDGET STYLES ===================== */
-        .widget-title { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
-
-        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .day-card { text-align: center; background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
-        .day-name { font-size: 10px; color: #8b949e; font-weight: bold; margin-bottom: 5px; }
+        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .day-card {
+            text-align: center; background: var(--bg);
+            border: 1px solid var(--border); padding: 10px; border-radius: 6px;
+        }
+        .day-name { font-size: 10px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
         .day-img { width: 32px; height: 32px; margin: 5px auto; display: block; object-fit: contain; }
         .day-status { font-size: 10px; color: var(--blue); font-family: 'SFMono-Regular', monospace; margin-top: 5px; }
 
-        .cal-note { font-size: 11px; color: #8b949e; margin-top: 15px; font-style: italic; border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.4; }
+        .cal-note {
+            font-size: 11px; color: var(--muted); margin-top: 14px;
+            font-style: italic; border-top: 1px solid var(--border);
+            padding-top: 12px; line-height: 1.4;
+        }
 
-        .edit-overlay { display: none; background: rgba(13, 17, 23, 0.98); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 50; border-radius: 8px; padding: 20px; box-sizing: border-box; border: 1px solid var(--blue); }
+        .edit-overlay {
+            display: none; background: rgba(13, 17, 23, 0.98);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; border-radius: 8px; padding: 20px; box-sizing: border-box;
+            border: 1px solid var(--blue);
+        }
         .edit-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .edit-group label { font-size: 9px; color: var(--blue); font-weight: bold; }
-        .edit-group input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 6px; font-size: 11px; border-radius: 4px; outline: none; }
+        .edit-group label { font-size: 9px; color: var(--blue); font-weight: 600; }
+        .edit-group input {
+            background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 6px; font-size: 11px;
+            border-radius: 4px; outline: none;
+        }
         .edit-group input:focus { border-color: var(--blue); }
 
-        .card-img-placeholder { width: 100%; height: 120px; border-radius: 4px; background: #0d1117; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #30363d; font-weight: bold; border: 1px solid var(--border); font-size: 12px; letter-spacing: 2px; }
+        .card-img-placeholder {
+            width: 100%; height: 120px; border-radius: 4px;
+            background: var(--bg); margin-bottom: 15px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted-2); font-weight: 600; border: 1px solid var(--border);
+            font-size: 12px; letter-spacing: 2px;
+        }
         .card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
-        .card p { font-size: 13px; color: #8b949e; line-height: 1.5; margin-bottom: 20px; }
+        .card p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
 
-        .btn-action { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; width: 100%; box-sizing: border-box; transition: 0.2s; }
-        .btn-green { background: var(--btn-green); border: none; }
-        .btn-green:hover { background: #2ea043; }
-        .btn-edit { background: #21262d; border: 1px solid var(--border); color: #8b949e; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .btn-action {
+            padding: 9px 16px; border-radius: 6px;
+            border: 1px solid var(--border); cursor: pointer;
+            background: var(--btn-bg); color: var(--text);
+            font-size: 13px; font-weight: 600; text-decoration: none;
+            text-align: center; display: block; width: 100%;
+            box-sizing: border-box; transition: 0.12s;
+        }
+        .btn-action:hover { background: var(--border); }
+        .btn-green { background: var(--green); border-color: var(--green); color: white; }
+        .btn-green:hover { background: var(--green-hover); border-color: var(--green-hover); }
+        .btn-edit {
+            background: var(--btn-bg); border: 1px solid var(--border);
+            color: var(--muted); padding: 2px 8px; border-radius: 4px;
+            font-size: 10px; cursor: pointer;
+        }
         .btn-edit:hover { color: var(--blue); border-color: var(--blue); }
         .btn-disabled { opacity: 0.4; cursor: not-allowed !important; }
 
-        .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; color: var(--red); display: none; background: rgba(248,81,73,0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--red); }
+        .lock-badge {
+            position: absolute; top: 12px; right: 12px; font-size: 10px;
+            color: var(--red); display: none;
+            background: rgba(248,81,73,0.1); padding: 3px 8px;
+            border-radius: 4px; border: 1px solid var(--red);
+        }
         .admin-only { display: none; }
 
-        .note-content p:first-child { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; font-weight: 700; }
-        .note-content p:last-child { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0; }
+        .note-content p:first-child {
+            font-size: 11px; color: var(--muted); text-transform: uppercase;
+            letter-spacing: 1px; margin: 0 0 8px 0; font-weight: 600;
+        }
+        .note-content p:last-child {
+            font-size: 13px; line-height: 1.6; color: var(--text); margin: 0;
+        }
     </style>
 </head>
 <body>
 
-<!-- ============= BOOT SCREEN ============= -->
 <div class="boot-screen" id="boot-screen">
     <h1 class="boot-logo">ADA</h1>
     <p class="boot-sub">Archive OS</p>
@@ -287,32 +332,27 @@
 
 <div id="ada-header-anchor"></div>
 
-<!-- ============= TOP-RIGHT CLOCK ============= -->
 <div class="topbar-clock">
     <div class="topbar-clock-time" id="topbar-clock-time">--:--:--</div>
     <div class="topbar-clock-date" id="topbar-clock-date">--/--/----</div>
 </div>
 
-<!-- ============= LAUNCH OVERLAY ============= -->
 <div class="launch-overlay" id="launch-overlay">
     <div class="launch-icon" id="launch-icon"></div>
     <div class="launch-name" id="launch-name">Launching</div>
     <div class="launch-status" id="launch-status">Connecting…</div>
-    <div class="launch-spinner"></div>
 </div>
 
 <div class="os-shell" id="os-shell">
 
-    <!-- ============ DESKTOP ============ -->
     <main class="os-desktop">
         <div class="os-grid-bg"></div>
 
-        <!-- Desktop icons -->
         <div class="desktop-icons">
 
             <div class="desktop-icon" data-target="win-note" data-launchable="true">
                 <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="4" y="3" width="16" height="18" rx="2"/>
                         <line x1="8" y1="8" x2="16" y2="8"/>
                         <line x1="8" y1="12" x2="16" y2="12"/>
@@ -324,7 +364,7 @@
 
             <div class="desktop-icon" data-target="win-forecast" data-launchable="true">
                 <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="9" cy="9" r="3"/>
                         <line x1="9" y1="2" x2="9" y2="4"/>
                         <line x1="9" y1="14" x2="9" y2="16"/>
@@ -338,7 +378,7 @@
 
             <div class="desktop-icon" data-href="/wikiselector.html" data-launchable="true">
                 <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/>
                         <path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/>
                     </svg>
@@ -348,7 +388,7 @@
 
             <div class="desktop-icon" data-href="/visuals.html" data-launchable="true">
                 <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="5" y="11" width="14" height="10" rx="2"/>
                         <path d="M8 11V7a4 4 0 1 1 8 0v4"/>
                     </svg>
@@ -358,7 +398,7 @@
 
             <div class="desktop-icon" data-href="/ADAP.html" data-launchable="true">
                 <div class="desktop-icon-img">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="16" rx="2"/>
                         <polyline points="7 9 10 12 7 15"/>
                         <line x1="13" y1="15" x2="17" y2="15"/>
@@ -368,10 +408,9 @@
             </div>
         </div>
 
-        <!-- WINDOW: Note to Max -->
         <div class="os-window" id="win-note" data-title="Note to Max" style="left: 220px; top: 80px; width: 420px;">
             <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                 <div class="os-window-title">Note to Max</div>
                 <div class="os-window-controls">
                     <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -385,10 +424,9 @@
             </div>
         </div>
 
-        <!-- WINDOW: Forecast -->
         <div class="os-window" id="win-forecast" data-title="Mood Forecast" style="left: 280px; top: 120px; width: 560px;">
             <div class="os-window-header">
-                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="9" cy="9" r="3"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="9" y1="14" x2="9" y2="16"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="14" y1="9" x2="16" y2="9"/></svg>
+                <svg class="os-window-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="3"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="9" y1="14" x2="9" y2="16"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="14" y1="9" x2="16" y2="9"/></svg>
                 <div class="os-window-title">Chan's Mood Forecast</div>
                 <div class="os-window-controls">
                     <div class="os-window-btn" data-action="minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
@@ -413,7 +451,6 @@
         </div>
     </main>
 
-    <!-- ============ TASKBAR ============ -->
     <div class="os-taskbar">
         <div class="taskbar-start" onclick="location.href='/index.html'">
             <span class="win-icon">⊞</span>
@@ -422,19 +459,19 @@
         <div class="taskbar-divider"></div>
         <div class="taskbar-apps">
             <div class="taskbar-app" data-target="win-note" title="Note to Max">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </div>
             <div class="taskbar-app" data-target="win-forecast" title="Mood Forecast">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><circle cx="9" cy="9" r="3"/><path d="M14 14a4 4 0 1 1 3 6.8H8a3.5 3.5 0 0 1-.8-6.9"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="3"/><path d="M14 14a4 4 0 1 1 3 6.8H8a3.5 3.5 0 0 1-.8-6.9"/></svg>
             </div>
             <div class="taskbar-app" data-href="/wikiselector.html" title="Wiki Records">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>
             </div>
             <div class="taskbar-app" data-href="/visuals.html" title="Content Page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
             </div>
             <div class="taskbar-app" data-href="/ADAP.html" title="ADAP Terminal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c9d1d9" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 10 12 7 15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>
             </div>
         </div>
     </div>
@@ -459,22 +496,17 @@
     const bootInterval = setInterval(() => {
         msgIdx++;
         if (msgIdx < bootMessages.length) bootStatus.textContent = bootMessages[msgIdx];
-    }, 350);
-
-    setTimeout(() => {
-        clearInterval(bootInterval);
-        bootStatus.textContent = 'READY';
-    }, 1750);
-
+    }, 320);
+    setTimeout(() => { clearInterval(bootInterval); bootStatus.textContent = 'READY'; }, 1600);
     setTimeout(() => {
         bootScreen.classList.add('hidden');
         osShell.classList.add('visible');
-    }, 2200);
+    }, 2000);
 
     /* =================== TOP-RIGHT CLOCK =================== */
     function startClock() {
         const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const timeEl = document.getElementById('topbar-clock-time');
         const dateEl = document.getElementById('topbar-clock-date');
         function tick() {
@@ -487,7 +519,7 @@
             const year = now.getFullYear();
             const dayShort = DAYS[now.getDay()].slice(0,3).toUpperCase();
             if (timeEl) timeEl.textContent = `${hh}:${mm}:${ss}`;
-            if (dateEl) dateEl.textContent = `${dayShort} ${date} ${month}`;
+            if (dateEl) dateEl.textContent = `${dayShort} ${date} ${month} ${year}`;
         }
         tick();
         setInterval(tick, 1000);
@@ -501,43 +533,31 @@
     const launchStatus = document.getElementById('launch-status');
 
     function launchApp(iconEl) {
-        // Get the SVG and label from the icon
         const svg = iconEl.querySelector('.desktop-icon-img').innerHTML;
         const name = iconEl.querySelector('.desktop-icon-label').textContent;
         const href = iconEl.dataset.href;
 
-        // Reset animation by reflowing
         launchIcon.innerHTML = svg;
         launchIcon.style.animation = 'none';
         launchName.style.animation = 'none';
         launchStatus.style.animation = 'none';
-        // Force reflow
         void launchIcon.offsetWidth;
         launchIcon.style.animation = '';
         launchName.style.animation = '';
         launchStatus.style.animation = '';
 
         launchName.textContent = name;
-        launchStatus.textContent = 'Launching…';
-
+        launchStatus.textContent = 'Connecting…';
         launchOverlay.classList.add('active');
 
-        // Cycle through boot messages during transition
-        const messages = ['Connecting…', 'Authenticating…', 'Loading…', 'Almost there…'];
+        const messages = ['Authenticating…', 'Loading…', 'Opening…'];
         let i = 0;
         const msgTimer = setInterval(() => {
             i++;
             if (i < messages.length) launchStatus.textContent = messages[i];
-        }, 350);
-
-        setTimeout(() => {
-            clearInterval(msgTimer);
-            launchStatus.textContent = 'Opening…';
-        }, 1400);
-
-        setTimeout(() => {
-            window.location.href = href;
-        }, 1700);
+        }, 450);
+        setTimeout(() => { clearInterval(msgTimer); launchStatus.textContent = 'Opening…'; }, 1300);
+        setTimeout(() => { window.location.href = href; }, 1500);
     }
 
     /* =================== OS WINDOW ENGINE =================== */
@@ -553,16 +573,13 @@
         win.classList.add('focused');
         syncActiveState(win.id);
     }
-
     function syncActiveState(activeId) {
         desktopIcons.forEach(icon => icon.classList.toggle('active', icon.dataset.target === activeId));
         taskbarApps.forEach(app => app.classList.toggle('active', app.dataset.target === activeId));
     }
-
     function makeDraggable(win) {
         const header = win.querySelector('.os-window-header');
         let isDragging = false, startX, startY, startLeft, startTop;
-
         const onDown = (e) => {
             if (e.target.closest('.os-window-controls')) return;
             if (win.classList.contains('maximized')) return;
@@ -570,8 +587,7 @@
             startX = e.clientX; startY = e.clientY;
             const rect = win.getBoundingClientRect();
             startLeft = rect.left; startTop = rect.top;
-            bringToFront(win);
-            e.preventDefault();
+            bringToFront(win); e.preventDefault();
         };
         const onMove = (e) => {
             if (!isDragging) return;
@@ -585,12 +601,10 @@
             win.style.top = newTop + 'px';
         };
         const onUp = () => { isDragging = false; };
-
         header.addEventListener('mousedown', onDown);
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
     }
-
     document.querySelectorAll('.os-window-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -604,33 +618,25 @@
             }
         });
     });
-
-    // Desktop icons: link apps go through launch transition; windowed apps open windows
     desktopIcons.forEach(icon => {
-        icon.addEventListener('dblclick', () => {
-            if (icon.dataset.href) {
-                launchApp(icon);
-            } else {
-                const target = document.getElementById(icon.dataset.target);
-                if (!target) return;
-                target.classList.remove('closed', 'minimized');
-                bringToFront(target);
-            }
-        });
         icon.addEventListener('click', () => {
-            if (icon.dataset.href) {
-                launchApp(icon);
-            } else {
+            if (icon.dataset.href) launchApp(icon);
+            else {
                 const target = document.getElementById(icon.dataset.target);
                 if (target) bringToFront(target);
             }
         });
+        icon.addEventListener('dblclick', () => {
+            if (icon.dataset.href) launchApp(icon);
+            else {
+                const target = document.getElementById(icon.dataset.target);
+                if (target) { target.classList.remove('closed', 'minimized'); bringToFront(target); }
+            }
+        });
     });
-
     taskbarApps.forEach(app => {
         app.addEventListener('click', () => {
             if (app.dataset.href) {
-                // Find the desktop icon that has the same href and use its icon
                 const matchingIcon = Array.from(desktopIcons).find(ic => ic.dataset.href === app.dataset.href);
                 if (matchingIcon) launchApp(matchingIcon);
                 else window.location.href = app.dataset.href;
@@ -639,15 +645,12 @@
             const target = document.getElementById(app.dataset.target);
             if (!target) return;
             if (target.classList.contains('focused') && !target.classList.contains('minimized')) {
-                target.classList.add('minimized');
-                syncActiveState(null);
+                target.classList.add('minimized'); syncActiveState(null);
             } else {
-                target.classList.remove('closed', 'minimized');
-                bringToFront(target);
+                target.classList.remove('closed', 'minimized'); bringToFront(target);
             }
         });
     });
-
     windows.forEach(win => {
         win.addEventListener('mousedown', () => bringToFront(win));
         makeDraggable(win);
@@ -668,7 +671,6 @@
             const inCal = document.getElementById('in-cal-note');
             if (inCal) inCal.value = data.widgets.calendar_note || "";
         }
-        // (Clock already running above)
     }
 
     function renderForecast() {
