@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA | Archive Dashboard</title>
-    
+    <title>ADA OS</title>
+
     <!-- MASTER SCRIPTS -->
     <script src="/config.js"></script>
     <script src="/uplink.js"></script>
@@ -11,201 +11,767 @@
     <script src="/escape-key.js"></script>
 
     <style>
-        :root { 
-            --bg: #0d1117; --header: #161b22; --border: #30363d; 
-            --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; 
+        /* ──────────────────────────────────────────────────────────
+           ADA OS — Retro Windows 95 / 2000 chrome (Dark Mode)
+           ────────────────────────────────────────────────────────── */
+        :root {
+            --bg-desktop:        #0a0e14;   /* near-black desktop */
+            --bg-desktop-accent: #141a22;
+            --win-bg:            #1c2128;   /* dark grey window chrome */
+            --win-bg-light:      #2a313c;   /* raised edge */
+            --win-bg-dark:       #11151b;   /* sunken edge */
+            --win-bg-darker:     #0a0d12;
+            --win-title:         #0d1117;   /* dark title bar */
+            --win-title-active:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            --win-title-inactive:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+            --win-text:          #e6edf3;
+            --win-text-light:    #ffffff;
+            --win-border-light:  #4a525e;   /* light edge of dark chrome */
+            --win-border-dark:   #080a0e;   /* dark edge of dark chrome */
+            --win-text-blue:     #58a6ff;
+            --taskbar-bg:        #161b22;
+            --btn-green:         #238636;
+            --blue:              #58a6ff;
+            --red:               #f85149;
         }
-        
+
+        * { box-sizing: border-box; }
+
         /* THEMED SCROLLBAR */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--win-bg-light); border-top: 1px solid var(--win-border-light); border-left: 1px solid var(--win-border-light); border-right: 1px solid var(--win-border-dark); border-bottom: 1px solid var(--win-border-dark); }
+        ::-webkit-scrollbar-button { background: var(--win-bg-light); display: block; }
 
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
-        
-        .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 30px 20px; box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px;
+            color: var(--win-text);
+            overflow: hidden;
+        }
 
-        /* WIDGETS LAYOUT */
-        .widgets-row { display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-bottom: 40px; }
-        .widget-box { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; }
-        .widget-title { font-size: 11px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
+        /* ── DESKTOP ───────────────────────────────────────────── */
+        #desktop {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(88,166,255,0.06), transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.30), transparent 50%),
+                var(--bg-desktop);
+            overflow: hidden;
+        }
 
-        /* Forecast Styles */
-        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .day-card { text-align: center; background: #0d1117; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
-        .day-name { font-size: 10px; color: #8b949e; font-weight: bold; margin-bottom: 5px; }
-        .day-img { width: 32px; height: 32px; margin: 5px auto; display: block; object-fit: contain; }
-        .day-status { font-size: 10px; color: var(--blue); font-family: 'SFMono-Regular', monospace; margin-top: 5px; }
+        /* Desktop icons (left column) */
+        .desktop-icons {
+            position: absolute; top: 10px; left: 10px;
+            display: flex; flex-direction: column; gap: 14px;
+            z-index: 1;
+        }
+        .desktop-icon {
+            display: flex; flex-direction: column; align-items: center;
+            width: 76px; padding: 6px 4px; cursor: pointer;
+            border: 1px dotted transparent; user-select: none;
+        }
+        .desktop-icon:hover { background: rgba(88,166,255,0.10); border-color: rgba(88,166,255,0.4); }
+        .desktop-icon:active { background: rgba(0,0,0,0.30); }
+        .desktop-icon .icon-img {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; line-height: 1; margin-bottom: 4px;
+        }
+        .desktop-icon .icon-label {
+            color: var(--win-text); font-size: 11px; text-align: center;
+            text-shadow: 1px 1px 0 #000;
+            word-wrap: break-word;
+        }
 
-        /* Calendar Styles */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-size: 11px; }
-        .cal-header { color: #8b949e; font-weight: bold; padding-bottom: 5px; }
-        .cal-date { padding: 5px; border-radius: 4px; }
-        .cal-today { background: var(--blue); color: #000; font-weight: bold; }
-        .cal-note { font-size: 11px; color: #8b949e; margin-top: 15px; font-style: italic; border-top: 1px solid var(--border); padding-top: 12px; line-height: 1.4; }
+        /* ── WINDOWS ───────────────────────────────────────────── */
+        .window {
+            position: absolute;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000, 0 0 0 1px #000;
+            display: flex; flex-direction: column;
+            min-width: 220px; min-height: 140px;
+        }
+        .window.maximized {
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: calc(100% - 32px) !important;
+            border: 2px solid var(--win-border-dark);
+        }
 
-        /* Admin Overlays */
-        .edit-overlay { display: none; background: rgba(13, 17, 23, 0.98); position: absolute; top:0; left:0; width:100%; height:100%; z-index: 50; border-radius: 8px; padding: 20px; box-sizing: border-box; border: 1px solid var(--blue); }
-        .edit-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .edit-group label { font-size: 9px; color: var(--blue); font-weight: bold; }
-        .edit-group input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 6px; font-size: 11px; border-radius: 4px; outline: none; }
-        .edit-group input:focus { border-color: var(--blue); }
+        .titlebar {
+            background: var(--win-title-inactive);
+            color: var(--win-text-light);
+            padding: 3px 4px 3px 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 12px;
+            cursor: move;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .window.active .titlebar { background: var(--win-title-active); }
+        .titlebar-text { display: flex; align-items: center; gap: 5px; }
+        .titlebar-text .tb-icon { font-size: 13px; }
+        .titlebar-buttons { display: flex; gap: 2px; }
 
-        /* Resource Cards */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        .card { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 20px; position: relative; transition: 0.2s; }
-        .card:hover { border-color: #8b949e; }
-        .card-img-placeholder { width: 100%; height: 160px; border-radius: 4px; background: #0d1117; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #30363d; font-weight: bold; border: 1px solid var(--border); font-size: 12px; letter-spacing: 2px; }
-        .card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--blue); }
-        .card p { font-size: 13px; color: #8b949e; line-height: 1.5; margin-bottom: 20px; }
+        .titlebar-btn {
+            width: 18px; height: 16px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            display: flex; align-items: center; justify-content: center;
+            font-family: "Marlett", "MS Sans Serif", monospace;
+            font-size: 10px; line-height: 1; cursor: pointer;
+            color: var(--win-text); padding: 0;
+        }
+        .titlebar-btn:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
 
-        /* Buttons */
-        .btn-action { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; background: #21262d; color: white; font-size: 13px; font-weight: 600; text-decoration: none; text-align: center; display: block; width: 100%; box-sizing: border-box; transition: 0.2s; }
-        .btn-green { background: var(--btn-green); border: none; }
-        .btn-green:hover { background: #2ea043; }
-        .btn-edit { background: #21262d; border: 1px solid var(--border); color: #8b949e; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .btn-edit:hover { color: var(--blue); border-color: var(--blue); }
-        .btn-disabled { opacity: 0.4; cursor: not-allowed !important; }
+        .menubar {
+            display: flex; gap: 0;
+            background: var(--win-bg);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 1px 2px;
+            flex-shrink: 0;
+        }
+        .menubar span {
+            padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+        }
+        .menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
 
-        .lock-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; color: var(--red); display: none; background: rgba(248,81,73,0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--red); }
+        .window-body {
+            flex: 1;
+            padding: 10px;
+            overflow: auto;
+            background: var(--win-bg);
+            color: var(--win-text);
+            /* Inset border on body */
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
+        }
+        .window-body.flush { padding: 0; }
+
+        .statusbar {
+            padding: 3px 6px; font-size: 11px; color: var(--win-text);
+            background: var(--win-bg);
+            border-top: 1px solid var(--win-border-dark);
+            display: flex; justify-content: space-between; gap: 4px;
+            flex-shrink: 0;
+        }
+        .statusbar-cell {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 1px 6px; flex: 1;
+            color: var(--win-text);
+        }
+
+        /* ── BUTTONS (chiseled chrome) ─────────────────────────── */
+        .btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 4px 14px;
+            font-family: inherit; font-size: 12px;
+            cursor: pointer; min-width: 75px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 5px 13px 3px 15px;
+        }
+        .btn:disabled { color: var(--win-bg-light); text-shadow: 1px 1px 0 #000; cursor: not-allowed; }
+        .btn-primary  { font-weight: bold; }
+
+        .field {
+            background: #0d1117; color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 3px 5px; font-family: inherit; font-size: 12px;
+            outline: none; width: 100%; box-sizing: border-box;
+        }
+        .field:focus { background: #161b22; border-right-color: var(--win-text-blue); border-bottom-color: var(--win-text-blue); }
+        textarea.field { resize: vertical; min-height: 80px; font-family: "MS Sans Serif", monospace; }
+
+        /* ── WINDOW-INTERNAL CONTENT ───────────────────────────── */
+        .window h2 {
+            margin: 0 0 8px 0; font-size: 13px; color: var(--win-text-blue);
+            font-weight: bold;
+        }
+        .window p { margin: 0 0 10px 0; line-height: 1.45; }
+        .window p.subtle { color: #8b949e; font-style: italic; font-size: 11px; }
+
+        .field-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+        .field-group label { font-size: 11px; font-weight: bold; color: var(--win-text); }
+        .field-group .label-row { display: flex; justify-content: space-between; align-items: baseline; }
+        .field-group .label-row .hint { font-size: 10px; color: #8b949e; font-style: italic; }
+
+        /* Forecast grid (inside Chan's Mood Forecast window) */
+        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .day-card {
+            text-align: center; background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 6px 4px;
+            color: var(--win-text);
+        }
+        .day-name { font-size: 10px; color: #8b949e; font-weight: bold; margin-bottom: 4px; }
+        .day-img  { width: 32px; height: 32px; margin: 0 auto; display: block; object-fit: contain; }
+        .day-status { font-size: 10px; color: var(--win-text-blue); font-family: "Courier New", monospace; margin-top: 4px; }
+
+        .clock-day  { font-size: 12px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .clock-date { font-size: 13px; color: var(--win-text); font-weight: 600; }
+        .clock-time { font-size: 32px; font-family: "Courier New", monospace; font-weight: bold; color: var(--win-text-blue); letter-spacing: 2px; }
+
+        /* Card placeholders (apps) */
+        .app-tile {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center;
+            padding: 12px 8px;
+            background: #0d1117;
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            cursor: pointer; user-select: none;
+        }
+        .app-tile:hover { background: #161b22; }
+        .app-tile:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+        .app-tile .app-icon  { font-size: 36px; line-height: 1; margin-bottom: 6px; }
+        .app-tile .app-name  { font-size: 12px; font-weight: bold; }
+        .app-tile .app-sub   { font-size: 10px; color: #8b949e; margin-top: 2px; }
+        .app-tile.locked    { opacity: 0.6; }
+
+        .lock-badge {
+            font-size: 10px; color: white; display: none;
+            background: var(--red); padding: 2px 6px;
+            border: 1px solid #800000; margin-bottom: 6px;
+            text-align: center; font-weight: bold;
+        }
+
+        /* ── TASKBAR ───────────────────────────────────────────── */
+        #taskbar {
+            position: fixed; left: 0; right: 0; bottom: 0;
+            height: 32px;
+            background: var(--taskbar-bg);
+            border-top: 2px solid var(--win-border-light);
+            display: flex; align-items: center; padding: 2px 4px; gap: 4px;
+            z-index: 9999;
+        }
+        #start-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 2px 8px; font-weight: bold; font-size: 12px;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            cursor: pointer; min-height: 24px;
+        }
+        #start-btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+        }
+        #start-btn .logo {
+            width: 16px; height: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 12px; color: white;
+        }
+
+        #taskbar-windows { flex: 1; display: flex; gap: 3px; overflow: hidden; }
+        .taskbar-item {
+            display: flex; align-items: center; gap: 4px;
+            padding: 2px 8px; min-width: 130px; max-width: 180px;
+            font-size: 12px; cursor: pointer; user-select: none;
+            color: var(--win-text);
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .taskbar-item.active {
+            background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            box-shadow: inset 1px 1px 0 0 #000;
+        }
+        .taskbar-item .ti-icon { font-size: 13px; flex-shrink: 0; }
+        .taskbar-item .ti-text { overflow: hidden; text-overflow: ellipsis; }
+
+        #system-tray {
+            display: flex; align-items: center; gap: 6px;
+            padding: 2px 8px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            font-size: 12px; min-height: 24px;
+            color: var(--win-text);
+        }
+        #tray-clock { font-weight: bold; }
+
+        /* ── START MENU ────────────────────────────────────────── */
+        #start-menu {
+            position: fixed; left: 4px; bottom: 32px;
+            width: 220px;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            display: none; z-index: 9998;
+            box-shadow: 2px 2px 0 0 #000;
+        }
+        #start-menu.open { display: block; }
+        #start-menu-header {
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            color: white; font-weight: bold;
+            padding: 6px 8px; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .start-menu-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 8px; cursor: pointer; font-size: 12px;
+            color: var(--win-text);
+        }
+        .start-menu-item:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+        .start-menu-item .smi-icon { font-size: 16px; width: 20px; text-align: center; }
+        .start-menu-sep {
+            height: 1px; background: var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px 2px;
+        }
+        .start-menu-side {
+            position: absolute; top: 0; right: 0; bottom: 0;
+            width: 24px;
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            display: flex; align-items: flex-end; justify-content: center;
+            color: white; font-weight: bold;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            font-size: 18px; padding: 8px 4px; letter-spacing: 2px;
+        }
+
+        /* ── MISC ──────────────────────────────────────────────── */
+        .hidden { display: none !important; }
         .admin-only { display: none; }
+
+        .icon-strip { display: flex; gap: 4px; align-items: center; }
+        .icon-strip .ic { font-size: 14px; }
+
+        .row-spread { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .row-buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<!-- 2. HEADER INJECTION ANCHOR -->
-<div id="ada-header-anchor"></div>
-<script src="/header-engine.js"></script>
-<script src="/changelog.js"></script>
-<div class="container">
-    <p>Message for max:</p>
-    <p>Hey Max! Counterintuitive as it sounds, milk actually is slightly acidic.Fresh cow’s milk has a chemical pH between 6.5 and 6.7. Since a neutral pH is exactly 7.0, anything below that is technically an acid.People often mistake milk for being alkaline because it temporarily soothes heartburn. That relief happens because the milk coats your stomach lining, not because it is a base.</p>
-    <!-- 3. WIDGETS SECTION -->
-    <div class="widgets-row">
-        <!-- FORECAST WIDGET -->
-        <div class="widget-box" id="forecast-widget">
-            <div class="widget-title">
-                Chan's Mood Forcast:
-                <button class="btn-edit admin-only" onclick="toggleOverlay('edit-forecast')">Edit</button>
+<!-- ═════════════ DESKTOP ═════════════ -->
+<div id="desktop">
+
+    <!-- Desktop icons (left) -->
+    <div class="desktop-icons">
+        <div class="desktop-icon" ondblclick="openWindow('forecast')">
+            <div class="icon-img">⛅</div>
+            <div class="icon-label">Forecast</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('clock')">
+            <div class="icon-img">🕒</div>
+            <div class="icon-label">System Time</div>
+        </div>
+        <div class="desktop-icon" ondblclick="openWindow('apps')">
+            <div class="icon-img">📁</div>
+            <div class="icon-label">Programs</div>
+        </div>
+        <div class="desktop-icon" ondblclick="navigateTo('/login.html')">
+            <div class="icon-img">🚪</div>
+            <div class="icon-label">Log Out</div>
+        </div>
+    </div>
+
+    <!-- Header anchor (preserved for engine compatibility) -->
+    <div id="ada-header-anchor" class="hidden"></div>
+
+    <!-- ── WINDOW: Welcome / Read me ── -->
+    <div class="window" id="win-welcome" data-win="welcome" style="left: 100px; top: 60px; width: 360px; height: 240px;">
+        <div class="titlebar">
+            <div class="titlebar-text"><span class="tb-icon">💬</span><span>Welcome to ADA OS</span></div>
+            <div class="titlebar-buttons">
+                <button class="titlebar-btn" title="Help">?</button>
+                <button class="titlebar-btn" onclick="closeWindow('welcome')" title="Close">×</button>
             </div>
+        </div>
+        <div class="menubar"><span>File</span><span>Edit</span><span>Help</span></div>
+        <div class="window-body">
+            <h2>ADA Archive Desktop</h2>
+            <p>Double-click a desktop icon to open a program. Use the Programs folder to launch archives.</p>
+            <p class="subtle">Tip: You can drag windows around by their title bar, and double-click the title bar to maximize.</p>
+        </div>
+        <div class="statusbar">
+            <div class="statusbar-cell">Ready</div>
+            <div class="statusbar-cell">User: <span id="status-user">guest</span></div>
+        </div>
+    </div>
+
+    <!-- ── WINDOW: Chan's Mood Forecast ── -->
+    <div class="window" id="win-forecast" data-win="forecast" style="left: 480px; top: 80px; width: 360px; height: 240px;">
+        <div class="titlebar">
+            <div class="titlebar-text"><span class="tb-icon">⛅</span><span>Chan's Mood Forecast</span></div>
+            <div class="titlebar-buttons">
+                <button class="titlebar-btn" onclick="toggleOverlay('edit-forecast')" title="Edit">✎</button>
+                <button class="titlebar-btn" onclick="maximizeWindow('forecast')" title="Maximize">▢</button>
+                <button class="titlebar-btn" onclick="closeWindow('forecast')" title="Close">×</button>
+            </div>
+        </div>
+        <div class="menubar"><span>File</span><span>View</span><span>Help</span></div>
+        <div class="window-body">
             <div class="forecast-grid" id="forecast-display"></div>
-            
             <!-- Edit Overlay -->
-            <div class="edit-overlay" id="edit-forecast">
-                <div id="forecast-editor-inputs" style="max-height: 250px; overflow-y:auto; padding-right:5px;"></div>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn-action btn-green" style="font-size:11px; padding:6px;" onclick="saveForecast()">Save Sync</button>
-                    <button class="btn-action" style="font-size:11px; padding:6px;" onclick="toggleOverlay('edit-forecast')">Cancel</button>
+            <div id="edit-forecast" class="hidden" style="position:absolute;inset:30px;background:var(--win-bg);padding:8px;overflow:auto;border-top:1px solid var(--win-border-light);border-left:1px solid var(--win-border-light);border-right:1px solid var(--win-border-dark);border-bottom:1px solid var(--win-border-dark);">
+                <div id="forecast-editor-inputs"></div>
+                <div class="row-buttons">
+                    <button class="btn btn-primary" onclick="saveForecast()">Save Sync</button>
+                    <button class="btn" onclick="toggleOverlay('edit-forecast')">Cancel</button>
                 </div>
             </div>
         </div>
+        <div class="statusbar">
+            <div class="statusbar-cell">Forecast.cfg</div>
+            <div class="statusbar-cell" id="forecast-status">5 days</div>
+        </div>
+    </div>
 
-        <!-- CLOCK WIDGET -->
-        <div class="widget-box">
-            <div class="widget-title">
-                System Time
-                <button class="btn-edit admin-only" onclick="toggleOverlay('edit-calendar')">Edit Note</button>
+    <!-- ── WINDOW: System Time ── -->
+    <div class="window" id="win-clock" data-win="clock" style="left: 200px; top: 280px; width: 280px; height: 240px;">
+        <div class="titlebar">
+            <div class="titlebar-text"><span class="tb-icon">🕒</span><span>System Time</span></div>
+            <div class="titlebar-buttons">
+                <button class="titlebar-btn" onclick="toggleOverlay('edit-calendar')" title="Edit Note">✎</button>
+                <button class="titlebar-btn" onclick="maximizeWindow('clock')" title="Maximize">▢</button>
+                <button class="titlebar-btn" onclick="closeWindow('clock')" title="Close">×</button>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 0;">
-                <div id="clock-day" style="font-size:12px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:2px;"></div>
-                <div id="clock-date" style="font-size:14px;color:var(--text);font-weight:600;"></div>
-                <div id="clock-time" style="font-size:36px;font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;color:var(--blue);letter-spacing:3px;margin:4px 0;"></div>
+        </div>
+        <div class="menubar"><span>File</span><span>View</span><span>Help</span></div>
+        <div class="window-body">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px 0;">
+                <div id="clock-day" class="clock-day"></div>
+                <div id="clock-date" class="clock-date"></div>
+                <div id="clock-time" class="clock-time"></div>
             </div>
-            <div id="calendar-note-display" class="cal-note"></div>
-
+            <div id="calendar-note-display" style="margin-top:10px;padding:6px;background:white;border-top:1px solid var(--win-border-dark);border-left:1px solid var(--win-border-dark);border-right:1px solid var(--win-border-light);border-bottom:1px solid var(--win-border-light);font-size:11px;font-style:italic;line-height:1.4;"></div>
             <!-- Edit Overlay -->
-            <div class="edit-overlay" id="edit-calendar">
-                <label style="font-size:10px; color:var(--blue); font-weight:bold; display:block; margin-bottom:5px;">GLOBAL SYSTEM NOTE</label>
-                <textarea id="in-cal-note" style="width:100%; height:120px; background:#000; color:white; border:1px solid var(--border); border-radius:6px; font-size:12px; outline:none; padding:10px; box-sizing:border-box;"></textarea>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn-action btn-green" style="font-size:11px; padding:6px;" onclick="saveCalendarNote()">Update</button>
-                    <button class="btn-action" style="font-size:11px; padding:6px;" onclick="toggleOverlay('edit-calendar')">Cancel</button>
+            <div id="edit-calendar" class="hidden" style="position:absolute;inset:30px;background:var(--win-bg);padding:8px;overflow:auto;border-top:1px solid var(--win-border-light);border-left:1px solid var(--win-border-light);border-right:1px solid var(--win-border-dark);border-bottom:1px solid var(--win-border-dark);">
+                <div class="field-group">
+                    <label>GLOBAL SYSTEM NOTE</label>
+                    <textarea id="in-cal-note" class="field"></textarea>
+                </div>
+                <div class="row-buttons">
+                    <button class="btn btn-primary" onclick="saveCalendarNote()">Update</button>
+                    <button class="btn" onclick="toggleOverlay('edit-calendar')">Cancel</button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- 4. GALLERY GRID -->
-    <h2>Archive Resources</h2>
-    <div class="grid">
-        <!-- Wiki Card -->
-        <div class="card">
-            <span class="lock-badge" id="lock-page1">🔒 Restricted</span>
-            <div class="card-img-placeholder" style="border-left: 4px solid var(--blue);">SEC_WIKI_NET</div>
-            
-            <h3>Wiki Records</h3>
-            <p>Publicly editable documentation partitions for archive data and system logs.</p>
-            <button class="btn-action btn-green" id="nav-page1" onclick="location.href='/wikiselector.html'">Launch Archives</button>
-            <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page1')">Toggle System Lock</button>
-        </div>
-
-        <!-- Special Projects Card -->
-        <div class="card">
-            <span class="lock-badge" id="lock-page2">🔒 Restricted</span>
-            <div class="card-img-placeholder" style="border-left: 4px solid var(--btn-green);">SEC_SPEC_OPS</div>
-            <h3>Content Page</h3>
-            <p>Shhh...</p>
-            <button class="btn-action btn-green" id="nav-page2" onclick="location.href='/visuals.html'">Access Content</button>
-            <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page2')">Toggle System Lock</button>
-        </div>
-        <div class="card">
-            <span class="lock-badge" id="lock-page3">🔒 Restricted</span>
-            <div class="card-img-placeholder" style="border-left: 4px solid var(--btn-green);">SEC_SPEC_OPS</div>
-            <h3>ADAP</h3>
-            <p>Access ADAP</p>
-            <button class="btn-action btn-green" id="nav-page3" onclick="location.href='/ADAP.html'">Access Special</button>
-            <button class="btn-action admin-only" style="margin-top:10px;" onclick="toggleLock('page3')">Toggle System Lock</button>
+        <div class="statusbar">
+            <div class="statusbar-cell">Clock</div>
+            <div class="statusbar-cell" id="clock-tz">Local Time</div>
         </div>
     </div>
+
+    <!-- ── WINDOW: Programs (apps/launchers) ── -->
+    <div class="window" id="win-apps" data-win="apps" style="left: 520px; top: 360px; width: 360px; height: 280px;">
+        <div class="titlebar">
+            <div class="titlebar-text"><span class="tb-icon">📁</span><span>Programs</span></div>
+            <div class="titlebar-buttons">
+                <button class="titlebar-btn" onclick="maximizeWindow('apps')" title="Maximize">▢</button>
+                <button class="titlebar-btn" onclick="closeWindow('apps')" title="Close">×</button>
+            </div>
+        </div>
+        <div class="menubar"><span>File</span><span>View</span><span>Help</span></div>
+        <div class="window-body">
+            <p class="subtle">Double-click an application to launch it.</p>
+            <div id="apps-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;">
+                <!-- Wiki -->
+                <div class="app-tile" id="tile-page1" ondblclick="launchApp('page1')">
+                    <span class="lock-badge" id="lock-page1">🔒 RESTRICTED</span>
+                    <div class="app-icon">📚</div>
+                    <div class="app-name">Wiki Records</div>
+                    <div class="app-sub">SEC_WIKI_NET</div>
+                </div>
+                <!-- Special -->
+                <div class="app-tile" id="tile-page2" ondblclick="launchApp('page2')">
+                    <span class="lock-badge" id="lock-page2">🔒 RESTRICTED</span>
+                    <div class="app-icon">🎨</div>
+                    <div class="app-name">Special</div>
+                    <div class="app-sub">SEC_SPEC_OPS</div>
+                </div>
+                <!-- ADAP -->
+                <div class="app-tile" id="tile-page3" ondblclick="launchApp('page3')">
+                    <span class="lock-badge" id="lock-page3">🔒 RESTRICTED</span>
+                    <div class="app-icon">🛰️</div>
+                    <div class="app-name">ADAP</div>
+                    <div class="app-sub">Access Special</div>
+                </div>
+            </div>
+            <!-- Admin controls -->
+            <div class="admin-only" style="margin-top:12px;padding-top:8px;border-top:1px solid var(--win-bg-dark);">
+                <p class="subtle" style="margin-bottom:6px;">Admin · System Locks</p>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <button class="btn" onclick="toggleLock('page1')" style="min-width:0;padding:4px 8px;">Lock Wiki</button>
+                    <button class="btn" onclick="toggleLock('page2')" style="min-width:0;padding:4px 8px;">Lock Special</button>
+                    <button class="btn" onclick="toggleLock('page3')" style="min-width:0;padding:4px 8px;">Lock ADAP</button>
+                </div>
+            </div>
+        </div>
+        <div class="statusbar">
+            <div class="statusbar-cell">3 programs</div>
+            <div class="statusbar-cell" id="apps-status">All systems nominal</div>
+        </div>
+    </div>
+
+</div><!-- /#desktop -->
+
+<!-- ═════════════ TASKBAR ═════════════ -->
+<div id="taskbar">
+    <button id="start-btn" onclick="toggleStartMenu()">
+        <span class="logo" style="background:var(--win-text-blue);">A</span>
+        <span>Start</span>
+    </button>
+
+    <div id="taskbar-windows"></div>
+
+    <div id="system-tray">
+        <span class="ic" title="Network">🌐</span>
+        <span class="ic" title="Volume">🔊</span>
+        <span id="tray-clock">--:--</span>
+    </div>
+</div>
+
+<!-- ═════════════ START MENU ═════════════ -->
+<div id="start-menu">
+    <div id="start-menu-header"><span>🪟</span><span>ADA OS</span></div>
+    <div class="start-menu-item" ondblclick="openWindow('forecast')">
+        <span class="smi-icon">⛅</span><span>Forecast</span>
+    </div>
+    <div class="start-menu-item" ondblclick="openWindow('clock')">
+        <span class="smi-icon">🕒</span><span>System Time</span>
+    </div>
+    <div class="start-menu-item" ondblclick="openWindow('apps')">
+        <span class="smi-icon">📁</span><span>Programs</span>
+    </div>
+    <div class="start-menu-sep"></div>
+    <div class="start-menu-item" ondblclick="navigateTo('/login.html')">
+        <span class="smi-icon">🚪</span><span>Log Out</span>
+    </div>
+    <div class="start-menu-item" ondblclick="navigateTo('/blocked.html')">
+        <span class="smi-icon">🚫</span><span>Blocked</span>
+    </div>
+    <div class="start-menu-side">ADA OS</div>
 </div>
 
 <script>
     var ADA_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
     var forecastData = {};
+    var windowStack = ['welcome', 'forecast', 'clock', 'apps']; // visible on load
+    var openWindows = new Set(windowStack);
+    var activeWindow = null;
+    var zCounter = 100;
+    var trayClockTimer = null;
 
+    /* ══════════════ INIT ══════════════ */
     async function init() {
-        // 1. Recursive check to ensure runNeuralGuard is defined from uplink.js
-        if (typeof runNeuralGuard !== 'function') {
-            setTimeout(init, 100);
-            return;
-        }
+        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
 
-        // 2. Execute Guard
         const data = await runNeuralGuard();
         if (!data) return;
 
         const isAdmin = data.user.is_admin === 1;
+        const userEmail = (localStorage.getItem('ada_user_email') || 'guest').split('@')[0];
 
-        // 3. Show Admin UI
+        // Admin UI
         if (isAdmin) {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
         }
 
-        // 4. Render Widgets
+        // User status
+        document.getElementById('status-user').textContent = userEmail;
+
+        // Widgets
         if (data.widgets) {
-            forecastData = JSON.parse(data.widgets.forecast || "{}");
+            try { forecastData = JSON.parse(data.widgets.forecast || "{}"); } catch {}
             renderForecast();
-            
-            document.getElementById('calendar-note-display').innerText = data.widgets.calendar_note || "System running nominal parameters.";
-            document.getElementById('in-cal-note').value = data.widgets.calendar_note || "";
+            const note = data.widgets.calendar_note || "System running nominal parameters.";
+            document.getElementById('calendar-note-display').innerText = note;
+            document.getElementById('in-cal-note').value = note;
         }
-        startClock();
 
-        // 5. Apply Page Locks
+        startClock();
+        startTrayClock();
+        setupWindowManagement();
+
+        // Apply locks
         data.locks.forEach(l => {
             const badge = document.getElementById(`lock-${l.page_id}`);
-            const btn = document.getElementById(`nav-${l.page_id}`);
-            if(badge) badge.style.display = l.is_locked ? 'block' : 'none';
-            
-            if (l.is_locked && !isAdmin && btn) {
-                btn.classList.add('btn-disabled');
-                btn.innerText = "Access Restricted";
-                btn.onclick = (e) => { e.preventDefault(); alert("Cleared personnel only."); };
+            const tile = document.getElementById(`tile-${l.page_id}`);
+            if (badge) badge.style.display = l.is_locked ? 'block' : 'none';
+            if (l.is_locked && tile && !isAdmin) tile.classList.add('locked');
+        });
+
+        // Bring welcome to front on load
+        focusWindow('welcome');
+    }
+
+    /* ══════════════ WINDOW MANAGEMENT ══════════════ */
+    function setupWindowManagement() {
+        // Drag for every window
+        document.querySelectorAll('.window').forEach(win => {
+            const tb = win.querySelector('.titlebar');
+            if (!tb) return;
+            let dragging = false, offX = 0, offY = 0;
+            tb.addEventListener('mousedown', e => {
+                if (e.target.closest('.titlebar-btn')) return; // ignore button clicks
+                dragging = true;
+                const rect = win.getBoundingClientRect();
+                offX = e.clientX - rect.left;
+                offY = e.clientY - rect.top;
+                focusWindow(win.dataset.win);
+                e.preventDefault();
+            });
+            tb.addEventListener('dblclick', e => {
+                if (e.target.closest('.titlebar-btn')) return;
+                maximizeWindow(win.dataset.win);
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                win.style.left = (e.clientX - offX) + 'px';
+                win.style.top  = Math.max(0, e.clientY - offY) + 'px';
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+
+            // Click anywhere on window to focus
+            win.addEventListener('mousedown', () => focusWindow(win.dataset.win));
+        });
+
+        // Close start menu when clicking elsewhere
+        document.addEventListener('mousedown', e => {
+            if (!e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
+                document.getElementById('start-menu').classList.remove('open');
             }
         });
     }
 
+    function focusWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win || !openWindows.has(id)) return;
+        zCounter += 1;
+        win.style.zIndex = zCounter;
+        document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+        win.classList.add('active');
+        activeWindow = id;
+        renderTaskbar();
+    }
+
+    function openWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        if (!openWindows.has(id)) {
+            openWindows.add(id);
+            windowStack.push(id);
+            win.classList.remove('hidden');
+        }
+        win.style.display = 'flex';
+        focusWindow(id);
+    }
+
+    function closeWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        win.style.display = 'none';
+        openWindows.delete(id);
+        windowStack = windowStack.filter(x => x !== id);
+        renderTaskbar();
+    }
+
+    function maximizeWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        win.classList.toggle('maximized');
+        focusWindow(id);
+    }
+
+    function renderTaskbar() {
+        const tray = document.getElementById('taskbar-windows');
+        tray.innerHTML = '';
+        windowStack.forEach(id => {
+            if (!openWindows.has(id)) return;
+            const win = document.getElementById('win-' + id);
+            if (!win) return;
+            const tb = win.querySelector('.titlebar-text');
+            const icon = tb ? tb.querySelector('.tb-icon') : null;
+            const txt  = tb ? tb.lastChild.textContent.trim() : id;
+            const item = document.createElement('div');
+            item.className = 'taskbar-item' + (id === activeWindow ? ' active' : '');
+            item.innerHTML = `<span class="ti-icon">${icon ? icon.textContent : '▣'}</span><span class="ti-text">${txt}</span>`;
+            item.onclick = () => {
+                if (id === activeWindow) { minimizeToggle(id); }
+                else { focusWindow(id); }
+            };
+            tray.appendChild(item);
+        });
+    }
+
+    function minimizeToggle(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        if (win.style.display === 'none') { win.style.display = 'flex'; focusWindow(id); }
+        else { win.style.display = 'none'; activeWindow = null; renderTaskbar(); }
+    }
+
+    function toggleStartMenu() {
+        document.getElementById('start-menu').classList.toggle('open');
+    }
+
+    function navigateTo(url) {
+        document.getElementById('start-menu').classList.remove('open');
+        window.location.href = url;
+    }
+
+    /* ══════════════ FORECAST ══════════════ */
     function renderForecast() {
         const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
         const display = document.getElementById('forecast-display');
@@ -220,12 +786,11 @@
                     <img src="${day.img || ''}" class="day-img" onerror="this.style.opacity='0'">
                     <div class="day-status">${day.text}</div>
                 </div>`;
-            
             editor.innerHTML += `
-                <div class="edit-group">
+                <div class="field-group">
                     <label>${d.toUpperCase()} CONFIG</label>
-                    <input type="text" id="edit-text-${d}" value="${day.text}" placeholder="Status Text">
-                    <input type="text" id="edit-img-${d}" value="${day.img}" placeholder="Icon URL / Base64">
+                    <input type="text" class="field" id="edit-text-${d}" value="${day.text.replace(/"/g,'&quot;')}" placeholder="Status Text">
+                    <input type="text" class="field" id="edit-img-${d}" value="${day.img.replace(/"/g,'&quot;')}" placeholder="Icon URL / Base64">
                 </div>`;
         });
     }
@@ -235,32 +800,51 @@
         const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
         function tick() {
             const now = new Date();
-            const day = DAYS[now.getDay()];
-            const date = now.getDate();
-            const month = MONTHS[now.getMonth()];
-            const year = now.getFullYear();
-            const hh = String(now.getHours()).padStart(2,'0');
-            const mm = String(now.getMinutes()).padStart(2,'0');
-            const ss = String(now.getSeconds()).padStart(2,'0');
-            document.getElementById('clock-day').textContent = day;
-            document.getElementById('clock-date').textContent = `${date} ${month} ${year}`;
-            document.getElementById('clock-time').textContent = `${hh} : ${mm} : ${ss}`;
+            document.getElementById('clock-day').textContent  = DAYS[now.getDay()];
+            document.getElementById('clock-date').textContent = `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+            document.getElementById('clock-time').textContent = `${String(now.getHours()).padStart(2,'0')} : ${String(now.getMinutes()).padStart(2,'0')} : ${String(now.getSeconds()).padStart(2,'0')}`;
         }
         tick();
         setInterval(tick, 1000);
     }
 
-    function toggleOverlay(id) {
-        const el = document.getElementById(id);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    function startTrayClock() {
+        function tick() {
+            const now = new Date();
+            document.getElementById('tray-clock').textContent =
+                `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        }
+        tick();
+        trayClockTimer = setInterval(tick, 1000);
     }
 
+    function toggleOverlay(id) {
+        const el = document.getElementById(id);
+        el.classList.toggle('hidden');
+    }
+
+    /* ══════════════ APP LAUNCH ══════════════ */
+    function launchApp(id) {
+        const targets = {
+            page1: '/wikiselector.html',
+            page2: '/visuals.html',
+            page3: '/ADAP.html'
+        };
+        const tile = document.getElementById('tile-' + id);
+        if (tile && tile.classList.contains('locked')) {
+            alert("Cleared personnel only.");
+            return;
+        }
+        navigateTo(targets[id]);
+    }
+
+    /* ══════════════ ADMIN ACTIONS ══════════════ */
     async function saveForecast() {
-        var updated = {};
+        const updated = {};
         ['mon','tue','wed','thu','fri'].forEach(d => {
             updated[d] = {
                 text: document.getElementById('edit-text-'+d).value,
-                img: document.getElementById('edit-img-'+d).value
+                img:  document.getElementById('edit-img-'+d).value
             };
         });
         await fetch(ADA_API + "/admin/system/save", {
@@ -287,11 +871,15 @@
         location.reload();
     }
 
-    // Initialize Page
+    // Kick off
     init();
 </script>
 
-<!-- 5. CHAT WIDGET -->
+<!-- Header engine (preserved) -->
+<script src="/header-engine.js"></script>
+<script src="/changelog.js"></script>
+
+<!-- Chat widget -->
 <script src="/chat-widget.js"></script>
 
 </body>
