@@ -240,6 +240,232 @@
         /* Runaway like button — absolute within reaction-bar, no position transition */
         #like-btn.runaway { position:absolute; pointer-events:auto; z-index:500; }
     </style>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ADA OS — Retro Windows 95/2000 chrome (Dark Mode)
+         Synced from dash.html — overlay for chrome components
+         ═══════════════════════════════════════════════════════════════ -->
+    <style>
+        :root {
+            --win-bg:            #1c2128;
+            --win-bg-light:      #2a313c;
+            --win-bg-dark:       #11151b;
+            --win-bg-darker:     #0a0d12;
+            --win-title-active:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            --win-title-inactive:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+            --win-text:          #e6edf3;
+            --win-text-light:    #ffffff;
+            --win-border-light:  #4a525e;
+            --win-border-dark:   #080a0e;
+            --win-text-blue:     #58a6ff;
+        }
+
+        /* THEMED SCROLLBAR (retro) */
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--win-bg-light);
+            border-top: 1px solid var(--win-border-light);
+            border-left: 1px solid var(--win-border-light);
+            border-right: 1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+        }
+        ::-webkit-scrollbar-button { background: var(--win-bg-light); display: block; }
+
+        body {
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+        }
+
+        /* CHISELED BUTTONS (retro) — overlay existing button classes */
+        .btn-gh, .react-btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 4px 14px;
+            font-family: inherit;
+            font-size: 12px;
+            border-radius: 0;
+            box-shadow: 1px 1px 0 0 #000;
+            transition: none;
+            transform: none;
+        }
+        .btn-gh:active, .react-btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 5px 13px 3px 15px;
+        }
+        .btn-gh:hover, .react-btn:hover {
+            background: #232a33;
+            border-color: var(--win-border-light);
+            transform: none;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .btn-gh:disabled, .react-btn:disabled {
+            color: var(--win-bg-light);
+            text-shadow: 1px 1px 0 #000;
+            cursor: not-allowed;
+        }
+
+        /* Primary (green) — flat retro (no green pill) */
+        .btn-primary {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background: #232a33;
+            border-color: var(--win-border-light);
+        }
+
+        /* Danger (red border) — retro */
+        .btn-danger {
+            background: var(--win-bg);
+            color: var(--red);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+        }
+        .btn-danger:hover {
+            background: #232a33;
+            border-color: var(--red);
+        }
+
+        /* Reaction liked/disliked states — keep their colored state, swap to chiseled */
+        .react-btn.liked {
+            background: var(--win-bg);
+            border-color: var(--btn-green);
+            color: #3fb950;
+        }
+        .react-btn.disliked {
+            background: var(--win-bg);
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* SUNKEN FIELDS (retro) */
+        .inp, .inp-sm, .lbmgr-inp, .comment-textarea, input, textarea, select, .field {
+            background: #0d1117;
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 3px 5px;
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            border-radius: 0;
+            margin: 0;
+            transition: none;
+            box-sizing: border-box;
+        }
+        .inp:focus, .inp-sm:focus, .lbmgr-inp:focus, .comment-textarea:focus,
+        input:focus, textarea:focus, select:focus, .field:focus {
+            background: #161b22;
+            border-right-color: var(--win-text-blue);
+            border-bottom-color: var(--win-text-blue);
+        }
+        textarea, .comment-textarea { resize: vertical; min-height: 80px; font-family: "MS Sans Serif", monospace; }
+
+        /* The page-specific rules above set width:100% on .inp — keep that. */
+        .inp { width: 100%; }
+        .inp-sm { width: 80px; }
+        .lbmgr-inp { flex: 1; }
+        .comment-textarea { width: 100%; min-height: 36px; }
+
+        /* WINDOW CHROME (retro) — available for use */
+        .window {
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000, 0 0 0 1px #000;
+            display: flex; flex-direction: column;
+        }
+        .titlebar {
+            background: var(--win-title-inactive);
+            color: var(--win-text-light);
+            padding: 3px 4px 3px 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 12px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .window.active .titlebar { background: var(--win-title-active); }
+        .titlebar-text { display: flex; align-items: center; gap: 5px; }
+        .titlebar-text .tb-icon { font-size: 13px; }
+        .titlebar-buttons { display: flex; gap: 2px; }
+        .titlebar-btn {
+            width: 18px; height: 16px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; line-height: 1; cursor: pointer;
+            color: var(--win-text); padding: 0;
+        }
+        .titlebar-btn:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+        .menubar {
+            display: flex; gap: 0;
+            background: var(--win-bg);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 1px 2px;
+            flex-shrink: 0;
+        }
+        .menubar span {
+            padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+        }
+        .menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+        .window-body {
+            flex: 1;
+            padding: 10px;
+            overflow: auto;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
+        }
+        .window-body.flush { padding: 0; }
+        .statusbar {
+            padding: 3px 6px; font-size: 11px; color: var(--win-text);
+            background: var(--win-bg);
+            border-top: 1px solid var(--win-border-dark);
+            display: flex; justify-content: space-between; gap: 4px;
+            flex-shrink: 0;
+        }
+        .statusbar-cell {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 1px 6px; flex: 1;
+            color: var(--win-text);
+        }
+
+        /* HIDDEN / MISC */
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body id="p-body">
 
