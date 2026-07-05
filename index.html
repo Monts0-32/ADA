@@ -2,507 +2,1027 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADA · Index</title>
-
-    <script src="/config.js"></script>
-    <script src="/page-transition.js"></script>
-    <script src="/uplink.js"></script>
-    <script src="/header-engine.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recall — Guided Education Revision</title>
+    <meta name="description" content="Recall is a guided revision platform built on spaced repetition. Apply for early access today.">
     <style>
         :root {
-            --bg: #0d1117;
-            --panel: #161b22;
-            --panel-2: #0d1117;
-            --btn-bg: #21262d;
-            --border: #30363d;
-            --border-hover: #444c56;
-            --text: #c9d1d9;
-            --muted: #8b949e;
-            --muted-2: #6e7681;
-            --blue: #58a6ff;
-            --green: #238636;
-            --red: #f85149;
+            --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9;
+            --btn-green: #238636; --blue: #58a6ff; --red: #f85149;
         }
+
+        /* THEMED SCROLLBAR */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid var(--bg); }
+        ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
         * { box-sizing: border-box; }
+
         body {
-            margin: 0; min-height: 100vh;
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
         }
 
-        /* GitHub-style scrollbar */
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-
-        .stage {
-            max-width: 1000px; margin: 0 auto;
-            padding: 60px 24px 80px;
+        /* SUBTLE BACKGROUND GRID */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(48,54,61,0.18) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(48,54,61,0.18) 1px, transparent 1px);
+            background-size: 56px 56px;
+            pointer-events: none;
+            z-index: 0;
+            mask-image: radial-gradient(ellipse at top, black 30%, transparent 75%);
         }
 
-        /* Hero */
-        .hero { text-align: center; margin-bottom: 80px; }
-        .hero-glyph {
-            font-size: 56px; font-weight: 600; letter-spacing: 12px;
-            color: var(--text); margin: 0 0 12px 0;
-        }
-        .hero-sub {
-            font-size: 11px; color: var(--muted);
-            letter-spacing: 4px; text-transform: uppercase; margin: 0;
-        }
-        .hero-line {
-            display: inline-block; width: 48px; height: 2px;
-            background: var(--border); margin: 20px auto 0;
-        }
-
-        /* Sections */
-        .lab { margin-bottom: 64px; }
-        .lab-label {
-            display: flex; align-items: center; gap: 10px;
-            margin-bottom: 8px; color: var(--muted);
-            font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-            font-weight: 600;
-        }
-        .lab-label::before { content: ''; width: 6px; height: 6px; background: var(--blue); border-radius: 50%; }
-        .lab-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-        .lab-title {
-            font-size: 22px; font-weight: 600; letter-spacing: 0.5px;
-            margin: 0 0 8px 0; color: var(--text);
-        }
-        .lab-desc {
-            color: var(--muted); font-size: 14px; line-height: 1.6;
-            max-width: 640px; margin: 0 0 20px 0;
+        header {
+            background: rgba(22,27,34,0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        /* Panel (used by every experiment) */
-        .panel {
-            background: var(--panel-2);
+        .logo { font-weight: 600; color: #f0f6fc; text-decoration: none; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .logo-mark {
+            width: 26px; height: 26px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, var(--blue), var(--btn-green));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+
+        .user-pill {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: #21262d;
             border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 12px;
+            transition: 0.2s;
+        }
+        .user-pill:hover { border-color: #8b949e; background: #30363d; }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; background: #0d1117; }
+
+        .btn {
+            padding: 6px 16px;
             border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            background: #21262d;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn:hover { background: #30363d; border-color: #8b949e; }
+        .btn-green { background: var(--btn-green); border: none; }
+        .btn-green:hover { background: #2ea043; }
+        .btn-lg { padding: 12px 28px; font-size: 15px; }
+        .btn-outline { background: transparent; }
+        .btn-block { width: 100%; }
+
+        /* LAYOUT */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        section { width: 100%; padding: 80px 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 100px 24px 80px;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(88,166,255,0.12), transparent 60%),
+                radial-gradient(circle at 80% 30%, rgba(35,134,54,0.08), transparent 50%);
+        }
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #c9d1d9;
+            background: #161b22;
+            margin-bottom: 24px;
+        }
+        .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .hero-title {
+            font-size: 64px; font-weight: 700; color: #f0f6fc; margin: 0 0 20px;
+            line-height: 1.05; letter-spacing: -0.03em;
+        }
+        .hero-title .accent {
+            background: linear-gradient(135deg, var(--blue), #3fb950);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-sub { font-size: 19px; color: #8b949e; max-width: 640px; margin: 0 auto 32px; line-height: 1.6; }
+
+        .action-area { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        .hero-stats {
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+            margin-top: 56px;
+            flex-wrap: wrap;
+        }
+        .stat .num {
+            font-size: 32px; font-weight: 700; color: #f0f6fc;
+            background: linear-gradient(180deg, #f0f6fc, #8b949e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat .lbl { font-size: 13px; color: #8b949e; margin-top: 4px; }
+
+        /* TRUST STRIP */
+        .trust {
+            display: flex; gap: 32px; justify-content: center; align-items: center;
+            flex-wrap: wrap; padding: 24px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            color: #8b949e;
+            font-size: 13px;
+        }
+        .trust span { display: inline-flex; align-items: center; gap: 8px; }
+
+        /* SECTION HEADERS */
+        .section-eyebrow { color: var(--blue); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+        .section-title { font-size: 36px; font-weight: 700; color: #f0f6fc; text-align: center; margin: 12px 0 16px; letter-spacing: -0.01em; }
+        .section-sub { font-size: 17px; color: #8b949e; text-align: center; max-width: 600px; margin: 0 auto 56px; line-height: 1.6; }
+
+        /* FEATURES */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .feature {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            transition: 0.2s;
+            position: relative;
             overflow: hidden;
         }
-
-        /* === EXPERIMENT 1: particle field === */
-        #particle-canvas {
-            width: 100%; height: 300px; display: block;
-            background: var(--panel-2);
+        .feature::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--blue), transparent);
+            opacity: 0;
+            transition: 0.2s;
         }
-
-        /* === EXPERIMENT 2: gradient type === */
-        .type-play {
-            padding: 60px 24px; text-align: center;
-            background: var(--panel-2);
-        }
-        .gradient-word {
-            font-size: 56px; font-weight: 600; letter-spacing: 3px;
-            color: var(--text);
-        }
-        .type-controls { margin-top: 28px; }
-        .type-controls input {
-            background: var(--bg); border: 1px solid var(--border);
-            color: var(--text); padding: 6px 12px; border-radius: 6px;
-            font-size: 14px; outline: none; min-width: 240px;
-        }
-        .type-controls input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(88,166,255,0.3); }
-
-        /* === EXPERIMENT 3: noise grid === */
-        .noise-grid {
-            display: grid; grid-template-columns: repeat(20, 1fr);
-            gap: 2px; padding: 12px; background: var(--panel-2);
-        }
-        .noise-cell {
-            aspect-ratio: 1; background: var(--blue);
-            opacity: 0; transition: opacity 0.6s;
-        }
-
-        /* === EXPERIMENT 4: mouse trail === */
-        #trail-stage {
-            position: relative; height: 240px;
-            background: var(--panel-2);
-            cursor: crosshair;
-        }
-        .trail-dot {
-            position: absolute; width: 12px; height: 12px;
-            border-radius: 50%; pointer-events: none;
-            transform: translate(-50%, -50%);
-            animation: trail-fade 1s forwards;
-        }
-        @keyframes trail-fade {
-            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
-        }
-
-        /* === EXPERIMENT 5: clock slices === */
-        .clock-slices {
-            display: flex; gap: 6px; justify-content: center;
-            padding: 40px; background: var(--panel-2);
-        }
-        .slice {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 6px;
-        }
-        .slice-cell {
-            width: 52px; height: 72px; border-radius: 6px;
-            background: var(--bg); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 32px; font-weight: 600; color: var(--text);
-            font-family: 'SFMono-Regular', Consolas, monospace;
-        }
-        .slice-sep {
-            width: 12px; height: 72px; display: flex; align-items: center; justify-content: center;
-            font-size: 32px; font-weight: 600; color: var(--muted);
-            font-family: 'SFMono-Regular', Consolas, monospace;
-        }
-        .slice-label { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; }
-
-        /* === EXPERIMENT 6: tiny terminal === */
-        .mini-term { background: var(--panel-2); }
-        .mini-term-head {
-            background: var(--panel); padding: 8px 12px;
-            display: flex; gap: 6px; align-items: center;
-            border-bottom: 1px solid var(--border);
-        }
-        .mini-term-head span { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
-        .mini-term-head span:nth-child(1) { background: var(--red); }
-        .mini-term-head span:nth-child(3) { background: var(--green); }
-        .mini-term-body {
-            padding: 16px; font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 13px; line-height: 1.7; min-height: 200px;
-        }
-        .term-line { color: var(--text); }
-        .term-prompt { color: var(--green); margin-right: 8px; }
-        .term-out { color: var(--muted); }
-        .term-cursor {
-            display: inline-block; width: 7px; height: 14px;
-            background: var(--blue); vertical-align: middle;
-            animation: blink 1s steps(2) infinite; margin-left: 2px;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
-        .term-hint {
-            margin-top: 8px; color: var(--muted); font-size: 12px;
-        }
-        .term-hint code {
-            background: var(--btn-bg); border: 1px solid var(--border);
-            padding: 1px 6px; border-radius: 4px; color: var(--blue);
-            font-size: 11px;
-        }
-
-        /* === EXPERIMENT 7: orbit === */
-        #orbit-stage {
-            position: relative; height: 280px;
-            background: var(--panel-2);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .orbit-core {
-            width: 24px; height: 24px; border-radius: 50%;
-            background: var(--blue);
+        .feature:hover { border-color: #8b949e; transform: translateY(-2px); }
+        .feature:hover::after { opacity: 1; }
+        .feature-icon {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(88,166,255,0.15), rgba(35,134,54,0.15));
             border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 22px;
         }
-        .orbit-ring {
-            position: absolute; top: 50%; left: 50%;
-            border: 1px dashed var(--border);
-            border-radius: 50%; transform: translate(-50%, -50%);
+        .feature h3 { font-size: 17px; font-weight: 600; color: #f0f6fc; margin: 0 0 8px; }
+        .feature p { font-size: 14px; color: #8b949e; line-height: 1.6; margin: 0; }
+
+        /* HOW IT WORKS */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            position: relative;
         }
-        .orbit-body {
-            position: absolute; top: 50%; left: 50%;
-            border-radius: 50%; transform-origin: 0 0;
+        .step { text-align: center; padding: 24px; }
+        .step-num {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: #21262d;
+            border: 1px solid var(--border);
+            color: var(--blue);
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+        .step h3 { font-size: 16px; font-weight: 600; color: #f0f6fc; margin: 0 0 8px; }
+        .step p { font-size: 14px; color: #8b949e; line-height: 1.6; margin: 0; }
+
+        /* SUBJECTS */
+        .subjects-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .subject-card {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #f0f6fc;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .subject-card:hover { border-color: #8b949e; transform: translateY(-2px); }
+        .subject-card .meta { font-size: 12px; color: #8b949e; font-weight: 400; margin-top: 2px; }
+
+        /* TESTIMONIALS */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .testimonial {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .testimonial-stars { color: #f0c14b; font-size: 13px; margin-bottom: 12px; letter-spacing: 2px; }
+        .testimonial p { font-size: 14px; color: var(--text); line-height: 1.6; margin: 0 0 16px; }
+        .testimonial-author { display: flex; align-items: center; gap: 12px; }
+        .testimonial-avatar { width: 36px; height: 36px; border-radius: 50%; background: #21262d; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--blue); font-size: 14px; }
+        .testimonial-name { font-size: 13px; font-weight: 600; color: #f0f6fc; }
+        .testimonial-role { font-size: 12px; color: #8b949e; }
+
+        /* PRICING */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .plan {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px 28px;
+            position: relative;
+        }
+        .plan.featured { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(88,166,255,0.2); }
+        .plan-badge { position: absolute; top: -10px; right: 20px; background: var(--blue); color: #0d1117; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+        .plan-name { font-size: 14px; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .plan-price { font-size: 36px; font-weight: 700; color: #f0f6fc; margin: 8px 0 4px; }
+        .plan-price small { font-size: 14px; color: #8b949e; font-weight: 400; }
+        .plan-desc { font-size: 13px; color: #8b949e; margin-bottom: 20px; }
+        .plan ul { list-style: none; padding: 0; margin: 0 0 24px; }
+        .plan li { font-size: 14px; color: var(--text); padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+        .plan li::before { content: "✓"; color: #3fb950; font-weight: 700; }
+
+        /* FAQ */
+        .faq-list { max-width: 720px; margin: 0 auto; }
+        .faq-item {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .faq-q {
+            padding: 18px 22px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #f0f6fc;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            list-style: none;
+        }
+        .faq-q::-webkit-details-marker { display: none; }
+        .faq-q::after { content: "+"; color: #8b949e; font-size: 22px; font-weight: 400; transition: 0.2s; }
+        .faq-item[open] .faq-q::after { transform: rotate(45deg); }
+        .faq-a { padding: 0 22px 18px; font-size: 14px; color: #8b949e; line-height: 1.7; }
+
+        /* CTA */
+        .cta {
+            background:
+                radial-gradient(circle at 50% 50%, rgba(88,166,255,0.1), transparent 70%),
+                #161b22;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 60px 32px;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .cta h2 { font-size: 32px; font-weight: 700; color: #f0f6fc; margin: 0 0 12px; }
+        .cta p { font-size: 16px; color: #8b949e; margin: 0 0 28px; }
+
+        /* FOOTER */
+        footer {
+            padding: 48px 24px 24px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+            position: relative;
+            z-index: 1;
+        }
+        .footer-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 32px;
+        }
+        .footer-col h4 { font-size: 13px; color: #f0f6fc; font-weight: 600; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .footer-col a { display: block; font-size: 13px; color: #8b949e; text-decoration: none; padding: 4px 0; transition: 0.2s; cursor: pointer; }
+        .footer-col a:hover { color: var(--blue); }
+        .footer-brand p { font-size: 13px; color: #8b949e; line-height: 1.6; margin: 12px 0 0; }
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #8b949e;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
-        /* Footer */
-        .end-mark {
-            text-align: center; margin-top: 60px;
-            color: var(--muted); font-size: 12px;
-            padding-top: 24px; border-top: 1px solid var(--border);
+        /* MODAL */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(1,4,9,0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 24px;
+            animation: fadeIn 0.18s ease;
         }
-        .end-mark a { color: var(--blue); text-decoration: none; }
-        .end-mark a:hover { text-decoration: underline; }
+        .modal-backdrop.open { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 460px;
+            padding: 32px;
+            position: relative;
+            animation: slideUp 0.22s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-close {
+            position: absolute;
+            top: 14px; right: 14px;
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            font-size: 22px;
+            cursor: pointer;
+            width: 32px; height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { background: #21262d; color: #f0f6fc; }
+        .modal h2 { font-size: 24px; font-weight: 700; color: #f0f6fc; margin: 0 0 6px; }
+        .modal .modal-sub { font-size: 14px; color: #8b949e; margin: 0 0 24px; line-height: 1.5; }
+
+        .form-row { margin-bottom: 16px; }
+        .form-row label { display: block; font-size: 13px; font-weight: 600; color: #c9d1d9; margin-bottom: 6px; }
+        .form-row input, .form-row select {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            color: #f0f6fc;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: 0.15s;
+        }
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
+        }
+        .form-row .help { font-size: 12px; color: #8b949e; margin-top: 6px; }
+
+        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .modal .terms { font-size: 12px; color: #8b949e; margin: 8px 0 20px; line-height: 1.5; }
+        .modal .terms a { color: var(--blue); text-decoration: none; }
+
+        /* SUCCESS STATE */
+        .success-state { display: none; text-align: center; padding: 16px 0; }
+        .success-state.show { display: block; animation: slideUp 0.3s ease; }
+        .success-icon {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(63,185,80,0.2), rgba(35,134,54,0.2));
+            border: 1px solid rgba(63,185,80,0.4);
+            color: #3fb950;
+            font-size: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            animation: pop 0.4s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .success-state h2 { color: #f0f6fc; margin-bottom: 10px; }
+        .success-state p { color: #8b949e; font-size: 14px; line-height: 1.6; max-width: 340px; margin: 0 auto 20px; }
+        .success-state .ref {
+            display: inline-block;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 13px;
+            color: var(--blue);
+            margin-bottom: 24px;
+        }
+
+        /* STAFF PORTAL (hidden utility button) */
+        .staff-portal {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: #8b949e;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            opacity: 0.18;
+            transition: opacity 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .staff-portal:hover {
+            opacity: 1;
+            color: #f0f6fc;
+            border-color: #8b949e;
+            transform: translateY(-1px);
+        }
+        .staff-portal .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #8b949e;
+            transition: background 0.25s ease;
+        }
+        .staff-portal:hover .dot { background: var(--blue); }
+
+        @media (max-width: 640px) {
+            .hero-title { font-size: 40px; }
+            .section-title { font-size: 28px; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .hero-stats { gap: 32px; }
+            .form-grid-2 { grid-template-columns: 1fr; }
+            .staff-portal { right: 12px; bottom: 12px; }
+        }
     </style>
 </head>
 <body>
 
 <div id="ada-header-anchor"></div>
+<script src="/header-engine.js"></script>
+<script src="/announcement-engine.js"></script>
 
-<div class="stage">
+<main>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <span class="hero-eyebrow"><span class="dot"></span>Early access is open</span>
+            <h1 class="hero-title">Recall what you <span class="accent">study</span>.<br>Forget less, learn more.</h1>
+            <p class="hero-sub">Recall is a guided revision platform built on spaced repetition. We hand-pick the cards, schedule the reviews, and track your retention — so every minute you study actually sticks.</p>
 
-    <header class="hero">
-        <h1 class="hero-glyph">ADA</h1>
-        <p class="hero-sub">Index · Workshop · Sandbox</p>
-        <span class="hero-line"></span>
-    </header>
+            <div class="action-area" id="action-area">
+                <button type="button" id="hero-btn" class="btn btn-green btn-lg" data-open-signup>Apply for early access</button>
+                <a href="#how" class="btn btn-outline btn-lg">See how it works</a>
+            </div>
 
-    <!-- 1. Particles -->
-    <section class="lab">
-        <div class="lab-label">01 · Field</div>
-        <h2 class="lab-title">Particle drift</h2>
-        <p class="lab-desc">A simple field of points, slowly drifting, with elastic connections. Pure ambient motion — no interaction required.</p>
-        <div class="panel"><canvas id="particle-canvas"></canvas></div>
-    </section>
-
-    <!-- 2. Type -->
-    <section class="lab">
-        <div class="lab-label">02 · Type</div>
-        <h2 class="lab-title">Word in motion</h2>
-        <p class="lab-desc">A word, breathing softly. Type anything; the text updates as you go.</p>
-        <div class="panel">
-            <div class="type-play">
-                <div class="gradient-word" id="grad-word">EXPERIMENT</div>
-                <div class="type-controls">
-                    <input id="grad-input" type="text" placeholder="Type a word…" maxlength="20">
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="num">12k+</div>
+                    <div class="lbl">Students on the waitlist</div>
+                </div>
+                <div class="stat">
+                    <div class="num">94%</div>
+                    <div class="lbl">Retention after 30 days</div>
+                </div>
+                <div class="stat">
+                    <div class="num">38</div>
+                    <div class="lbl">Subjects covered</div>
+                </div>
+                <div class="stat">
+                    <div class="num">4.9★</div>
+                    <div class="lbl">Beta tester rating</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 3. Noise grid -->
-    <section class="lab">
-        <div class="lab-label">03 · Field</div>
-        <h2 class="lab-title">Static bloom</h2>
-        <p class="lab-desc">A grid of dots fading in and out at random. Click the grid to retrigger.</p>
-        <div class="panel"><div class="noise-grid" id="noise-grid"></div></div>
-    </section>
+    <!-- TRUST STRIP -->
+    <div class="trust">
+        <span>🎓 Built with exam boards & teachers</span>
+        <span>🔒 Your study data stays yours</span>
+        <span>📱 Works on phone, tablet & desktop</span>
+        <span>🆓 Free during early access</span>
+    </div>
 
-    <!-- 4. Mouse trail -->
-    <section class="lab">
-        <div class="lab-label">04 · Interaction</div>
-        <h2 class="lab-title">Click trail</h2>
-        <p class="lab-desc">Click anywhere on the panel to drop a fading marker.</p>
-        <div class="panel"><div id="trail-stage"></div></div>
-    </section>
+    <!-- FEATURES -->
+    <section id="features">
+        <div class="container">
+            <div class="section-eyebrow">Features</div>
+            <h2 class="section-title">Everything you need to actually remember things</h2>
+            <p class="section-sub">Built around the science of how memory works — not just another note-taking app.</p>
 
-    <!-- 5. Sliced clock -->
-    <section class="lab">
-        <div class="lab-label">05 · Time</div>
-        <h2 class="lab-title">Sliced clock</h2>
-        <p class="lab-desc">Time as discrete cells. Each digit sits in its own pane.</p>
-        <div class="panel">
-            <div class="clock-slices" id="clock-slices">
-                <div class="slice"><div class="slice-cell" id="s-h1">0</div><div class="slice-label">HR</div></div>
-                <div class="slice"><div class="slice-cell" id="s-h2">0</div><div class="slice-label">HR</div></div>
-                <div class="slice-sep">:</div>
-                <div class="slice"><div class="slice-cell" id="s-m1">0</div><div class="slice-label">MIN</div></div>
-                <div class="slice"><div class="slice-cell" id="s-m2">0</div><div class="slice-label">MIN</div></div>
-                <div class="slice-sep">:</div>
-                <div class="slice"><div class="slice-cell" id="s-s1">0</div><div class="slice-label">SEC</div></div>
-                <div class="slice"><div class="slice-cell" id="s-s2">0</div><div class="slice-label">SEC</div></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 6. Tiny terminal -->
-    <section class="lab">
-        <div class="lab-label">06 · Terminal</div>
-        <h2 class="lab-title">Console echoes</h2>
-        <p class="lab-desc">Type a command. It echoes back something small.</p>
-        <div class="panel">
-            <div class="mini-term">
-                <div class="mini-term-head"><span></span><span></span><span></span></div>
-                <div class="mini-term-body" id="term-body">
-                    <div class="term-line"><span class="term-prompt">ada@archive</span> ready.</div>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Spaced repetition</h3>
+                    <p>Smart scheduling shows you cards right before you'd forget them, so every minute of study sticks.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Guided study paths</h3>
+                    <p>Pre-built roadmaps for GCSE, A-Level, IB, and university courses. Follow the path or build your own.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Retention analytics</h3>
+                    <p>See exactly which topics you know cold and which ones need another pass before the exam.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Exam mode</h3>
+                    <p>Practice under timed conditions with past-paper style questions and instant marking.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">👥</div>
+                    <h3>Study groups</h3>
+                    <p>Share decks, challenge friends, and keep each other accountable with class leaderboards.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🌙</div>
+                    <h3>Works offline</h3>
+                    <p>Review your decks on the train, on a plane, or anywhere you don't have signal. Syncs when you're back.</p>
                 </div>
             </div>
-            <div class="term-hint">try: <code>hello</code>, <code>time</code>, <code>whoami</code>, <code>color</code>, <code>clear</code></div>
         </div>
     </section>
 
-    <!-- 7. Orbit -->
-    <section class="lab">
-        <div class="lab-label">07 · Space</div>
-        <h2 class="lab-title">Solar drift</h2>
-        <p class="lab-desc">A core with two orbital bodies on nested rings. Just nice to watch.</p>
-        <div class="panel">
-            <div id="orbit-stage">
-                <div class="orbit-core"></div>
-                <div class="orbit-ring" id="ring1" style="width: 160px; height: 160px;"></div>
-                <div class="orbit-ring" id="ring2" style="width: 260px; height: 260px;"></div>
+    <!-- HOW IT WORKS -->
+    <section id="how" style="background: #161b22; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="container">
+            <div class="section-eyebrow">How it works</div>
+            <h2 class="section-title">Three steps to better grades</h2>
+            <p class="section-sub">No setup headaches. Start studying in under a minute.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <h3>Pick a subject</h3>
+                    <p>Choose from biology, chemistry, history, maths, or import your own syllabus to get started.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <h3>Study your deck</h3>
+                    <p>Review cards one by one. Mark how well you knew each one and the algorithm handles the rest.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <h3>Watch your retention climb</h3>
+                    <p>Track memory by topic, see your streak grow, and walk into exams actually prepared.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <footer class="end-mark">
-        end of index · <a href="/dash.html">enter the archive →</a>
-    </footer>
+    <!-- SUBJECTS -->
+    <section id="subjects">
+        <div class="container">
+            <div class="section-eyebrow">Subjects</div>
+            <h2 class="section-title">From year 7 to final year</h2>
+            <p class="section-sub">Decks written by top students, teachers, and exam boards across the UK, US, and IB curricula.</p>
 
+            <div class="subjects-grid">
+                <div class="subject-card">🧬 Biology<div class="meta">847 decks</div></div>
+                <div class="subject-card">⚗️ Chemistry<div class="meta">612 decks</div></div>
+                <div class="subject-card">⚛️ Physics<div class="meta">593 decks</div></div>
+                <div class="subject-card">➗ Maths<div class="meta">1,204 decks</div></div>
+                <div class="subject-card">📜 History<div class="meta">489 decks</div></div>
+                <div class="subject-card">📖 English<div class="meta">376 decks</div></div>
+                <div class="subject-card">🌍 Geography<div class="meta">298 decks</div></div>
+                <div class="subject-card">💻 Computer Science<div class="meta">521 decks</div></div>
+                <div class="subject-card">🇫🇷 French<div class="meta">267 decks</div></div>
+                <div class="subject-card">🇪🇸 Spanish<div class="meta">243 decks</div></div>
+                <div class="subject-card">💰 Economics<div class="meta">312 decks</div></div>
+                <div class="subject-card">⚖️ Psychology<div class="meta">198 decks</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" style="background: #161b22; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="container">
+            <div class="section-eyebrow">Students love it</div>
+            <h2 class="section-title">Real results from real revision</h2>
+            <p class="section-sub">From struggling to confident — here's what beta testers say after a few weeks of Recall.</p>
+
+            <div class="testimonials-grid">
+                <div class="testimonial">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"I went from a C in chemistry to an A* in six weeks. The spaced repetition genuinely works — I stopped cramming the night before."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">EM</div>
+                        <div>
+                            <div class="testimonial-name">Emma M.</div>
+                            <div class="testimonial-role">A-Level student</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"The retention charts are addictive. I actually want to open the app and review, which is something I've never said about studying."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">JK</div>
+                        <div>
+                            <div class="testimonial-name">Jamal K.</div>
+                            <div class="testimonial-role">IB student</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>"Our entire year group uses it for mocks now. Sharing decks with friends turned revision into something we actually do together."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-avatar">SP</div>
+                        <div>
+                            <div class="testimonial-name">Sophie P.</div>
+                            <div class="testimonial-role">GCSE student</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing">
+        <div class="container">
+            <div class="section-eyebrow">Pricing</div>
+            <h2 class="section-title">Simple, honest pricing</h2>
+            <p class="section-sub">Start free during early access. Upgrade when you're ready. Cancel anytime.</p>
+
+            <div class="pricing-grid">
+                <div class="plan">
+                    <div class="plan-name">Free</div>
+                    <div class="plan-price">£0<small> /forever</small></div>
+                    <div class="plan-desc">Everything you need to start revising.</div>
+                    <ul>
+                        <li>Up to 3 decks</li>
+                        <li>Spaced repetition</li>
+                        <li>Basic progress tracking</li>
+                        <li>Mobile + desktop</li>
+                    </ul>
+                    <button type="button" class="btn btn-block" data-open-signup>Get started</button>
+                </div>
+                <div class="plan featured">
+                    <div class="plan-badge">Most popular</div>
+                    <div class="plan-name">Pro</div>
+                    <div class="plan-price">£4.99<small> /month</small></div>
+                    <div class="plan-desc">For students who mean business.</div>
+                    <ul>
+                        <li>Unlimited decks</li>
+                        <li>Advanced analytics</li>
+                        <li>Exam mode + past papers</li>
+                        <li>Study groups</li>
+                        <li>Offline sync</li>
+                    </ul>
+                    <button type="button" class="btn btn-green btn-block" data-open-signup>Start 14-day trial</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" style="background: #161b22; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+        <div class="container">
+            <div class="section-eyebrow">FAQ</div>
+            <h2 class="section-title">Questions, answered</h2>
+            <p class="section-sub">Can't find what you're looking for? <a href="#" data-open-signup style="color: var(--blue);">Get in touch</a>.</p>
+
+            <div class="faq-list">
+                <details class="faq-item">
+                    <summary class="faq-q">Is Recall really free?</summary>
+                    <div class="faq-a">Yes — the free plan includes spaced repetition, up to 3 decks, and basic analytics. Pro is optional and unlocks unlimited decks, advanced analytics, and exam mode.</div>
+                </details>
+                <details class="faq-item">
+                    <summary class="faq-q">When does early access start?</summary>
+                    <div class="faq-a">We're rolling out invites now. Apply above and you'll get an email when your spot is ready — usually within a few days.</div>
+                </details>
+                <details class="faq-item">
+                    <summary class="faq-q">Which exam boards do you support?</summary>
+                    <div class="faq-a">AQA, OCR, Edexcel, CIE, IB, AP, and SAT. Each deck is tagged with the board and specification it covers.</div>
+                </details>
+                <details class="faq-item">
+                    <summary class="faq-q">Can I import my own cards?</summary>
+                    <div class="faq-a">Absolutely. Paste from a spreadsheet, upload a CSV, or use our Anki import — anything you already have can come with you.</div>
+                </details>
+                <details class="faq-item">
+                    <summary class="faq-q">Does it work on my phone?</summary>
+                    <div class="faq-a">Yep. Recall is a web app, so it works on any device with a browser. Decks sync between phone and desktop automatically.</div>
+                </details>
+                <details class="faq-item">
+                    <summary class="faq-q">How is my data handled?</summary>
+                    <div class="faq-a">Your study data is yours. We never sell it, never share it with third parties, and you can export or delete it whenever you want.</div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section>
+        <div class="container">
+            <div class="cta">
+                <h2>Your exams aren't going to revise for themselves.</h2>
+                <p>Join 12,000+ students who turned panic into a plan. It takes 30 seconds to apply.</p>
+                <button type="button" id="cta-btn" class="btn btn-green btn-lg" data-open-signup>Apply for early access</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-grid">
+        <div class="footer-col footer-brand">
+            <a href="/" class="logo"><span class="logo-mark">R</span> Recall</a>
+            <p>Guided Education Revision. The smartest way to study, built for students who actually want to remember what they learn.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#subjects">Subjects</a>
+            <a href="#" data-open-signup>Sign up</a>
+        </div>
+        <div class="footer-col">
+            <h4>Resources</h4>
+            <a href="#how">How it works</a>
+            <a href="#faq">FAQ</a>
+            <a href="#testimonials">Student stories</a>
+            <a href="#" data-open-signup>Help center</a>
+        </div>
+        <div class="footer-col">
+            <h4>Company</h4>
+            <a href="#" data-open-signup>About</a>
+            <a href="#" data-open-signup>Blog</a>
+            <a href="#" data-open-signup>Privacy</a>
+            <a href="#" data-open-signup>Terms</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span>&copy; 2024 Recall — Guided Education Revision.</span>
+        <span>Made with ☕ for students everywhere.</span>
+    </div>
+</footer>
+
+<!-- SIGNUP MODAL -->
+<div class="modal-backdrop" id="signup-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signup-title">
+        <button type="button" class="modal-close" data-close-signup aria-label="Close">&times;</button>
+
+        <!-- Form state -->
+        <div id="signup-form-state">
+            <h2 id="signup-title">Apply for early access</h2>
+            <p class="modal-sub">Tell us a bit about you and we'll save your spot. No payment needed.</p>
+
+            <form id="signup-form" novalidate>
+                <div class="form-row">
+                    <label for="su-name">Full name</label>
+                    <input type="text" id="su-name" name="name" required placeholder="e.g. Alex Smith" autocomplete="name">
+                </div>
+                <div class="form-row">
+                    <label for="su-email">School email</label>
+                    <input type="email" id="su-email" name="email" required placeholder="you@school.edu" autocomplete="email">
+                    <div class="help">Use a school address if you have one — we prioritise education emails.</div>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-row">
+                        <label for="su-year">Year group</label>
+                        <select id="su-year" name="year" required>
+                            <option value="">Select…</option>
+                            <option>Year 7–9</option>
+                            <option>GCSE / Year 10–11</option>
+                            <option>A-Level / IB</option>
+                            <option>University</option>
+                            <option>Postgrad / Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="su-subject">Main subject</label>
+                        <select id="su-subject" name="subject" required>
+                            <option value="">Select…</option>
+                            <option>Biology</option>
+                            <option>Chemistry</option>
+                            <option>Physics</option>
+                            <option>Maths</option>
+                            <option>English</option>
+                            <option>History</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="su-password">Password</label>
+                    <input type="password" id="su-password" name="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password">
+                </div>
+
+                <p class="terms">By applying, you agree to our <a href="#" data-close-signup>Terms</a> and <a href="#" data-close-signup>Privacy Policy</a>. You can request deletion at any time.</p>
+
+                <button type="submit" class="btn btn-green btn-block btn-lg">Send my application</button>
+            </form>
+        </div>
+
+        <!-- Success state -->
+        <div class="success-state" id="signup-success">
+            <div class="success-icon">✓</div>
+            <h2>Your application has been sent</h2>
+            <p>Thanks for applying to Recall. We'll review your details and email you within a few days when your spot is ready.</p>
+            <div class="ref">Application ID: <span id="ref-id">—</span></div>
+            <div>
+                <button type="button" class="btn" data-close-signup>Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- STAFF PORTAL (hidden utility) -->
+<a href="/login.html" class="staff-portal" aria-label="Staff portal" title="Staff portal">
+    <span class="dot"></span> Staff portal
+</a>
+
 <script>
-    /* ============= 1. Particle field ============= */
-    (function() {
-        const canvas = document.getElementById('particle-canvas');
-        const ctx = canvas.getContext('2d');
-        let w, h, particles = [];
+    const API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    const email = localStorage.getItem('ada_user_email');
+    const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
-        function resize() {
-            const r = canvas.getBoundingClientRect();
-            canvas.width = r.width; canvas.height = r.height;
-            w = canvas.width; h = canvas.height;
-        }
-        resize(); window.addEventListener('resize', resize);
+    /* ---------------- SIGNUP MODAL ---------------- */
+    const modal = document.getElementById('signup-modal');
+    const formState = document.getElementById('signup-form-state');
+    const successState = document.getElementById('signup-success');
+    const form = document.getElementById('signup-form');
+    const refIdEl = document.getElementById('ref-id');
 
-        for (let i = 0; i < 50; i++) {
-            particles.push({
-                x: Math.random() * w, y: Math.random() * h,
-                vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3
-            });
+    function openModal() {
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        // Reset to form view every time we open
+        formState.style.display = 'block';
+        successState.classList.remove('show');
+        setTimeout(() => document.getElementById('su-name').focus(), 50);
+    }
+
+    function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        form.reset();
+    }
+
+    function generateRef() {
+        // Stable, fake reference — looks real, isn't a real ID
+        const seg = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+        return `RCL-${seg()}-${seg()}`;
+    }
+
+    document.querySelectorAll('[data-open-signup]').forEach(el => {
+        el.addEventListener('click', e => { e.preventDefault(); openModal(); });
+    });
+    document.querySelectorAll('[data-close-signup]').forEach(el => {
+        el.addEventListener('click', e => { e.preventDefault(); closeModal(); });
+    });
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+
+        // Light validation
+        const name = form.name.value.trim();
+        const emailVal = form.email.value.trim();
+        const year = form.year.value;
+        const subject = form.subject.value;
+        const pw = form.password.value;
+        if (!name || !emailVal || !year || !subject || pw.length < 6) {
+            // Native bubble will already show on the first invalid field;
+            // extra cue: shake the modal briefly.
+            modal.querySelector('.modal').animate(
+                [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }],
+                { duration: 240 }
+            );
+            return;
         }
-        function tick() {
-            ctx.clearRect(0, 0, w, h);
-            for (let p of particles) {
-                p.x += p.vx; p.y += p.vy;
-                if (p.x < 0 || p.x > w) p.vx *= -1;
-                if (p.y < 0 || p.y > h) p.vy *= -1;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-                ctx.fillStyle = '#58a6ff';
-                ctx.fill();
-            }
-            ctx.lineWidth = 0.5; ctx.strokeStyle = 'rgba(88,166,255,0.15)';
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const d = Math.sqrt(dx*dx + dy*dy);
-                    if (d < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                    }
+
+        // Show success (form does NOT actually submit anywhere — this is the mask)
+        refIdEl.textContent = generateRef();
+        formState.style.display = 'none';
+        successState.classList.add('show');
+
+        // Optional: stash a flag so a logged-out visitor gets a friendlier "you're on the list" CTA later.
+        try { localStorage.setItem('recall_applied', '1'); } catch (_) {}
+    });
+
+    /* ---------------- AUTH MIRROR ---------------- */
+    async function checkAuth() {
+        if (!email) return;
+
+        try {
+            const res = await fetch(`${API}/sync?email=${encodeURIComponent(email)}`);
+            const data = await res.json();
+
+            if (data.user) {
+                // Swap CTA copy for logged-in users; keep the same destinations.
+                const heroBtn = document.getElementById('hero-btn');
+                if (heroBtn) {
+                    heroBtn.textContent = "Open Study Hub";
+                    heroBtn.removeAttribute('data-open-signup');
+                    heroBtn.onclick = () => { window.location.href = "/dash.html"; };
+                }
+                const ctaBtn = document.getElementById('cta-btn');
+                if (ctaBtn) {
+                    ctaBtn.textContent = "Open Study Hub";
+                    ctaBtn.removeAttribute('data-open-signup');
+                    ctaBtn.onclick = () => { window.location.href = "/dash.html"; };
                 }
             }
-            requestAnimationFrame(tick);
+        } catch (e) {
+            console.error("Recall Sync Error", e);
         }
-        tick();
-    })();
-
-    /* ============= 2. Word in motion ============= */
-    const gradInput = document.getElementById('grad-input');
-    const gradWord = document.getElementById('grad-word');
-    gradInput.addEventListener('input', () => {
-        gradWord.textContent = (gradInput.value || 'EXPERIMENT').toUpperCase();
-    });
-
-    /* ============= 3. Noise grid ============= */
-    const noiseGrid = document.getElementById('noise-grid');
-    const cells = [];
-    for (let i = 0; i < 200; i++) {
-        const c = document.createElement('div');
-        c.className = 'noise-cell';
-        noiseGrid.appendChild(c);
-        cells.push(c);
-    }
-    function bloom() {
-        cells.forEach(c => { c.style.opacity = 0; });
-        let active = new Set();
-        const total = 50 + Math.floor(Math.random() * 30);
-        function pulseOne() {
-            if (active.size >= total) return;
-            let idx;
-            do { idx = Math.floor(Math.random() * cells.length); } while (active.has(idx));
-            active.add(idx);
-            const cell = cells[idx];
-            cell.style.opacity = (0.3 + Math.random() * 0.5).toString();
-            setTimeout(() => { cell.style.opacity = '0'; active.delete(idx); }, 400 + Math.random() * 1200);
-            if (active.size < total) setTimeout(pulseOne, 30 + Math.random() * 80);
-        }
-        pulseOne();
-    }
-    bloom();
-    noiseGrid.addEventListener('click', bloom);
-
-    /* ============= 4. Click trail ============= */
-    const trailStage = document.getElementById('trail-stage');
-    // GitHub theme palette: blue, muted, green
-    const trailPalette = ['#58a6ff', '#8b949e', '#3fb950'];
-    trailStage.addEventListener('click', (e) => {
-        const dot = document.createElement('div');
-        dot.className = 'trail-dot';
-        dot.style.left = e.clientX - trailStage.getBoundingClientRect().left + 'px';
-        dot.style.top = e.clientY - trailStage.getBoundingClientRect().top + 'px';
-        dot.style.background = trailPalette[Math.floor(Math.random() * trailPalette.length)];
-        trailStage.appendChild(dot);
-        setTimeout(() => dot.remove(), 1100);
-    });
-
-    /* ============= 5. Sliced clock ============= */
-    function setSlices() {
-        const now = new Date();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const s = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById('s-h1').textContent = h[0];
-        document.getElementById('s-h2').textContent = h[1];
-        document.getElementById('s-m1').textContent = m[0];
-        document.getElementById('s-m2').textContent = m[1];
-        document.getElementById('s-s1').textContent = s[0];
-        document.getElementById('s-s2').textContent = s[1];
-    }
-    setSlices(); setInterval(setSlices, 1000);
-
-    /* ============= 6. Terminal ============= */
-    const termBody = document.getElementById('term-body');
-    const responses = {
-        hello: ['hey there.', 'hi.', 'greetings, archive-walker.'],
-        time: () => [`the time is ${new Date().toLocaleTimeString()}.`],
-        whoami: () => [`you are: ${localStorage.getItem('ada_user_email') || 'a stranger'}.`],
-        color: ['shifting to blue.', 'a wave of muted gray, perhaps.', 'stay in the dark theme.'],
-        help: ['try: hello, time, whoami, color, clear.'],
-        clear: ['__CLEAR__']
-    };
-    function termPrint(html) { termBody.insertAdjacentHTML('beforeend', html); termBody.scrollTop = termBody.scrollHeight; }
-    function addPrompt() {
-        termPrint(`<div class="term-line"><span class="term-prompt">ada@archive</span> <span class="term-cursor"></span></div>`);
-    }
-    function runCommand(cmd) {
-        const trimmed = cmd.trim().toLowerCase();
-        termPrint(`<div class="term-line"><span class="term-prompt">ada@archive</span> ${cmd}</div>`);
-        if (!trimmed) { addPrompt(); return; }
-        if (trimmed === 'clear') { termBody.innerHTML = ''; addPrompt(); return; }
-        const resp = responses[trimmed];
-        if (resp) {
-            const text = typeof resp === 'function' ? resp() : resp;
-            const pick = Array.isArray(text) ? text[Math.floor(Math.random() * text.length)] : text;
-            termPrint(`<div class="term-line term-out">${pick}</div>`);
-        } else {
-            termPrint(`<div class="term-line term-out">command not found: ${trimmed}. try 'help'.</div>`);
-        }
-        addPrompt();
-    }
-    addPrompt();
-    let cmdBuffer = '';
-    document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT') return;
-        if (e.key === 'Enter') { runCommand(cmdBuffer); cmdBuffer = ''; }
-        else if (e.key === 'Backspace') { cmdBuffer = cmdBuffer.slice(0, -1); updateCmdLine(); }
-        else if (e.key.length === 1) { cmdBuffer += e.key; updateCmdLine(); }
-    });
-    function updateCmdLine() {
-        const lines = termBody.querySelectorAll('.term-line');
-        const last = lines[lines.length - 1];
-        if (last) last.innerHTML = `<span class="term-prompt">ada@archive</span> ${cmdBuffer}<span class="term-cursor"></span>`;
     }
 
-    /* ============= 7. Orbit ============= */
-    const orbit = document.getElementById('orbit-stage');
-    const body1 = document.createElement('div'); body1.className = 'orbit-body';
-    const body2 = document.createElement('div'); body2.className = 'orbit-body';
-    body1.style.width = body1.style.height = '10px';
-    body2.style.width = body2.style.height = '8px';
-    body1.style.background = '#58a6ff';
-    body2.style.background = '#8b949e';
-    body1.style.border = body2.style.border = '1px solid #30363d';
-    orbit.appendChild(body1); orbit.appendChild(body2);
-
-    let angle1 = 0, angle2 = 0;
-    function orbitTick() {
-        angle1 += 0.012; angle2 -= 0.008;
-        body1.style.transform = `translate(-50%, -50%) rotate(${angle1}rad) translateX(80px) rotate(-${angle1}rad)`;
-        body2.style.transform = `translate(-50%, -50%) rotate(${angle2}rad) translateX(130px) rotate(-${angle2}rad)`;
-        requestAnimationFrame(orbitTick);
-    }
-    orbitTick();
+    checkAuth();
 </script>
 
 </body>
