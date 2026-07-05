@@ -5,6 +5,7 @@
     <title>ADA | Archive Dashboard</title>
     
     <!-- MASTER SCRIPTS -->
+    <script src="/config.js"></script>
     <script src="/uplink.js"></script>
     <script src="/header-engine.js"></script>
     <script src="/escape-key.js"></script>
@@ -160,7 +161,7 @@
 </div>
 
 <script>
-    var ADA_API = "https://ada-relay.andrewdinglearchive.workers.dev";
+    var ADA_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
     var forecastData = {};
 
     async function init() {

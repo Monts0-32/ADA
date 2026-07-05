@@ -68,7 +68,7 @@
     </style>
     <script src="/chat-widget.js"></script>
     <script>
-        const CHAT_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
+        const CHAT_API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
         const myChatEmail = localStorage.getItem('ada_user_email');
         let isChatOpen = false;
         let lastChatId = 0;
@@ -138,7 +138,7 @@
 
     <script>
         async function saveUser() {
-            const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
+            const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
             await fetch(`${API}/admin/create-user`, {
                 method: 'POST',
                 body: JSON.stringify({

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>ADA | Partition Network</title>
 
-    <script>window.ADA_CONFIG = { requiredTag: 'wiki_access' };</script>
     <script src="/config.js"></script>
+    <script>window.ADA_CONFIG = Object.assign({}, window.ADA_CONFIG, { requiredTag: 'wiki_access' });</script>
     <script src="/page-transition.js"></script>
     <script src="/uplink.js"></script>
     <script src="/announcement-engine.js"></script>
@@ -628,7 +628,7 @@
 </div>
 
 <script>
-    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
+    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
     const IMG_PLACEHOLDER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd3aWR0aD0iMjQiIGhlaWdodD0iMjQiPjxwYXRoIGQ9Ik0xMiAxMmMyLjIxIDAgNC0xLjc5IDQtNFM4IDMuMzQgOC03LjM0IDgtNCAxNC4yMSAxMiAxMiAxMnptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTgtOC00eiIvPjwvc3ZnPg==`;
     const ICON_BOOK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>`;

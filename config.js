@@ -15,6 +15,9 @@
 (function() {
     window.ADA_CONFIG = {
         // Worker / API endpoint used across the archive.
+        // Embedded Pages Function lives at functions/api/[[path]].js,
+        // which is served at /api/* automatically by Cloudflare Pages.
+        // The DB binding (D1) is exposed as `env.DB` inside the worker.
         API: "/api",
 
         // How long the page-transition animation runs.

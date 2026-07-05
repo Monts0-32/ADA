@@ -1,6 +1,6 @@
 // Use 'var' to prevent "Identifier already declared" errors if loaded twice
 // Prefer window.ADA_CONFIG.API if config.js loaded first, fall back to default.
-var ADA_API_URL = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "https://ada-relay.andrewdinglearchive.workers.dev";
+var ADA_API_URL = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
 
 (function() {
     // 1. Function to Inject UI Safely
