@@ -15,7 +15,7 @@
 (function() {
     window.ADA_CONFIG = {
         // Worker / API endpoint used across the archive.
-        API: "https://ada-relay.andrewdinglearchive.workers.dev",
+        API: "/api",
 
         // How long the page-transition animation runs.
         // Keep this in sync with the duration in page-transition.js

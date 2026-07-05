@@ -1,0 +1,2388 @@
+/**
+ * ADA ARCHIVE MASTER RELAY — Pages Functions Catch-All Wrapper
+ * Place this file at: /functions/api/[[path]].js
+ */
+
+export async function onRequest(context) {
+  // 1. Extract request, env, and ctx from the Pages context object.
+  // This ensures your database statements ('env.DB') continue working untouched!
+  const { request, env, ctx } = context;
+  
+  const url = new URL(request.url);
+
+  // 2. PATH REWRITE (CRITICAL):
+  // Strips "/api" from the front of the incoming path (e.g. "/api/sync" -> "/sync").
+  // This allows all your existing if/else checks below to work flawlessly.
+  url.pathname = url.pathname.replace(/^\/api/, "") || "/";
+
+  // Global Headers for Secure Communication (From your worker)
+  const relayHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Cookie, User-Agent",
+  };
+
+  // Global Default Profile Icon (From your worker)
+  const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+
+  // Handle Browser Pre-flight OPTIONS requests
+  if (request.method === "OPTIONS") {
+    return new Response(null, { headers: relayHeaders });
+  }
+
+  try {
+      // ── WISP PROXY ────────────────────────────────────────────────
+      if (url.pathname.startsWith('/wisp/')) {
+        const upgradeHeader = request.headers.get('Upgrade');
+        if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
+          return new Response('Expected WebSocket upgrade', { status: 426, headers: relayHeaders });
+        }
+        const wispTarget = 'https://dev.ada-access.co.uk/wisp/' + url.pathname.slice(7);
+        return fetch(wispTarget, {
+          headers: request.headers,
+          method: request.method,
+        });
+      }
+
+      // ── BARE PROXY (Ultraviolet transport) ───────────────────────
+      if (url.pathname.startsWith('/bare/')) {
+        if (url.pathname === '/bare/') {
+          return new Response(JSON.stringify({
+            versions: ['v3'],
+            language: 'Cloudflare Workers',
+            memoryUsage: 0,
+            maintainer: { email: '', website: '' },
+            project: { name: 'ADA Bare', repository: '', version: '1.0.0' }
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            }
+          });
+        }
+
+        if (request.method === 'OPTIONS') {
+          return new Response(null, {
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': '*',
+              'Access-Control-Allow-Methods': '*',
+            }
+          });
+        }
+
+        const bareURL     = request.headers.get('x-bare-url');
+        const bareHeaders = request.headers.get('x-bare-headers');
+
+        if (!bareURL) {
+          return new Response('Missing x-bare-url', { status: 400 });
+        }
+
+        let forwardHeaders = {};
+        if (bareHeaders) {
+          try { forwardHeaders = JSON.parse(bareHeaders); } catch {}
+        }
+
+        let bareResponse;
+        try {
+          bareResponse = await fetch(bareURL, {
+            method:  request.method,
+            headers: forwardHeaders,
+            body:    ['GET','HEAD'].includes(request.method) ? undefined : request.body,
+            redirect: 'manual'
+          });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const responseHeaders = new Headers();
+        responseHeaders.set('Access-Control-Allow-Origin', '*');
+        responseHeaders.set('Access-Control-Allow-Headers', '*');
+        responseHeaders.set('Access-Control-Expose-Headers', '*');
+        responseHeaders.set('x-bare-status',      String(bareResponse.status));
+        responseHeaders.set('x-bare-status-text', bareResponse.statusText);
+
+        const passHeaders = {};
+        for (const [k, v] of bareResponse.headers.entries()) {
+          if (['content-encoding','content-length','transfer-encoding'].includes(k.toLowerCase())) continue;
+          passHeaders[k] = v;
+        }
+        responseHeaders.set('x-bare-headers', JSON.stringify(passHeaders));
+        responseHeaders.set('Content-Type', bareResponse.headers.get('content-type') || 'application/octet-stream');
+
+        return new Response(bareResponse.body, {
+          status: 200,
+          headers: responseHeaders
+        });
+      }
+
+      // ── WEB PROXY / RELAY ─────────────────────────────────────────
+      if (url.pathname === "/relay/v3") {
+        let targetURL = url.searchParams.get("url");
+        if (!targetURL) {
+          return new Response(JSON.stringify({ error: "No Uplink" }), { status: 400, headers: relayHeaders });
+        }
+        if (!targetURL.startsWith("http")) targetURL = "https://" + targetURL;
+
+        let parsedTarget;
+        try {
+          parsedTarget = new URL(targetURL);
+        } catch {
+          return new Response(JSON.stringify({ error: "Invalid URL" }), { status: 400, headers: relayHeaders });
+        }
+
+        const blockedHosts = ["localhost", "127.0.0.1", "0.0.0.0"];
+        if (blockedHosts.includes(parsedTarget.hostname)) {
+          return new Response(JSON.stringify({ error: "Blocked Host" }), { status: 403, headers: relayHeaders });
+        }
+
+        const targetOrigin = parsedTarget.origin;
+        const workerBase = `${url.origin}/relay/v3?url=`;
+
+        function proxify(u) {
+          if (!u) return u;
+          if (u.startsWith("javascript:") || u.startsWith("data:") || u.startsWith("blob:") || u.startsWith("#")) return u;
+          try {
+            const abs = new URL(u, targetOrigin).href;
+            return workerBase + encodeURIComponent(abs);
+          } catch { return u; }
+        }
+
+        if (request.headers.get("Upgrade") === "websocket") {
+          return fetch(request);
+        }
+
+        const outgoingHeaders = new Headers(request.headers);
+        outgoingHeaders.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36");
+        outgoingHeaders.set("Origin", targetOrigin);
+        outgoingHeaders.set("Referer", targetURL);
+        outgoingHeaders.set("Accept-Language", "en-US,en;q=0.9");
+
+        const cookie = request.headers.get("Cookie");
+        if (cookie) outgoingHeaders.set("Cookie", cookie);
+
+        outgoingHeaders.delete("cf-connecting-ip");
+        outgoingHeaders.delete("x-forwarded-for");
+        outgoingHeaders.delete("x-real-ip");
+        outgoingHeaders.delete("content-length");
+
+        const cache = caches.default;
+        const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|webp|woff|woff2|ttf|ico)$/i.test(parsedTarget.pathname);
+
+        if (isStatic && request.method === "GET") {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+        }
+
+        const response = await fetch(targetURL, {
+          method: request.method,
+          headers: {
+            ...Object.fromEntries(outgoingHeaders),
+            "Accept": request.headers.get("Accept") || "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br"
+          },
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "manual"
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        const newHeaders = new Headers(response.headers);
+        newHeaders.delete("content-security-policy");
+        newHeaders.delete("content-security-policy-report-only");
+        newHeaders.delete("x-frame-options");
+        newHeaders.delete("x-content-type-options");
+        newHeaders.delete("cross-origin-opener-policy");
+        newHeaders.delete("cross-origin-resource-policy");
+        newHeaders.delete("cross-origin-embedder-policy");
+        newHeaders.delete("permissions-policy");
+        newHeaders.set("Access-Control-Allow-Origin", "*");
+
+        if ([301, 302, 303, 307, 308].includes(response.status)) {
+          const location = response.headers.get("location");
+          if (location) newHeaders.set("location", proxify(location));
+          return new Response(null, { status: response.status, headers: newHeaders });
+        }
+
+        if (contentType.includes("text/css")) {
+          let css = await response.text();
+          css = css.replace(/url\((.*?)\)/gi, (match, group) => {
+            let clean = group.replace(/[\"']/g, "").trim();
+            if (clean.startsWith("data:") || clean.startsWith("blob:") || clean.startsWith("javascript:")) return match;
+            try {
+              const abs = new URL(clean, targetURL).href;
+              return `url(${proxify(abs)})`;
+            } catch { return match; }
+          });
+          css = css.replace(/@import\s+(?:url\()?['\"]?(.*?)['\"]?\)?;/gi, (match, group) => {
+            try {
+              const abs = new URL(group, targetURL).href;
+              return `@import url(${proxify(abs)});`;
+            } catch { return match; }
+          });
+          const cssResponse = new Response(css, { status: response.status, headers: newHeaders });
+          if (isStatic) ctx.waitUntil(cache.put(request, cssResponse.clone()));
+          return cssResponse;
+        }
+
+        if (!contentType.includes("text/html")) {
+          const passthrough = new Response(response.body, { status: response.status, headers: newHeaders });
+          if (isStatic) ctx.waitUntil(cache.put(request, passthrough.clone()));
+          return passthrough;
+        }
+
+        const injectedScript = `
+    <script>
+    (function() {
+        const WORKER = ${JSON.stringify(workerBase)};
+        const ORIGIN = ${JSON.stringify(targetOrigin)};
+        function rewriteURL(u) {
+            if (!u) return u;
+            if (u.startsWith('javascript:') || u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('#')) return u;
+            try { const abs = new URL(u, ORIGIN).href; return WORKER + encodeURIComponent(abs); } catch { return u; }
+        }
+        const originalFetch = window.fetch;
+        window.fetch = function(input, init) {
+            try {
+                if (typeof input === 'string') input = rewriteURL(input);
+                else if (input instanceof Request) input = new Request(rewriteURL(input.url), input);
+            } catch {}
+            return originalFetch.call(this, input, init);
+        };
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, ...rest) { return originalOpen.call(this, method, rewriteURL(url), ...rest); };
+        const OriginalWebSocket = window.WebSocket;
+        window.WebSocket = function(url, protocols) { return new OriginalWebSocket(rewriteURL(url), protocols); };
+        const origPush = history.pushState.bind(history);
+        const origReplace = history.replaceState.bind(history);
+        history.pushState = function(s, t, u) { return origPush(s, t, u ? rewriteURL(u) : u); };
+        history.replaceState = function(s, t, u) { return origReplace(s, t, u ? rewriteURL(u) : u); };
+        const origOpen = window.open;
+        window.open = function(url, ...args) { return origOpen.call(this, rewriteURL(url), ...args); };
+        const origAssign = window.location.assign.bind(window.location);
+        const origReplace2 = window.location.replace.bind(window.location);
+        window.location.assign = function(url) { return origAssign(rewriteURL(url)); };
+        window.location.replace = function(url) { return origReplace2(rewriteURL(url)); };
+        const origWrite = document.write.bind(document);
+        document.write = function(html) {
+            return origWrite(html.replace(/src=["'](.*?)["']/gi, (m, u) => \`src="\${rewriteURL(u)}"\`));
+        };
+    })();
+    <\/script>`;
+
+        const rewrittenResponse = new HTMLRewriter()
+          .on("head", { element(el) { el.prepend(`<base href="${targetOrigin}/">`, { html: true }); } })
+          .on("head", { element(el) { el.prepend(injectedScript, { html: true }); } })
+          .on("meta", { element(el) {
+              const equiv = (el.getAttribute("http-equiv") || "").toLowerCase();
+              if (equiv === "content-security-policy" || equiv === "content-security-policy-report-only") el.remove();
+          }})
+          .on("script, link", { element(el) {
+              el.removeAttribute("integrity");
+              el.removeAttribute("crossorigin");
+              el.removeAttribute("nonce");
+          }})
+          .on("style", { element(el) { el.removeAttribute("nonce"); } })
+          .on("a, area", { element(el) {
+              const href = el.getAttribute("href");
+              if (!href || href.startsWith("javascript:") || href.startsWith("data:") || href.startsWith("#")) return;
+              el.setAttribute("href", proxify(href));
+          }})
+          .on("link", { element(el) {
+              const href = el.getAttribute("href");
+              if (!href) return;
+              const rel = (el.getAttribute("rel") || "").toLowerCase();
+              if (rel.includes("stylesheet") || rel.includes("icon") || rel.includes("manifest") || rel.includes("preload") || rel.includes("modulepreload")) {
+                try { el.setAttribute("href", proxify(href)); } catch {}
+              }
+          }})
+          .on("script", { element(el) {
+              const src = el.getAttribute("src");
+              if (!src || src.startsWith("blob:") || src.startsWith("data:")) return;
+              try { el.setAttribute("src", proxify(src)); } catch {}
+          }})
+          .on("img, iframe, source, embed, object, video, audio", { element(el) {
+              const src = el.getAttribute("src");
+              if (src && !src.startsWith("data:") && !src.startsWith("blob:")) el.setAttribute("src", proxify(src));
+              const dataSrc = el.getAttribute("data-src");
+              if (dataSrc && !dataSrc.startsWith("data:") && !dataSrc.startsWith("blob:")) {
+                try { el.setAttribute("data-src", proxify(dataSrc)); } catch {}
+              }
+              const dataSrcset = el.getAttribute("data-srcset");
+              if (dataSrcset) {
+                try {
+                  const rewritten = dataSrcset.split(",").map(part => {
+                    const [u, size] = part.trim().split(/\s+/);
+                    try { return `${proxify(u)} ${size || ""}`; } catch { return part; }
+                  }).join(", ");
+                  el.setAttribute("data-srcset", rewritten);
+                } catch {}
+              }
+          }})
+          .on("img, source", { element(el) {
+              const srcset = el.getAttribute("srcset");
+              if (!srcset) return;
+              const rewritten = srcset.split(",").map(part => {
+                const [u, size] = part.trim().split(/\s+/);
+                try { return `${proxify(u)} ${size || ""}`; } catch { return part; }
+              }).join(", ");
+              el.setAttribute("srcset", rewritten);
+          }})
+          .on("form", { element(el) {
+              const action = el.getAttribute("action") || targetURL;
+              el.setAttribute("action", proxify(action));
+          }})
+          .on("meta", { element(el) {
+              const httpEquiv = el.getAttribute("http-equiv");
+              if (!httpEquiv || httpEquiv.toLowerCase() !== "refresh") return;
+              const content = el.getAttribute("content");
+              if (!content) return;
+              const match = content.match(/url=(.*)$/i);
+              if (!match) return;
+              el.setAttribute("content", content.replace(match[1], proxify(match[1])));
+          }})
+          .transform(new Response(response.body, { status: response.status, headers: newHeaders }));
+
+        return rewrittenResponse;
+      }
+
+
+      // ═════════════════════════════════════════════════════════════════
+      // GET HANDLERS
+      // ═════════════════════════════════════════════════════════════════
+
+      // --- SYSTEM SYNC (Main Page Loader) ---
+      if (url.pathname === "/sync") {
+        const email = url.searchParams.get("email");
+        if (email) {
+          await env.DB.prepare("UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE email = ?").bind(email).run();
+        }
+
+        const userState = await env.DB.prepare(
+          "SELECT last_command, profile_disabled, is_admin FROM users WHERE email = ?"
+        ).bind(email).first();
+
+        let cmd = userState?.last_command || null;
+        if (cmd) {
+          await env.DB.prepare("UPDATE users SET last_command = NULL WHERE email = ?").bind(email).run();
+        }
+
+        const locks = await env.DB.prepare("SELECT * FROM page_settings").all();
+        const blocks = await env.DB.prepare("SELECT blocked_path FROM user_blocks WHERE user_email = ?").bind(email).all();
+        const perms  = await env.DB.prepare("SELECT perm_tag FROM user_permissions WHERE user_email = ?").bind(email).all();
+        const system = await env.DB.prepare("SELECT * FROM system_data").all();
+
+        return new Response(JSON.stringify({
+          user: {
+            email,
+            is_admin: userState?.is_admin || 0,
+            profile_disabled: userState?.profile_disabled || 0
+          },
+          command: cmd,
+          locks: locks.results,
+          blocks: blocks.results.map(b => b.blocked_path),
+          permissions: perms.results.map(p => p.perm_tag),
+          widgets: system.results.reduce((acc, row) => ({ ...acc, [row.id]: row.content }), {})
+        }), { headers: relayHeaders });
+      }
+
+      // --- SEARCH SUGGESTIONS ---
+      if (url.pathname === "/search/suggest") {
+        const q = url.searchParams.get("q");
+        const users = await env.DB.prepare("SELECT email, display_name, profile_picture FROM users WHERE email LIKE ? OR display_name LIKE ? LIMIT 5").bind(`%${q}%`, `%${q}%`).all();
+        return new Response(JSON.stringify(users.results.map(u => ({...u, profile_picture: u.profile_picture || DEFAULT_ICON}))), { headers: relayHeaders });
+      }
+
+      // --- ANNOUNCEMENTS (active for user) ---
+      if (url.pathname === "/announcements/active") {
+        const email = url.searchParams.get("email");
+        if (!email) return new Response(JSON.stringify({ error: "Missing email" }), { status: 400, headers: relayHeaders });
+        try {
+          const active = await env.DB.prepare(`
+              SELECT a.*, u.display_name, u.profile_picture
+              FROM announcements a
+              JOIN users u ON a.creator_email = u.email
+              LEFT JOIN user_announcements ua ON a.id = ua.announcement_id AND ua.user_email = ?
+              WHERE ua.status IS NULL
+              AND (json_extract(a.settings, '$.broadcast_until') IS NULL OR json_extract(a.settings, '$.broadcast_until') > strftime('%s', 'now'))
+          `).bind(email).all();
+          return new Response(JSON.stringify(active.results.map(a => ({...a, content: JSON.parse(a.content), settings: JSON.parse(a.settings)}))), { headers: relayHeaders });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: "Announcements system error", detail: e.message }), { status: 500, headers: relayHeaders });
+        }
+      }
+
+      // --- ADMIN: LIST ANNOUNCEMENTS ---
+      if (url.pathname === "/admin/announcements/list") {
+        const anns = await env.DB.prepare("SELECT * FROM announcements ORDER BY created_at DESC").all();
+        const votes = await env.DB.prepare("SELECT v.*, u.display_name, u.profile_picture FROM poll_votes v JOIN users u ON v.user_email = u.email").all();
+        const results = anns.results.map(a => {
+          const content = JSON.parse(a.content);
+          const settings = JSON.parse(a.settings);
+          let pollData = null;
+          let detailedVotes = [];
+          if (a.type === 'poll') {
+            const relevantVotes = votes.results.filter(v => v.announcement_id === a.id);
+            detailedVotes = relevantVotes;
+            const counts = {};
+            relevantVotes.forEach(v => {
+              const vList = JSON.parse(v.votes);
+              vList.forEach(opt => counts[opt] = (counts[opt] || 0) + 1);
+            });
+            pollData = counts;
+          }
+          return { ...a, content, settings, pollData, detailedVotes };
+        });
+        return new Response(JSON.stringify(results), { headers: relayHeaders });
+      }
+
+      // --- WIKI METADATA LIST ---
+      if (url.pathname === "/wiki/metadata") {
+        const email = url.searchParams.get("email") || "guest";
+        const data = await env.DB.prepare(`
+            SELECT m.*, u.display_name, u.profile_picture,
+            (SELECT access_level FROM wiki_permissions WHERE wiki_id = m.id AND user_email = ?) as my_access
+            FROM wiki_metadata m
+            LEFT JOIN users u ON m.creator_email = u.email
+            ORDER BY m.id DESC
+        `).bind(email).all();
+        return new Response(JSON.stringify(data.results), { headers: relayHeaders });
+      }
+
+      // --- WIKI LOAD (with permission check) ---
+      if (url.pathname === "/wiki/load") {
+        const id = url.searchParams.get("id");
+        const email = url.searchParams.get("email");
+
+        const meta = await env.DB.prepare("SELECT creator_email FROM wiki_metadata WHERE id = ?").bind(id).first();
+        const user = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(email).first();
+        const perm = await env.DB.prepare("SELECT access_level FROM wiki_permissions WHERE wiki_id = ? AND user_email = ?").bind(id, email).first();
+
+        let level = "none";
+        if (user?.is_admin === 1 || meta?.creator_email === email) level = "edit";
+        else if (perm) level = perm.access_level;
+
+        if (level === "none") {
+          return new Response(JSON.stringify({ accessLevel: "none" }), { headers: relayHeaders });
+        }
+
+        const content = await env.DB.prepare("SELECT * FROM wiki_content WHERE id = ?").bind(id).first();
+        const logs = await env.DB.prepare(`SELECT DISTINCT u.display_name, u.profile_picture, u.email FROM wiki_logs l JOIN users u ON l.user_email = u.email WHERE l.wiki_id = ? ORDER BY l.updated_at DESC LIMIT 5`).bind(id).all();
+        const allowed = await env.DB.prepare("SELECT * FROM wiki_permissions WHERE wiki_id = ?").bind(id).all();
+
+        return new Response(JSON.stringify({
+          content: content || { content: "" },
+          logs: logs.results.map(l => ({...l, profile_picture: l.profile_picture || DEFAULT_ICON})),
+          allowedUsers: allowed.results,
+          accessLevel: level
+        }), { headers: relayHeaders });
+      }
+
+      // --- CHAT LOAD ---
+      if (url.pathname === "/chat/load") {
+        const msgs = await env.DB.prepare(`SELECT m.*, u.profile_picture, u.display_name FROM messages m LEFT JOIN users u ON m.user_email = u.email ORDER BY m.id DESC LIMIT 40`).all();
+        return new Response(JSON.stringify(msgs.results.reverse().map(m => ({ ...m, profile_picture: m.profile_picture || DEFAULT_ICON }))), { headers: relayHeaders });
+      }
+
+      // --- GAME SCORE FETCH (GET) ---
+      if (url.pathname === "/content/a617") {
+        const email = url.searchParams.get("email");
+        const gameId = url.searchParams.get("content");
+        const score = await env.DB.prepare(
+            "SELECT score FROM game_scores WHERE user_email = ? AND game_id = ? ORDER BY score DESC LIMIT 1"
+        ).bind(email, gameId).first();
+        return new Response(JSON.stringify({ score: score?.score || 0 }), { headers: relayHeaders });
+      }
+
+      // --- SPECIAL METADATA ---
+      if (url.pathname === "/special/metadata") {
+        const data = await env.DB.prepare("SELECT * FROM special_metadata ORDER BY id ASC").all();
+        return new Response(JSON.stringify(data.results), { headers: relayHeaders });
+      }
+
+      // --- ADMIN: LIST USERS ---
+      if (url.pathname === "/admin/list-users") {
+        const users = await env.DB.prepare("SELECT *, (strftime('%s', 'now') - strftime('%s', last_active)) as sec_ago, (strftime('%s', 'now') - strftime('%s', last_interaction)) as interact_ago FROM users").all();
+        const perms = await env.DB.prepare("SELECT * FROM user_permissions").all();
+        const badges = await env.DB.prepare("SELECT * FROM user_badges").all();
+        const blocks = await env.DB.prepare("SELECT * FROM user_blocks").all();
+        const master = await env.DB.prepare("SELECT * FROM badges_master").all();
+
+        const res = users.results.map(u => {
+          const online = u.sec_ago !== null && u.sec_ago < 60;
+          const idle = online && (u.interact_ago === null || u.interact_ago >= 60);
+          return {
+            ...u,
+            is_online: online,
+            is_idle: idle,
+            perm_tags: perms.results.filter(p => p.user_email === u.email).map(p => p.perm_tag),
+            badges: badges.results.filter(b => b.user_email === u.email).map(bg => ({ ...bg, ...master.results.find(m => m.name === bg.badge_name) })),
+            blocked_paths: blocks.results.filter(b => b.user_email === u.email).map(b => b.blocked_path)
+          };
+        });
+        return new Response(JSON.stringify(res), { headers: relayHeaders });
+      }
+
+      // --- PROFILE GET ---
+      if (url.pathname === "/profile/get") {
+        const email = url.searchParams.get("email");
+        const by = url.searchParams.get("by");
+        const user = await env.DB.prepare(
+          "SELECT *, (strftime('%s', 'now') - strftime('%s', last_active)) as sec_ago FROM users WHERE email = ?"
+        ).bind(email).first();
+
+        if (!user) return new Response(JSON.stringify({user: {email, profile_picture: DEFAULT_ICON}}), { headers: relayHeaders });
+
+        const viewer = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(by).first();
+        if (user.profile_disabled && (!viewer || !viewer.is_admin)) {
+          return new Response(JSON.stringify({ disabled: true }), { headers: relayHeaders });
+        }
+
+        const badges = await env.DB.prepare(
+          "SELECT b.* FROM badges_master b JOIN user_badges ub ON b.name = ub.badge_name WHERE ub.user_email = ?"
+        ).bind(email).all();
+
+        return new Response(JSON.stringify({
+          user: {
+            ...user,
+            profile_picture: user.profile_picture || DEFAULT_ICON,
+            is_online: user.sec_ago !== null && user.sec_ago < 60
+          },
+          badges: badges.results
+        }), { headers: relayHeaders });
+      }
+
+      // --- ADMIN: BADGES LIST ---
+      if (url.pathname === "/admin/badges/list") {
+        const data = await env.DB.prepare("SELECT * FROM badges_master").all();
+        return new Response(JSON.stringify({ master: data.results }), { headers: relayHeaders });
+      }
+
+      // --- BATTLE: ROOMS LIST ---
+      if (url.pathname === "/battle/rooms") {
+        const rooms = await env.DB.prepare(`
+            SELECT id, name, status, host_email, created_at
+            FROM battle_rooms
+            WHERE status IN ('waiting','placing')
+            ORDER BY created_at DESC LIMIT 20
+        `).all();
+        return new Response(JSON.stringify({ rooms: rooms.results }), { headers: relayHeaders });
+      }
+
+      // --- BATTLE: GAME STATE ---
+      if (url.pathname === "/battle/state") {
+        const roomId = url.searchParams.get("room_id");
+        const email  = url.searchParams.get("email");
+
+        const room = await env.DB.prepare(
+            "SELECT * FROM battle_rooms WHERE id = ?"
+        ).bind(roomId).first();
+        if (!room) return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers: relayHeaders });
+
+        const isHost = room.host_email === email;
+        if (!isHost && room.guest_email !== email)
+          return new Response(JSON.stringify({ error: "Not in room" }), { status: 403, headers: relayHeaders });
+
+        const oppEmail = isHost ? room.guest_email : room.host_email;
+
+        let myBoardData = Array(100).fill(null);
+        const myPlacement = await env.DB.prepare(
+            "SELECT positions FROM battle_placements WHERE room_id = ? AND user_email = ?"
+        ).bind(roomId, email).first();
+        if (myPlacement) {
+          const pos = JSON.parse(myPlacement.positions);
+          for (const cells of Object.values(pos)) cells.forEach(i => { myBoardData[i] = 'ship'; });
+        }
+
+        const incomingFires = await env.DB.prepare(
+            "SELECT row, col, result FROM battle_moves WHERE room_id = ? AND target_email = ? ORDER BY id ASC"
+        ).bind(roomId, email).all();
+        incomingFires.results.forEach(m => {
+          myBoardData[m.row * 10 + m.col] = m.result === 'miss' ? 'miss' : (m.result === 'sunk' ? 'sunk' : 'hit');
+        });
+
+        let enemyBoardData = Array(100).fill(0);
+        const outgoingFires = await env.DB.prepare(
+            "SELECT row, col, result FROM battle_moves WHERE room_id = ? AND actor_email = ? ORDER BY id ASC"
+        ).bind(roomId, email).all();
+        outgoingFires.results.forEach(m => {
+          enemyBoardData[m.row * 10 + m.col] = m.result === 'miss' ? 1 : (m.result === 'sunk' ? 3 : 2);
+        });
+
+        const TOTAL = 17;
+        const myHits    = incomingFires.results.filter(m => m.result !== 'miss').length;
+        const enemyHits = outgoingFires.results.filter(m => m.result !== 'miss').length;
+
+        const moveLogs = await env.DB.prepare(`
+            SELECT m.row, m.col, m.result, m.actor_email, u.display_name
+            FROM battle_moves m
+            LEFT JOIN users u ON m.actor_email = u.email
+            WHERE m.room_id = ? ORDER BY m.id ASC
+        `).bind(roomId).all();
+
+        return new Response(JSON.stringify({
+          status:           room.status,
+          my_turn:          room.turn_email === email,
+          winner:           room.winner_email || null,
+          my_board:         myBoardData,
+          enemy_board:      enemyBoardData,
+          my_ships_left:    Math.max(0, TOTAL - myHits),
+          enemy_ships_left: Math.max(0, TOTAL - enemyHits),
+          move_log: moveLogs.results.map(m => ({
+            actor:  m.display_name || m.actor_email,
+            row:    m.row,
+            col:    m.col,
+            result: m.result
+          }))
+        }), { headers: relayHeaders });
+      }
+
+      // --- BATTLE: LEAVE BEACON ---
+      if (url.pathname === "/battle/leave-beacon") {
+        const room_id = url.searchParams.get("room_id");
+        const email   = url.searchParams.get("email");
+        if (room_id && email) {
+          const room = await env.DB.prepare("SELECT * FROM battle_rooms WHERE id = ?").bind(room_id).first();
+          if (room) {
+            if (room.status === 'active') {
+              const winner = room.host_email === email ? room.guest_email : room.host_email;
+              await env.DB.prepare("UPDATE battle_rooms SET status = 'finished', winner_email = ? WHERE id = ?").bind(winner, room_id).run();
+            } else if (room.host_email === email) {
+              await env.DB.prepare("UPDATE battle_rooms SET status = 'abandoned' WHERE id = ?").bind(room_id).run();
+            } else {
+              await env.DB.prepare("UPDATE battle_rooms SET guest_email = NULL, status = 'waiting' WHERE id = ?").bind(room_id).run();
+              await env.DB.prepare("DELETE FROM battle_placements WHERE room_id = ? AND user_email = ?").bind(room_id, email).run();
+            }
+          }
+        }
+        return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+      }
+
+      // --- GAME SCORE / LEADERBOARD ---
+      if (url.pathname === "/game/get-score") {
+        const email  = url.searchParams.get("email");
+        const gameId = url.searchParams.get("content");
+        const score  = await env.DB.prepare(
+            "SELECT score FROM game_scores WHERE user_email = ? AND game_id = ? ORDER BY score DESC LIMIT 1"
+        ).bind(email, gameId).first();
+        return new Response(JSON.stringify({ score: score?.score || 0 }), { headers: relayHeaders });
+      }
+
+      if (url.pathname === "/game/leaderboard") {
+        const gameId = url.searchParams.get("content");
+        const topScores = await env.DB.prepare(`
+            SELECT s.score, u.display_name, u.profile_picture, u.email
+            FROM game_scores s
+            JOIN users u ON s.user_email = u.email
+            WHERE s.game_id = ?
+            ORDER BY s.score DESC LIMIT 5
+        `).bind(gameId).all();
+        return new Response(JSON.stringify(topScores.results), { headers: relayHeaders });
+      }
+
+      // --- PROFILE REACTIONS / COMMENTS ---
+      if (url.pathname === "/profile/reactions") {
+        const profile = url.searchParams.get("profile");
+        if (!profile) return new Response(JSON.stringify({ likes: [], dislikes: [] }), { headers: relayHeaders });
+        const row = await env.DB.prepare(
+            "SELECT content FROM system_data WHERE id = ?"
+        ).bind(`reactions__${profile}`).first();
+        let data = { likes: [], dislikes: [] };
+        if (row?.content) { try { data = JSON.parse(row.content); } catch {} }
+        return new Response(JSON.stringify(data), { headers: relayHeaders });
+      }
+
+      if (url.pathname === "/profile/comments") {
+        const profile = url.searchParams.get("profile");
+        if (!profile) return new Response(JSON.stringify([]), { headers: relayHeaders });
+        const row = await env.DB.prepare(
+            "SELECT content FROM system_data WHERE id = ?"
+        ).bind(`comments__${profile}`).first();
+        let comments = [];
+        if (row?.content) { try { comments = JSON.parse(row.content); } catch {} }
+        const emails = [...new Set(comments.map(c => c.email))];
+        let userMap = {};
+        if (emails.length) {
+          const placeholders = emails.map(() => "?").join(", ");
+          const users = await env.DB.prepare(
+              `SELECT email, display_name, profile_picture FROM users WHERE email IN (${placeholders})`
+          ).bind(...emails).all();
+          users.results.forEach(u => { userMap[u.email] = u; });
+        }
+        const enriched = comments.map(c => ({
+          ...c,
+          display_name:     userMap[c.email]?.display_name    || c.display_name    || c.email,
+          profile_picture:  userMap[c.email]?.profile_picture || c.profile_picture || DEFAULT_ICON,
+        }));
+        return new Response(JSON.stringify(enriched), { headers: relayHeaders });
+      }
+
+      // --- CHESS: ROOMS LIST ---
+      if (url.pathname === "/chess/rooms") {
+        await env.DB.prepare("DELETE FROM chess_moves WHERE room_id IN (SELECT id FROM chess_rooms WHERE status='abandoned' AND created_at < datetime('now', '-1 minute'))").run();
+        await env.DB.prepare("DELETE FROM chess_spectators WHERE room_id IN (SELECT id FROM chess_rooms WHERE status='abandoned' AND created_at < datetime('now', '-1 minute'))").run();
+        await env.DB.prepare("DELETE FROM chess_rooms WHERE status='abandoned' AND created_at < datetime('now', '-1 minute')").run();
+
+        const rooms = await env.DB.prepare(`
+            SELECT cr.*,
+            (SELECT COUNT(*) FROM chess_spectators WHERE room_id = cr.id) as spectator_count,
+            CASE WHEN cr.status = 'active' THEN 2 ELSE 1 END as player_count
+            FROM chess_rooms cr
+            WHERE cr.status IN ('waiting', 'active')
+            ORDER BY cr.created_at DESC LIMIT 20
+        `).all();
+        return new Response(JSON.stringify({rooms:rooms.results}),{headers:relayHeaders});
+      }
+
+      // --- CHESS: GAME STATE ---
+      if (url.pathname === "/chess/state") {
+        const id = url.searchParams.get("room_id");
+        const room = await env.DB.prepare("SELECT cr.*,uh.display_name as host_name,uh.profile_picture as host_pic,ug.display_name as guest_name,ug.profile_picture as guest_pic FROM chess_rooms cr LEFT JOIN users uh ON cr.host_email=uh.email LEFT JOIN users ug ON cr.guest_email=ug.email WHERE cr.id=?").bind(id).first();
+        if (!room) return new Response(JSON.stringify({error:"Not found"}),{status:404,headers:relayHeaders});
+        const moves = await env.DB.prepare("SELECT * FROM chess_moves WHERE room_id=? ORDER BY id ASC").bind(id).all();
+        const spectators = await env.DB.prepare(`
+            SELECT u.email, u.display_name, u.profile_picture
+            FROM chess_spectators s
+            JOIN users u ON s.email = u.email
+            WHERE s.room_id = ?
+        `).bind(id).all();
+        return new Response(JSON.stringify({
+          ...room,
+          moves: moves.results,
+          spectators: spectators.results.map(s => ({
+            ...s,
+            profile_picture: s.profile_picture || DEFAULT_ICON
+          }))
+        }),{headers:relayHeaders});
+      }
+
+      // --- CHESS: LEAVE BEACON ---
+      if (url.pathname === "/chess/leave-beacon") {
+        const room_id = url.searchParams.get("room_id");
+        const email   = url.searchParams.get("email");
+        if (room_id && email) {
+          await env.DB.prepare("DELETE FROM chess_spectators WHERE room_id = ? AND email = ?").bind(room_id, email).run();
+          const room = await env.DB.prepare("SELECT * FROM chess_rooms WHERE id=?").bind(room_id).first();
+          if (room) {
+            if (room.status === 'active') {
+              const winner = room.host_email === email ? room.guest_email : room.host_email;
+              await env.DB.prepare("UPDATE chess_rooms SET status='finished',winner_email=?,result='resign' WHERE id=?").bind(winner, room_id).run();
+            } else if (room.host_email === email) {
+              await env.DB.prepare("UPDATE chess_rooms SET status='abandoned' WHERE id=?").bind(room_id).run();
+            } else {
+              await env.DB.prepare("UPDATE chess_rooms SET guest_email=NULL,status='waiting' WHERE id=?").bind(room_id).run();
+            }
+          }
+        }
+        return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+      }
+
+      // ═════════════════════════════════════════════════════════════════
+      // PAPER.IO — GET HANDLERS
+      // ═════════════════════════════════════════════════════════════════
+
+      // --- PAPER: ROOMS LIST ---
+      if (url.pathname === "/paper/rooms") {
+        await env.DB.prepare("DELETE FROM paper_rooms WHERE status='abandoned' AND created_at < datetime('now', '-1 minute')").run();
+        const rooms = await env.DB.prepare(`
+            SELECT pr.*,
+            (SELECT COUNT(*) FROM paper_players WHERE room_id = pr.id) as player_count
+            FROM paper_rooms pr
+            WHERE pr.status IN ('waiting', 'active')
+            ORDER BY pr.created_at DESC LIMIT 20
+        `).all();
+        return new Response(JSON.stringify({ rooms: rooms.results || [] }), { headers: relayHeaders });
+      }
+
+      // --- PAPER: JOIN BY CODE ---
+      if (url.pathname === "/paper/find-by-code") {
+        const code = (url.searchParams.get("code") || "").toUpperCase();
+        if (!code) return new Response(JSON.stringify({ error: "Missing code" }), { status: 400, headers: relayHeaders });
+        const room = await env.DB.prepare("SELECT id FROM paper_rooms WHERE UPPER(code) = ? AND status = 'waiting'")
+          .bind(code).first();
+        if (!room) return new Response(JSON.stringify({ error: "No open room with that code" }), { status: 404, headers: relayHeaders });
+        return new Response(JSON.stringify({ room_id: room.id }), { headers: relayHeaders });
+      }
+
+      // --- PAPER: LOBBY STATE (joined players, code, host controls) ---
+      if (url.pathname === "/paper/lobby") {
+        const roomId = url.searchParams.get("room_id");
+        const email  = url.searchParams.get("email");
+        if (!roomId) return new Response(JSON.stringify({ error: "Missing room_id" }), { status: 400, headers: relayHeaders });
+
+        const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(roomId).first();
+        if (!room) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: relayHeaders });
+
+        const players = await env.DB.prepare(`
+            SELECT pp.email, pp.display_name, pp.profile_picture,
+                   pp.is_ai, pp.ai_difficulty,
+                   u.display_name as uname, u.profile_picture as upic
+            FROM paper_players pp
+            LEFT JOIN users u ON pp.email = u.email
+            WHERE pp.room_id = ?
+            ORDER BY pp.joined_at ASC
+        `).bind(roomId).all();
+
+        return new Response(JSON.stringify({
+          status:     room.status,
+          code:       room.code,
+          host_email: room.host_email,
+          time_limit: room.time_limit,
+          max_players: room.max_players,
+          min_ai:     room.min_ai,
+          map_size:   room.map_size,
+          is_ai_only: !!room.is_ai_only,
+          started_at: room.started_at,
+          players: (players.results || []).map(p => ({
+            email:   p.email,
+            name:    p.uname || p.display_name || p.email.split('@')[0],
+            profile_picture: p.upic || p.profile_picture || DEFAULT_ICON,
+            is_ai:   !!p.is_ai,
+            difficulty: p.ai_difficulty
+          }))
+        }), { headers: relayHeaders });
+      }
+
+      // --- PAPER: GAME STATE (poll endpoint) ---
+      if (url.pathname === "/paper/state") {
+        const id = url.searchParams.get("room_id");
+        if (!id) return new Response(JSON.stringify({ error: "Missing room_id" }), { status: 400, headers: relayHeaders });
+
+        const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id=?").bind(id).first();
+        if (!room) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: relayHeaders });
+
+        const playerRows = await env.DB.prepare(`
+            SELECT pp.email, pp.display_name, pp.profile_picture,
+                   pp.is_ai, pp.ai_difficulty,
+                   u.display_name as uname, u.profile_picture as upic
+            FROM paper_players pp
+            LEFT JOIN users u ON pp.email = u.email
+            WHERE pp.room_id = ?
+            ORDER BY pp.joined_at ASC
+        `).bind(id).all();
+
+        // Server-side win conditions for non-solo, non-local multiplayer rooms
+        let serverWinner = room.winner_email || null;
+        let serverFinished = room.status === 'finished';
+
+        // Time-up check — public match (is_ai_only = 0): highest territory wins
+        if (!serverFinished && room.status === 'active' && !room.is_ai_only && room.started_at) {
+          const elapsed = Math.floor(Date.now() / 1000) - room.started_at;
+          if (room.time_limit && elapsed >= room.time_limit) {
+            const counts = await env.DB.prepare(
+              "SELECT email FROM paper_players WHERE room_id = ? AND is_ai = 0"
+            ).bind(id).all();
+            // Territory is stored in paper_moves.territory (latest per player)
+            let bestEmail = null, bestTerritory = -1;
+            for (const p of (counts.results || [])) {
+              const lastMove = await env.DB.prepare(
+                "SELECT territory FROM paper_moves WHERE room_id = ? AND email = ? ORDER BY id DESC LIMIT 1"
+              ).bind(id, p.email).first();
+              const territory = parseInt(lastMove?.territory, 10) || 0;
+              if (territory > bestTerritory) { bestTerritory = territory; bestEmail = p.email; }
+            }
+            serverWinner = bestEmail;
+            serverFinished = true;
+            await env.DB.prepare(
+              "UPDATE paper_rooms SET status='finished', winner_email=? WHERE id=?"
+            ).bind(bestEmail, id).run();
+          }
+        }
+
+        return new Response(JSON.stringify({
+          status:     serverFinished ? 'finished' : room.status,
+          winner:     serverWinner,
+          time_limit: room.time_limit || 0,
+          started_at: room.started_at || 0,
+          map_size:   room.map_size || 100,
+          is_ai_only: !!room.is_ai_only,
+          players: (playerRows.results || []).map((row, idx) => ({
+            email:   row.email,
+            name:    row.uname || row.display_name || row.email.split('@')[0],
+            profile_picture: row.upic || row.profile_picture || DEFAULT_ICON,
+            is_ai:   !!row.is_ai,
+            difficulty: row.ai_difficulty,
+            x:       10 + idx * 5,
+            y:       10 + idx * 5,
+            dx: 1, dy: 0,
+            alive: true,
+            trail: [],
+            territory: 0
+          }))
+        }), { headers: relayHeaders });
+      }
+
+      // --- PAPER: LEAVE BEACON (tab close handler) ---
+      if (url.pathname === "/paper/leave-beacon") {
+        const room_id = url.searchParams.get("room_id");
+        const email   = url.searchParams.get("email");
+        if (room_id && email) {
+          await env.DB.prepare("DELETE FROM paper_players WHERE room_id=? AND email=?").bind(room_id, email).run();
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id=?").bind(room_id).first();
+          if (room) {
+            if (room.status === 'active') {
+              const remaining = await env.DB.prepare(
+                "SELECT email FROM paper_players WHERE room_id = ?"
+              ).bind(room_id).all();
+              const winner = (remaining.results && remaining.results.length > 0)
+                ? remaining.results[0].email
+                : null;
+              if (winner) {
+                await env.DB.prepare("UPDATE paper_rooms SET status='finished', winner_email=? WHERE id=?")
+                  .bind(winner, room_id).run();
+              } else {
+                await env.DB.prepare("UPDATE paper_rooms SET status='finished' WHERE id=?")
+                  .bind(room_id).run();
+              }
+            } else if (room.host_email === email) {
+              await env.DB.prepare("UPDATE paper_rooms SET status='abandoned' WHERE id=?")
+                .bind(room_id).run();
+            }
+          }
+        }
+        return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+      }
+
+      // ═════════════════════════════════════════════════════════════════
+      // GARTIC PHONE — GET HANDLERS
+      // ═════════════════════════════════════════════════════════════════
+
+      // --- GARTIC: ROOMS LIST ---
+      if (url.pathname === "/gartic/rooms") {
+        await env.DB.prepare(
+          "DELETE FROM garticphone_rooms WHERE status='abandoned' AND created_at < datetime('now', '-1 minute')"
+        ).run();
+        const rooms = await env.DB.prepare(`
+            SELECT pr.id, pr.name, pr.code, pr.host_email, pr.max_players,
+                   (SELECT COUNT(*) FROM garticphone_players WHERE room_id = pr.id) as player_count
+            FROM garticphone_rooms pr
+            WHERE pr.status = 'waiting'
+            ORDER BY pr.created_at DESC LIMIT 20
+        `).all();
+        return new Response(JSON.stringify({ rooms: rooms.results || [] }), { headers: relayHeaders });
+      }
+
+      // --- GARTIC: FIND BY CODE ---
+      if (url.pathname === "/gartic/find-by-code") {
+        const code = (url.searchParams.get("code") || "").toUpperCase();
+        if (!code) return new Response(JSON.stringify({ error: "Missing code" }), { status: 400, headers: relayHeaders });
+        const room = await env.DB.prepare(
+          "SELECT id FROM garticphone_rooms WHERE UPPER(code) = ? AND status = 'waiting'"
+        ).bind(code).first();
+        if (!room) return new Response(JSON.stringify({ error: "No open room with that code" }), { status: 404, headers: relayHeaders });
+        return new Response(JSON.stringify({ room_id: room.id }), { headers: relayHeaders });
+      }
+
+      // --- GARTIC: LOBBY STATE ---
+      if (url.pathname === "/gartic/lobby") {
+        const roomId = url.searchParams.get("room_id");
+        if (!roomId) return new Response(JSON.stringify({ error: "Missing room_id" }), { status: 400, headers: relayHeaders });
+        const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(roomId).first();
+        if (!room) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: relayHeaders });
+        const players = await env.DB.prepare(`
+            SELECT gp.email, gp.display_name, gp.profile_picture, gp.turn_index,
+                   u.display_name as uname, u.profile_picture as upic
+            FROM garticphone_players gp
+            LEFT JOIN users u ON gp.email = u.email
+            WHERE gp.room_id = ?
+            ORDER BY gp.turn_index ASC
+        `).bind(roomId).all();
+        return new Response(JSON.stringify({
+          status: room.status,
+          name: room.name,
+          code: room.code,
+          host_email: room.host_email,
+          max_players: room.max_players || 8,
+          total_rounds: room.total_rounds || 6,
+          players: (players.results || []).map(p => ({
+            email: p.email,
+            name: p.uname || p.display_name || p.email.split('@')[0],
+            profile_picture: p.upic || p.profile_picture || DEFAULT_ICON,
+            turn_index: p.turn_index,
+            chain_id: p.turn_index  // chain_id == turn_index; assigned at join, stable for game
+          }))
+        }), { headers: relayHeaders });
+      }
+
+      // --- GARTIC: GAME STATE (per-player view) ---
+      if (url.pathname === "/gartic/state") {
+        const roomId = url.searchParams.get("room_id");
+        const email  = url.searchParams.get("email");
+        if (!roomId || !email) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: relayHeaders });
+
+        const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(roomId).first();
+        if (!room) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: relayHeaders });
+
+        const me = await env.DB.prepare(
+          "SELECT turn_index FROM garticphone_players WHERE room_id = ? AND email = ?"
+        ).bind(roomId, email).first();
+        if (!me) return new Response(JSON.stringify({ error: "Not in room" }), { status: 403, headers: relayHeaders });
+
+        const playerRows = await env.DB.prepare(`
+            SELECT gp.email, gp.turn_index,
+                   u.display_name as uname, u.profile_picture as upic
+            FROM garticphone_players gp
+            LEFT JOIN users u ON gp.email = u.email
+            WHERE gp.room_id = ?
+            ORDER BY gp.turn_index ASC
+        `).bind(roomId).all();
+
+        const myChainId = me.turn_index;
+        const totalRounds = room.total_rounds || 6;
+        const currentRound = room.round || 1;
+        // Round 1 = text. Round 2 = draw. Round 3 = text. Round 4 = draw...
+        const myKind = (currentRound === 1 || currentRound % 2 === 1) ? 'text' : 'draw';
+
+        let source = null;
+        let mySubmitted = false;
+
+        // Anonymity: hide authorship during play + waiting_for_view.
+        // Names only appear once host starts viewing.
+        const isViewing = room.status === 'viewing' || room.status === 'finished';
+
+        if (room.status === 'playing' || room.status === 'waiting_for_view' || room.status === 'viewing' || room.status === 'finished') {
+          if (currentRound > 1) {
+            // Look up pairing for (room, round, chain_id) → source_owner_email
+            const pairing = await env.DB.prepare(
+              "SELECT source_owner_email FROM garticphone_pairings WHERE room_id = ? AND round = ? AND chain_id = ?"
+            ).bind(roomId, currentRound, myChainId).first();
+            if (pairing?.source_owner_email) {
+              const srcRow = await env.DB.prepare(`
+                  SELECT gp.kind, gp.content, gp.owner_email,
+                         u.display_name as uname, u.profile_picture as upic
+                  FROM garticphone_prompts gp
+                  LEFT JOIN users u ON gp.owner_email = u.email
+                  WHERE gp.room_id = ? AND gp.owner_email = ? AND gp.round = ?
+              `).bind(roomId, pairing.source_owner_email, currentRound - 1).first();
+              if (srcRow) {
+                source = {
+                  kind: srcRow.kind,
+                  content: srcRow.content,
+                  round: currentRound - 1,
+                  owner_email:  isViewing ? srcRow.owner_email  : null,
+                  owner_name:   isViewing ? (srcRow.uname || srcRow.owner_email) : null,
+                  owner_pic:    isViewing ? (srcRow.upic || DEFAULT_ICON) : null
+                };
+              }
+            }
+          }
+
+          // Has this player submitted for this round?
+          const submitted = await env.DB.prepare(
+            "SELECT id FROM garticphone_prompts WHERE room_id = ? AND round = ? AND owner_email = ?"
+          ).bind(roomId, currentRound, email).first();
+          mySubmitted = !!submitted;
+        }
+
+        // Submitted set for this round
+        const submittedRows = await env.DB.prepare(
+          "SELECT DISTINCT owner_email FROM garticphone_prompts WHERE room_id = ? AND round = ?"
+        ).bind(roomId, currentRound).all();
+        const submittedSet = new Set((submittedRows.results || []).map(r => r.owner_email));
+
+        const allSubmitted = (playerRows.results || []).length > 0 &&
+          playerRows.results.every(p => submittedSet.has(p.email));
+
+        return new Response(JSON.stringify({
+          status: room.status,
+          round: currentRound,
+          total_rounds: totalRounds,
+          my_chain_id: myChainId,
+          my_kind: myKind,
+          my_turn: room.status === 'playing' && !mySubmitted,
+          my_submitted: mySubmitted,
+          all_submitted: allSubmitted,
+          source: source,
+          players: (playerRows.results || []).map(p => ({
+            email: p.email,
+            name: p.uname || p.email.split('@')[0],
+            profile_picture: p.upic || DEFAULT_ICON,
+            turn_index: p.turn_index,
+            chain_id: p.turn_index,
+            submitted: submittedSet.has(p.email)
+          })),
+          viewing_chain_index: room.viewing_chain_index || 0,
+          viewing_started: room.status === 'viewing',
+          winner_email: room.winner_email || null
+        }), { headers: relayHeaders });
+      }
+
+      // --- GARTIC: REVEAL (full chain by chain_id) ---
+      if (url.pathname === "/gartic/reveal") {
+        const roomId = url.searchParams.get("room_id");
+        const chainId = parseInt(url.searchParams.get("chain_id"));
+        if (!roomId || isNaN(chainId)) return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: relayHeaders });
+
+        const prompts = await env.DB.prepare(`
+            SELECT gp.id, gp.round, gp.kind, gp.content, gp.owner_email, gp.source_owner_email,
+                   u.display_name as uname, u.profile_picture as upic
+            FROM garticphone_prompts gp
+            LEFT JOIN users u ON gp.owner_email = u.email
+            WHERE gp.room_id = ? AND gp.chain_id = ?
+            ORDER BY gp.round ASC
+        `).bind(roomId, chainId).all();
+
+        return new Response(JSON.stringify({
+          chain: (prompts.results || []).map(p => ({
+            id: p.id,
+            round: p.round,
+            kind: p.kind,
+            content: p.content,
+            owner_email: p.owner_email,
+            owner_name: p.uname || p.owner_email,
+            owner_pic: p.upic || DEFAULT_ICON,
+            source_owner_email: p.source_owner_email
+          }))
+        }), { headers: relayHeaders });
+      }
+
+      // --- GARTIC: LEAVE BEACON ---
+      if (url.pathname === "/gartic/leave-beacon") {
+        const room_id = url.searchParams.get("room_id");
+        const email   = url.searchParams.get("email");
+        if (room_id && email) {
+          const me = await env.DB.prepare(
+            "SELECT turn_index FROM garticphone_players WHERE room_id = ? AND email = ?"
+          ).bind(room_id, email).first();
+          if (me) {
+            await env.DB.prepare(
+              "DELETE FROM garticphone_players WHERE room_id = ? AND email = ?"
+            ).bind(room_id, email).run();
+            const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+            if (room) {
+              if (room.status === 'playing') {
+                const cnt = await env.DB.prepare(
+                  "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+                ).bind(room_id).first();
+                if (cnt.cnt < 2) {
+                  await env.DB.prepare(
+                    "UPDATE garticphone_rooms SET status = 'finished' WHERE id = ?"
+                  ).bind(room_id).run();
+                } else if (room.host_email === email) {
+                  const next = await env.DB.prepare(
+                    "SELECT email FROM garticphone_players WHERE room_id = ? ORDER BY turn_index ASC LIMIT 1"
+                  ).bind(room_id).first();
+                  if (next) {
+                    await env.DB.prepare(
+                      "UPDATE garticphone_rooms SET host_email = ? WHERE id = ?"
+                    ).bind(next.email, room_id).run();
+                  }
+                }
+              } else if (room.status === 'waiting' && room.host_email === email) {
+                const remaining = await env.DB.prepare(
+                  "SELECT email FROM garticphone_players WHERE room_id = ? ORDER BY turn_index ASC"
+                ).bind(room_id).all();
+                if ((remaining.results || []).length > 0) {
+                  await env.DB.prepare(
+                    "UPDATE garticphone_rooms SET host_email = ? WHERE id = ?"
+                  ).bind(remaining.results[0].email, room_id).run();
+                } else {
+                  await env.DB.prepare(
+                    "UPDATE garticphone_rooms SET status = 'abandoned' WHERE id = ?"
+                  ).bind(room_id).run();
+                }
+              }
+            }
+          }
+        }
+        return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+      }
+
+      // --- CUBIC LEVELS ---
+      if (url.pathname === "/cubic/levels") {
+        const data = await env.DB.prepare(
+          "SELECT id, name, author, author_email, difficulty, color, length, objects, image_url, is_locked, plays, created_at FROM cubic_levels ORDER BY id DESC"
+        ).all();
+        return new Response(JSON.stringify({ levels: data.results }), { headers: relayHeaders });
+      }
+
+      if (url.pathname === "/cubic/play") {
+        const id = url.searchParams.get("id");
+        await env.DB.prepare("UPDATE cubic_levels SET plays = plays + 1 WHERE id = ?").bind(id).run();
+        return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+      }
+
+      // --- RACING LOBBIES ---
+      if (url.pathname === "/racing/lobbies") {
+        const rows = await env.DB.prepare(
+          "SELECT id, content FROM system_data WHERE id LIKE 'racing_lobby\\_%' ESCAPE '\\'"
+        ).all();
+        const lobbies = rows.results.map(r => {
+          try { return JSON.parse(r.content); } catch { return null; }
+        }).filter(Boolean).filter(l => l.state === 'waiting');
+        return new Response(JSON.stringify(lobbies), { headers: relayHeaders });
+      }
+
+      if (url.pathname === "/racing/lobby/load") {
+        const id = url.searchParams.get("id");
+        if (!id) return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers: relayHeaders });
+        const row = await env.DB.prepare("SELECT content FROM system_data WHERE id = ?").bind(id).first();
+        if (!row) return new Response(JSON.stringify({ error: "Lobby not found" }), { status: 404, headers: relayHeaders });
+        return new Response(row.content, { headers: { ...relayHeaders, "Content-Type": "application/json" } });
+      }
+
+      if (url.pathname === "/racing/room-states") {
+        const room = url.searchParams.get("room");
+        if (!room) return new Response(JSON.stringify([]), { headers: relayHeaders });
+        const rows = await env.DB.prepare(
+          "SELECT content FROM system_data WHERE id LIKE ?"
+        ).bind('racing_state__' + room + '%').all();
+        const states = rows.results.map(r => {
+          try { return JSON.parse(r.content); } catch { return null; }
+        }).filter(Boolean);
+        return new Response(JSON.stringify(states), { headers: relayHeaders });
+      }
+
+      if (url.pathname === "/racing/lobbies/prune") {
+        const rows = await env.DB.prepare(
+          "SELECT id, content FROM system_data WHERE id LIKE 'racing_lobby\\_%' ESCAPE '\\'"
+        ).all();
+        const now = Date.now();
+        let pruned = 0;
+        for (const r of rows.results) {
+          try {
+            const lobby = JSON.parse(r.content);
+            const latestActivity = Math.max(
+              ...(lobby.players || []).map(p => p.last_seen || 0),
+              lobby.started_at || 0,
+              lobby.created_at || 0
+            );
+            if (now - latestActivity > 10 * 60 * 1000) {
+              await env.DB.prepare("DELETE FROM system_data WHERE id = ?").bind(r.id).run();
+              const roomId = r.id.replace('racing_lobby__', '');
+              const states = await env.DB.prepare(
+                "SELECT id FROM system_data WHERE id LIKE ?"
+              ).bind('racing_state__' + roomId + '%').all();
+              for (const s of states.results) {
+                await env.DB.prepare("DELETE FROM system_data WHERE id = ?").bind(s.id).run();
+              }
+              pruned++;
+            }
+          } catch (e) {}
+        }
+        return new Response(JSON.stringify({ success: true, pruned }), { headers: relayHeaders });
+      }
+
+
+      // ═════════════════════════════════════════════════════════════════
+      // POST HANDLERS
+      // ═════════════════════════════════════════════════════════════════
+      if (request.method === "POST") {
+        const body = await request.json();
+
+        // --- CHESS ---
+        if (url.pathname === "/chess/create") {
+          const id = "chess_" + Date.now();
+          await env.DB.prepare("INSERT INTO chess_rooms (id,name,host_email) VALUES (?,?,?)")
+            .bind(id, body.name, body.email).run();
+          return new Response(JSON.stringify({ success: true, room_id: id }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/chess/join") {
+          const room = await env.DB.prepare("SELECT * FROM chess_rooms WHERE id=? AND status='waiting'").bind(body.room_id).first();
+          if (!room) return new Response(JSON.stringify({success:false,error:"Room unavailable"}),{headers:relayHeaders});
+          if (room.host_email===body.email) return new Response(JSON.stringify({success:false,error:"Cannot join your own room"}),{headers:relayHeaders});
+          await env.DB.prepare("UPDATE chess_rooms SET guest_email=?,status='active' WHERE id=?").bind(body.email,body.room_id).run();
+          return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+        }
+
+        if (url.pathname === "/chess/spectate") {
+          await env.DB.prepare("INSERT OR REPLACE INTO chess_spectators (room_id, email) VALUES (?, ?)").bind(body.room_id, body.email).run();
+          return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+        }
+
+        if (url.pathname === "/chess/move") {
+          await env.DB.prepare("INSERT INTO chess_moves (room_id,email,from_sq,to_sq,flag,promo,alg) VALUES (?,?,?,?,?,?,?)").bind(body.room_id,body.email,body.from,body.to,body.flag||'',body.promo||null,body.alg||null).run();
+          if (body.result) await env.DB.prepare("UPDATE chess_rooms SET status='finished',result=?,winner_email=? WHERE id=?").bind(body.result,body.result.includes('stalemate')?null:body.email,body.room_id).run();
+          return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+        }
+
+        if (url.pathname === "/chess/leave") {
+          await env.DB.prepare("DELETE FROM chess_spectators WHERE room_id = ? AND email = ?").bind(body.room_id, body.email).run();
+          const room = await env.DB.prepare("SELECT * FROM chess_rooms WHERE id=?").bind(body.room_id).first();
+          if (room) {
+            if (room.status === 'active') {
+              const winner = room.host_email === body.email ? room.guest_email : room.host_email;
+              await env.DB.prepare("UPDATE chess_rooms SET status='finished',winner_email=?,result='resign' WHERE id=?").bind(winner,body.room_id).run();
+            } else if (room.host_email === body.email) {
+              await env.DB.prepare("UPDATE chess_rooms SET status='abandoned' WHERE id=?").bind(body.room_id).run();
+            } else {
+              await env.DB.prepare("UPDATE chess_rooms SET guest_email=NULL,status='waiting' WHERE id=?").bind(body.room_id).run();
+            }
+          }
+          return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+        }
+
+        if (url.pathname === "/chess/draw") {
+          if (body.offer) await env.DB.prepare("UPDATE chess_rooms SET draw_offered=? WHERE id=?").bind(body.email,body.room_id).run();
+          else if (body.accept) { await env.DB.prepare("UPDATE chess_rooms SET status='finished',result='draw' WHERE id=?").bind(body.room_id).run(); }
+          else await env.DB.prepare("UPDATE chess_rooms SET draw_offered=NULL WHERE id=?").bind(body.room_id).run();
+          return new Response(JSON.stringify({success:true}),{headers:relayHeaders});
+        }
+
+        // --- BATTLE ---
+        if (url.pathname === "/battle/create") {
+          const roomId = "battle_" + Date.now();
+          await env.DB.prepare(
+            "INSERT INTO battle_rooms (id, name, host_email, status) VALUES (?, ?, ?, 'waiting')"
+          ).bind(roomId, body.name, body.email).run();
+          return new Response(JSON.stringify({ success: true, room_id: roomId }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/battle/join") {
+          const room = await env.DB.prepare(
+            "SELECT * FROM battle_rooms WHERE id = ? AND status = 'waiting'"
+          ).bind(body.room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room unavailable" }), { headers: relayHeaders });
+          if (room.host_email === body.email) return new Response(JSON.stringify({ success: false, error: "Cannot join your own room" }), { headers: relayHeaders });
+          await env.DB.prepare(
+            "UPDATE battle_rooms SET guest_email = ?, status = 'placing' WHERE id = ?"
+          ).bind(body.email, body.room_id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/battle/place") {
+          await env.DB.prepare(
+            "INSERT OR REPLACE INTO battle_placements (room_id, user_email, positions) VALUES (?, ?, ?)"
+          ).bind(body.room_id, body.email, body.positions).run();
+          const count = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM battle_placements WHERE room_id = ?"
+          ).bind(body.room_id).first();
+          if (count.cnt >= 2) {
+            await env.DB.prepare(
+              "UPDATE battle_rooms SET status = 'active', turn_email = host_email WHERE id = ?"
+            ).bind(body.room_id).run();
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/battle/fire") {
+          const room = await env.DB.prepare("SELECT * FROM battle_rooms WHERE id = ?").bind(body.room_id).first();
+          if (!room || room.status !== 'active')
+            return new Response(JSON.stringify({ success: false, error: "Game not active" }), { headers: relayHeaders });
+          if (room.turn_email !== body.email)
+            return new Response(JSON.stringify({ success: false, error: "Not your turn" }), { headers: relayHeaders });
+
+          const oppEmail = room.host_email === body.email ? room.guest_email : room.host_email;
+          const cellIdx = parseInt(body.row) * 10 + parseInt(body.col);
+          const oppPlacement = await env.DB.prepare(
+            "SELECT positions FROM battle_placements WHERE room_id = ? AND user_email = ?"
+          ).bind(body.room_id, oppEmail).first();
+          const positions = JSON.parse(oppPlacement.positions);
+
+          let result = 'miss';
+          let hitShipId = null;
+          for (const [shipId, cells] of Object.entries(positions)) {
+            if (cells.includes(cellIdx)) { result = 'hit'; hitShipId = shipId; break; }
+          }
+
+          if (result === 'hit') {
+            const prevHits = await env.DB.prepare(
+              "SELECT row, col FROM battle_moves WHERE room_id = ? AND target_email = ? AND result != 'miss'"
+            ).bind(body.room_id, oppEmail).all();
+            const hitSet = new Set(prevHits.results.map(m => m.row * 10 + m.col));
+            hitSet.add(cellIdx);
+            if (positions[hitShipId].every(i => hitSet.has(i))) result = 'sunk';
+          }
+
+          await env.DB.prepare(
+            "INSERT INTO battle_moves (room_id, actor_email, target_email, row, col, result) VALUES (?, ?, ?, ?, ?, ?)"
+          ).bind(body.room_id, body.email, oppEmail, body.row, body.col, result).run();
+
+          const totalHits = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM battle_moves WHERE room_id = ? AND target_email = ? AND result != 'miss'"
+          ).bind(body.room_id, oppEmail).first();
+          if (totalHits.cnt >= 17) {
+            await env.DB.prepare(
+              "UPDATE battle_rooms SET status = 'finished', winner_email = ? WHERE id = ?"
+            ).bind(body.email, body.room_id).run();
+          } else {
+            await env.DB.prepare(
+              "UPDATE battle_rooms SET turn_email = ? WHERE id = ?"
+            ).bind(oppEmail, body.room_id).run();
+          }
+
+          return new Response(JSON.stringify({ success: true, result }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/battle/leave") {
+          const room = await env.DB.prepare("SELECT * FROM battle_rooms WHERE id = ?").bind(body.room_id).first();
+          if (room) {
+            if (room.status === 'active') {
+              const winner = room.host_email === body.email ? room.guest_email : room.host_email;
+              await env.DB.prepare("UPDATE battle_rooms SET status = 'finished', winner_email = ? WHERE id = ?").bind(winner, body.room_id).run();
+            } else if (room.host_email === body.email) {
+              await env.DB.prepare("UPDATE battle_rooms SET status = 'abandoned' WHERE id = ?").bind(body.room_id).run();
+            } else {
+              await env.DB.prepare("UPDATE battle_rooms SET guest_email = NULL, status = 'waiting' WHERE id = ?").bind(body.room_id).run();
+              await env.DB.prepare("DELETE FROM battle_placements WHERE room_id = ? AND user_email = ?").bind(body.room_id, body.email).run();
+            }
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- PAPER.IO ---
+        if (url.pathname === "/paper/create") {
+          if (!body.email || !body.name) {
+            return new Response(JSON.stringify({ success: false, error: "Missing email or name" }), { status: 400, headers: relayHeaders });
+          }
+          const id = "paper_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+
+          // Generate a unique 4-char lobby code
+          const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          let code, attempts = 0;
+          do {
+            code = "";
+            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            const existing = await env.DB.prepare("SELECT id FROM paper_rooms WHERE code = ?").bind(code).first();
+            if (!existing) break;
+            attempts++;
+          } while (attempts < 20);
+
+          const userRow = await env.DB.prepare(
+            "SELECT display_name, profile_picture FROM users WHERE email = ?"
+          ).bind(body.email).first();
+          const displayName = userRow?.display_name || body.name;
+          const pic         = userRow?.profile_picture || DEFAULT_ICON;
+
+          const timeLimit  = parseInt(body.time_limit)  || 300;
+          const maxPlayers = parseInt(body.max_players) || 8;
+          const mapSize    = parseInt(body.map_size)    || 100;
+          const isAiOnly   = body.is_ai_only ? 1 : 0;
+          const minAi      = parseInt(body.min_ai) || 0;
+
+          await env.DB.prepare(`
+              INSERT INTO paper_rooms (id, name, host_email, status, code, time_limit, max_players, map_size, is_ai_only, min_ai)
+              VALUES (?, ?, ?, 'waiting', ?, ?, ?, ?, ?, ?)
+          `).bind(id, body.name, body.email, code, timeLimit, maxPlayers, mapSize, isAiOnly, minAi).run();
+
+          await env.DB.prepare(`
+              INSERT INTO paper_players (room_id, email, display_name, profile_picture)
+              VALUES (?, ?, ?, ?)
+          `).bind(id, body.email, displayName, pic).run();
+
+          return new Response(JSON.stringify({ success: true, room_id: id, code }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/join") {
+          if (!body.email || !body.room_id) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+
+          const room = await env.DB.prepare(
+            "SELECT * FROM paper_rooms WHERE id = ? AND status = 'waiting'"
+          ).bind(body.room_id).first();
+
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room unavailable" }), { headers: relayHeaders });
+          if (room.host_email === body.email) return new Response(JSON.stringify({ success: false, error: "Cannot join your own room" }), { headers: relayHeaders });
+          if (room.is_ai_only) return new Response(JSON.stringify({ success: false, error: "This is an AI-only match" }), { headers: relayHeaders });
+
+          const cnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM paper_players WHERE room_id = ?"
+          ).bind(body.room_id).first();
+          if (cnt.cnt >= (room.max_players || 8)) return new Response(JSON.stringify({ success: false, error: "Room is full" }), { headers: relayHeaders });
+
+          const userRow = await env.DB.prepare(
+            "SELECT display_name, profile_picture FROM users WHERE email = ?"
+          ).bind(body.email).first();
+          const displayName = userRow?.display_name || body.email;
+          const pic         = userRow?.profile_picture || DEFAULT_ICON;
+
+          await env.DB.prepare(`
+              INSERT INTO paper_players (room_id, email, display_name, profile_picture)
+              VALUES (?, ?, ?, ?)
+          `).bind(body.room_id, body.email, displayName, pic).run();
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- PAPER: LOBBY HOST ACTIONS ---
+
+        if (url.pathname === "/paper/lobby/start") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room not found" }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only the host can start" }), { headers: relayHeaders });
+
+          // Count real (non-AI) players
+          const realCnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM paper_players WHERE room_id = ? AND is_ai = 0"
+          ).bind(room_id).first();
+
+          if (!room.is_ai_only && realCnt.cnt < 2) {
+            return new Response(JSON.stringify({ success: false, error: "Need at least 2 players to start" }), { headers: relayHeaders });
+          }
+
+          // Update map size & min_ai from payload (host edits)
+          const mapSize  = parseInt(body.map_size)  || room.map_size || 100;
+          const timeLim  = parseInt(body.time_limit) || room.time_limit || 300;
+          const minAi    = parseInt(body.min_ai)    || 0;
+
+          await env.DB.prepare(`
+              UPDATE paper_rooms
+              SET status = 'active', started_at = CAST(strftime('%s','now') AS INTEGER),
+                  map_size = ?, time_limit = ?, min_ai = ?
+              WHERE id = ?
+          `).bind(mapSize, timeLim, minAi, room_id).run();
+
+          return new Response(JSON.stringify({ success: true, map_size: mapSize }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/lobby/cancel") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can cancel" }), { headers: relayHeaders });
+          await env.DB.prepare("UPDATE paper_rooms SET status='abandoned' WHERE id=?").bind(room_id).run();
+          await env.DB.prepare("DELETE FROM paper_players WHERE room_id=?").bind(room_id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/lobby/kick") {
+          const { room_id, email, target_email } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can kick" }), { headers: relayHeaders });
+          if (target_email === room.host_email) return new Response(JSON.stringify({ success: false, error: "Cannot kick host" }), { headers: relayHeaders });
+          await env.DB.prepare("DELETE FROM paper_players WHERE room_id = ? AND email = ?").bind(room_id, target_email).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/lobby/add-ai") {
+          const { room_id, email, name, difficulty } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can add AI" }), { headers: relayHeaders });
+
+          const cnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM paper_players WHERE room_id = ?"
+          ).bind(room_id).first();
+          if (cnt.cnt >= (room.max_players || 8)) return new Response(JSON.stringify({ success: false, error: "Room is full" }), { headers: relayHeaders });
+
+          const aiName = name || ('AI_' + Math.random().toString(36).slice(2, 6));
+          const aiEmail = "ai_" + room_id + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+          const aiDiff = difficulty || 'medium';
+
+          await env.DB.prepare(`
+              INSERT INTO paper_players (room_id, email, display_name, profile_picture, is_ai, ai_difficulty)
+              VALUES (?, ?, ?, ?, 1, ?)
+          `).bind(room_id, aiEmail, aiName, DEFAULT_ICON, aiDiff).run();
+
+          // If host is playing AI-only, bump min_ai to ensure slots stay filled
+          if (room.is_ai_only) {
+            const newMin = Math.max(parseInt(room.min_ai) || 0, cnt.cnt + 1);
+            await env.DB.prepare("UPDATE paper_rooms SET min_ai = ? WHERE id = ?").bind(newMin, room_id).run();
+          }
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/lobby/update-time") {
+          const { room_id, email, time_limit } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can edit time" }), { headers: relayHeaders });
+          const tl = Math.max(30, Math.min(3600, parseInt(time_limit) || 300));
+          await env.DB.prepare("UPDATE paper_rooms SET time_limit = ? WHERE id = ?").bind(tl, room_id).run();
+          return new Response(JSON.stringify({ success: true, time_limit: tl }), { headers: relayHeaders });
+        }
+
+        // Refill AI if alive-AI count drops below min_ai during an AI-only match
+        if (url.pathname === "/paper/ai-refill") {
+          const { room_id } = body;
+          const room = await env.DB.prepare("SELECT * FROM paper_rooms WHERE id = ?").bind(room_id).first();
+          if (!room || room.status !== 'active' || !room.is_ai_only) {
+            return new Response(JSON.stringify({ success: true, added: 0 }), { headers: relayHeaders });
+          }
+          const aliveAi = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM paper_players pp WHERE pp.room_id = ? AND pp.is_ai = 1"
+          ).bind(room_id).first();
+          const minAi = parseInt(room.min_ai) || 0;
+          const need = Math.max(0, minAi - aliveAi.cnt);
+          let added = 0;
+          for (let i = 0; i < need; i++) {
+            const aiEmail = "ai_" + room_id + "_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 5);
+            const aiName  = "AI_" + Math.random().toString(36).slice(2, 6);
+            const diffs   = ['easy', 'medium', 'hard'];
+            const diff    = diffs[Math.floor(Math.random() * diffs.length)];
+            await env.DB.prepare(`
+                INSERT INTO paper_players (room_id, email, display_name, profile_picture, is_ai, ai_difficulty)
+                VALUES (?, ?, ?, ?, 1, ?)
+            `).bind(room_id, aiEmail, aiName, DEFAULT_ICON, diff).run();
+            added++;
+          }
+          return new Response(JSON.stringify({ success: true, added }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/move") {
+          if (!body.room_id || !body.email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+
+          const trail = JSON.stringify(body.trail || []);
+
+          await env.DB.prepare(`
+              INSERT INTO paper_moves (room_id, email, x, y, dx, dy, alive, trail, territory)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            body.room_id, body.email,
+            Number(body.x) || 0,
+            Number(body.y) || 0,
+            Number(body.dx) || 0,
+            Number(body.dy) || 0,
+            body.alive === false ? 0 : 1,
+            trail,
+            Number(body.territory) || 0
+          ).run();
+
+          // Win check: if this player is the last one alive
+          if (body.alive === false) {
+            const room = await env.DB.prepare(
+              "SELECT * FROM paper_rooms WHERE id = ?"
+            ).bind(body.room_id).first();
+
+            if (room && room.status === 'active') {
+              const players = await env.DB.prepare(
+                "SELECT email FROM paper_players WHERE room_id = ?"
+              ).bind(body.room_id).all();
+
+              let anyAlive = false;
+              let winner = null;
+              for (const p of (players.results || [])) {
+                if (p.email === body.email) continue;
+                const lastMove = await env.DB.prepare(`
+                    SELECT alive FROM paper_moves
+                    WHERE room_id = ? AND email = ?
+                    ORDER BY id DESC LIMIT 1
+                `).bind(body.room_id, p.email).first();
+                if (lastMove && lastMove.alive !== 0) {
+                  anyAlive = true;
+                  winner = p.email;
+                  break;
+                }
+              }
+              if (!anyAlive) {
+                await env.DB.prepare(
+                  "UPDATE paper_rooms SET status='finished', winner_email = ? WHERE id = ?"
+                ).bind(body.email, body.room_id).run();
+              }
+            }
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/paper/leave") {
+          if (!body.room_id || !body.email) {
+            return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+          }
+          await env.DB.prepare(
+            "DELETE FROM paper_players WHERE room_id = ? AND email = ?"
+          ).bind(body.room_id, body.email).run();
+
+          const room = await env.DB.prepare(
+            "SELECT * FROM paper_rooms WHERE id = ?"
+          ).bind(body.room_id).first();
+
+          if (room) {
+            if (room.status === 'active') {
+              // Public multiplayer: end only when ALL real (non-AI) players are gone
+              if (!room.is_ai_only) {
+                const remainingReal = await env.DB.prepare(
+                  "SELECT COUNT(*) as cnt FROM paper_players WHERE room_id = ? AND is_ai = 0"
+                ).bind(body.room_id).first();
+                if (remainingReal.cnt === 0) {
+                  // Pick winner by territory among anyone still in the room
+                  const allPlayers = await env.DB.prepare(
+                    "SELECT email FROM paper_players WHERE room_id = ?"
+                  ).bind(body.room_id).all();
+                  let bestEmail = null, bestTerritory = -1;
+                  for (const p of (allPlayers.results || [])) {
+                    const lastMove = await env.DB.prepare(
+                      "SELECT territory FROM paper_moves WHERE room_id = ? AND email = ? ORDER BY id DESC LIMIT 1"
+                    ).bind(body.room_id, p.email).first();
+                    const t = parseInt(lastMove?.territory, 10) || 0;
+                    if (t > bestTerritory) { bestTerritory = t; bestEmail = p.email; }
+                  }
+                  await env.DB.prepare(
+                    "UPDATE paper_rooms SET status='finished', winner_email=? WHERE id=?"
+                  ).bind(bestEmail, body.room_id).run();
+                }
+              }
+              // AI-only matches never end on a single leave (AI refill handles it)
+            } else if (room.host_email === body.email) {
+              await env.DB.prepare(
+                "UPDATE paper_rooms SET status='abandoned' WHERE id = ?"
+              ).bind(body.room_id).run();
+            }
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GARTIC PHONE ---
+        if (url.pathname === "/gartic/create") {
+          if (!body.email || !body.name) {
+            return new Response(JSON.stringify({ success: false, error: "Missing email or name" }), { status: 400, headers: relayHeaders });
+          }
+          const id = "gartic_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+
+          // Generate unique 4-char code
+          const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          let code, attempts = 0;
+          do {
+            code = "";
+            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            const existing = await env.DB.prepare("SELECT id FROM garticphone_rooms WHERE code = ?").bind(code).first();
+            if (!existing) break;
+            attempts++;
+          } while (attempts < 20);
+
+          const maxPlayers = Math.max(2, Math.min(12, parseInt(body.max_players) || 8));
+          const allowedRounds = [4, 6, 8, 10];
+          const totalRounds = allowedRounds.includes(parseInt(body.total_rounds))
+            ? parseInt(body.total_rounds)
+            : 6;
+
+          await env.DB.prepare(`
+              INSERT INTO garticphone_rooms (id, name, host_email, status, code, max_players, total_rounds, round)
+              VALUES (?, ?, ?, 'waiting', ?, ?, ?, 0)
+          `).bind(id, body.name, body.email, code, maxPlayers, totalRounds).run();
+
+          const userRow = await env.DB.prepare(
+            "SELECT display_name, profile_picture FROM users WHERE email = ?"
+          ).bind(body.email).first();
+          const displayName = userRow?.display_name || body.name;
+          const pic         = userRow?.profile_picture || DEFAULT_ICON;
+
+          await env.DB.prepare(`
+              INSERT INTO garticphone_players (room_id, email, display_name, profile_picture, turn_index)
+              VALUES (?, ?, ?, ?, 0)
+          `).bind(id, body.email, displayName, pic).run();
+
+          return new Response(JSON.stringify({ success: true, room_id: id, code }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/gartic/join") {
+          if (!body.email || !body.room_id) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          const room = await env.DB.prepare(
+            "SELECT * FROM garticphone_rooms WHERE id = ? AND status = 'waiting'"
+          ).bind(body.room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room unavailable" }), { headers: relayHeaders });
+          if (room.host_email === body.email) return new Response(JSON.stringify({ success: false, error: "Cannot join your own room" }), { headers: relayHeaders });
+
+          const cnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+          ).bind(body.room_id).first();
+          if (cnt.cnt >= (room.max_players || 8)) return new Response(JSON.stringify({ success: false, error: "Room is full" }), { headers: relayHeaders });
+
+          // Already joined?
+          const existing = await env.DB.prepare(
+            "SELECT email FROM garticphone_players WHERE room_id = ? AND email = ?"
+          ).bind(body.room_id, body.email).first();
+          if (existing) return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+
+          const userRow = await env.DB.prepare(
+            "SELECT display_name, profile_picture FROM users WHERE email = ?"
+          ).bind(body.email).first();
+          const displayName = userRow?.display_name || body.email;
+          const pic         = userRow?.profile_picture || DEFAULT_ICON;
+
+          await env.DB.prepare(`
+              INSERT INTO garticphone_players (room_id, email, display_name, profile_picture, turn_index)
+              VALUES (?, ?, ?, ?, ?)
+          `).bind(body.room_id, body.email, displayName, pic, cnt.cnt).run();
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/gartic/lobby/start") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room not found" }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only the host can start" }), { headers: relayHeaders });
+          if (room.status !== 'waiting') return new Response(JSON.stringify({ success: false, error: "Game already started" }), { headers: relayHeaders });
+
+          const cnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+          ).bind(room_id).first();
+          if (cnt.cnt < 2) return new Response(JSON.stringify({ success: false, error: "Need at least 2 players" }), { headers: relayHeaders });
+
+          await env.DB.prepare(`
+              UPDATE garticphone_rooms
+              SET status = 'playing', started_at = CAST(strftime('%s','now') AS INTEGER), round = 1
+              WHERE id = ?
+          `).bind(room_id).run();
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/gartic/submit") {
+          const { room_id, email, kind, content } = body;
+          if (!room_id || !email || !kind || !content) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          if (kind !== 'text' && kind !== 'draw') {
+            return new Response(JSON.stringify({ success: false, error: "Invalid kind" }), { headers: relayHeaders });
+          }
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room || room.status !== 'playing') {
+            return new Response(JSON.stringify({ success: false, error: "Game not in progress" }), { headers: relayHeaders });
+          }
+
+          const me = await env.DB.prepare(
+            "SELECT turn_index FROM garticphone_players WHERE room_id = ? AND email = ?"
+          ).bind(room_id, email).first();
+          if (!me) return new Response(JSON.stringify({ success: false, error: "Not in room" }), { headers: relayHeaders });
+
+          const currentRound = room.round || 1;
+          // Round 1 = text, Round 2 = draw, Round 3 = text, Round 4 = draw...
+          const expectedKind = (currentRound === 1 || currentRound % 2 === 1) ? 'text' : 'draw';
+          if (kind !== expectedKind) {
+            return new Response(JSON.stringify({ success: false, error: `Round ${currentRound} expects ${expectedKind}` }), { headers: relayHeaders });
+          }
+
+          // No double-submit
+          const dupe = await env.DB.prepare(
+            "SELECT id FROM garticphone_prompts WHERE room_id = ? AND round = ? AND owner_email = ?"
+          ).bind(room_id, currentRound, email).first();
+          if (dupe) return new Response(JSON.stringify({ success: false, error: "Already submitted this round" }), { headers: relayHeaders });
+
+          // Look up the source owner for this round (NULL for round 1)
+          let sourceOwner = null;
+          if (currentRound > 1) {
+            const pairing = await env.DB.prepare(
+              "SELECT source_owner_email FROM garticphone_pairings WHERE room_id = ? AND round = ? AND chain_id = ?"
+            ).bind(room_id, currentRound, me.turn_index).first();
+            sourceOwner = pairing?.source_owner_email || null;
+          }
+
+          // chain_id follows the prompt lineage, not the player's own slot.
+          // Round 1: each player seeds their own chain (chain_id = turn_index).
+          // Round > 1: the chain belongs to the source prompt, so look up the
+          // chain_id of the prompt the player is responding to. This makes a
+          // single chain contain contributions from many different players
+          // across rounds — exactly the classic Gartic Phone flow.
+          let myChainId = me.turn_index;
+          if (currentRound > 1 && sourceOwner) {
+            const srcPrompt = await env.DB.prepare(
+              "SELECT chain_id FROM garticphone_prompts WHERE room_id = ? AND round = ? AND owner_email = ?"
+            ).bind(room_id, currentRound - 1, sourceOwner).first();
+            if (srcPrompt?.chain_id !== undefined && srcPrompt?.chain_id !== null) {
+              myChainId = srcPrompt.chain_id;
+            }
+          }
+
+          await env.DB.prepare(`
+              INSERT INTO garticphone_prompts (room_id, chain_id, round, owner_email, source_owner_email, kind, content)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+          `).bind(room_id, myChainId, currentRound, email, sourceOwner, kind, content).run();
+
+          // Auto-advance: if everyone has submitted this round
+          const totalPlayers = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+          ).bind(room_id).first();
+          const submittedCnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM garticphone_prompts WHERE room_id = ? AND round = ?"
+          ).bind(room_id, currentRound).first();
+
+          if (submittedCnt.cnt >= totalPlayers.cnt) {
+            const totalRounds = room.total_rounds || 6;
+            if (currentRound >= totalRounds) {
+              // Final round done — wait for host to start viewing
+              await env.DB.prepare(
+                "UPDATE garticphone_rooms SET status = 'waiting_for_view', finished_at = CAST(strftime('%s','now') AS INTEGER), viewing_chain_index = 0 WHERE id = ?"
+              ).bind(room_id).run();
+            } else {
+              // Compute random pairings: each chain gets a random OTHER chain's round-N owner as their source for round N+1
+              const players = await env.DB.prepare(
+                "SELECT email, turn_index FROM garticphone_players WHERE room_id = ? ORDER BY turn_index ASC"
+              ).bind(room_id).all();
+              const ps = players.results || [];
+              // Build array of (turn_index, email)
+              const emails = ps.map(p => ({ chain_id: p.turn_index, email: p.email }));
+
+              // Random derangement: for each chain, pick a random other chain
+              const nextRound = currentRound + 1;
+              // Fisher-Yates shuffle the OTHER list per chain
+              const usedThisRound = new Set(); // source emails already assigned
+              for (let i = 0; i < emails.length; i++) {
+                const myChain = emails[i].chain_id;
+                const candidates = emails
+                  .filter(e => e.chain_id !== myChain && !usedThisRound.has(e.email))
+                  .map(e => e.email);
+                if (candidates.length === 0) continue; // shouldn't happen with >=2 players
+                const pickIdx = Math.floor(Math.random() * candidates.length);
+                const sourceEmail = candidates[pickIdx];
+                usedThisRound.add(sourceEmail);
+                await env.DB.prepare(`
+                    INSERT OR REPLACE INTO garticphone_pairings (room_id, round, chain_id, source_owner_email)
+                    VALUES (?, ?, ?, ?)
+                `).bind(room_id, nextRound, myChain, sourceEmail).run();
+              }
+
+              await env.DB.prepare(
+                "UPDATE garticphone_rooms SET round = ? WHERE id = ?"
+              ).bind(nextRound, room_id).run();
+            }
+          }
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GARTIC: START VIEWING (host only) ---
+        if (url.pathname === "/gartic/start-viewing") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room not found" }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can start viewing" }), { headers: relayHeaders });
+          if (room.status !== 'waiting_for_view') return new Response(JSON.stringify({ success: false, error: "Not ready for viewing" }), { headers: relayHeaders });
+
+          await env.DB.prepare(`
+              UPDATE garticphone_rooms
+              SET status = 'viewing', viewing_started_at = CAST(strftime('%s','now') AS INTEGER), viewing_chain_index = 0
+              WHERE id = ?
+          `).bind(room_id).run();
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GARTIC: VIEWING NEXT (host only) ---
+        if (url.pathname === "/gartic/viewing/next") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room not found" }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can advance" }), { headers: relayHeaders });
+          if (room.status !== 'viewing') return new Response(JSON.stringify({ success: false, error: "Not viewing" }), { headers: relayHeaders });
+
+          const cnt = await env.DB.prepare(
+            "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+          ).bind(room_id).first();
+          const maxIdx = Math.max(0, cnt.cnt - 1);
+          const nextIdx = Math.min(maxIdx, (room.viewing_chain_index || 0) + 1);
+
+          if (nextIdx >= cnt.cnt) {
+            // Past the end — mark finished
+            await env.DB.prepare(
+              "UPDATE garticphone_rooms SET status = 'finished' WHERE id = ?"
+            ).bind(room_id).run();
+          } else {
+            await env.DB.prepare(
+              "UPDATE garticphone_rooms SET viewing_chain_index = ? WHERE id = ?"
+            ).bind(nextIdx, room_id).run();
+          }
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GARTIC: VIEWING PREV (host only) ---
+        if (url.pathname === "/gartic/viewing/prev") {
+          const { room_id, email } = body;
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: false, error: "Room not found" }), { headers: relayHeaders });
+          if (room.host_email !== email) return new Response(JSON.stringify({ success: false, error: "Only host can advance" }), { headers: relayHeaders });
+          if (room.status !== 'viewing') return new Response(JSON.stringify({ success: false, error: "Not viewing" }), { headers: relayHeaders });
+
+          const prevIdx = Math.max(0, (room.viewing_chain_index || 0) - 1);
+          await env.DB.prepare(
+            "UPDATE garticphone_rooms SET viewing_chain_index = ? WHERE id = ?"
+          ).bind(prevIdx, room_id).run();
+
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/gartic/leave") {
+          const { room_id, email } = body;
+          if (!room_id || !email) return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+
+          const me = await env.DB.prepare(
+            "SELECT turn_index FROM garticphone_players WHERE room_id = ? AND email = ?"
+          ).bind(room_id, email).first();
+          if (!me) return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+
+          await env.DB.prepare(
+            "DELETE FROM garticphone_players WHERE room_id = ? AND email = ?"
+          ).bind(room_id, email).run();
+
+          const room = await env.DB.prepare("SELECT * FROM garticphone_rooms WHERE id = ?").bind(room_id).first();
+          if (!room) return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+
+          if (room.status === 'waiting') {
+            // Renumber remaining players
+            const remaining = await env.DB.prepare(
+              "SELECT email FROM garticphone_players WHERE room_id = ? ORDER BY turn_index ASC"
+            ).bind(room_id).all();
+            for (let i = 0; i < (remaining.results || []).length; i++) {
+              await env.DB.prepare(
+                "UPDATE garticphone_players SET turn_index = ? WHERE room_id = ? AND email = ?"
+              ).bind(i, room_id, remaining.results[i].email).run();
+            }
+            if (room.host_email === email) {
+              // Hand host to first remaining player (or abandon if none)
+              if ((remaining.results || []).length > 0) {
+                await env.DB.prepare(
+                  "UPDATE garticphone_rooms SET host_email = ? WHERE id = ?"
+                ).bind(remaining.results[0].email, room_id).run();
+              } else {
+                await env.DB.prepare(
+                  "UPDATE garticphone_rooms SET status = 'abandoned' WHERE id = ?"
+                ).bind(room_id).run();
+              }
+            }
+          } else if (room.status === 'playing') {
+            // If host leaves mid-game, hand off or end
+            const remaining = await env.DB.prepare(
+              "SELECT COUNT(*) as cnt FROM garticphone_players WHERE room_id = ?"
+            ).bind(room_id).first();
+            if (remaining.cnt < 2) {
+              await env.DB.prepare(
+                "UPDATE garticphone_rooms SET status = 'finished' WHERE id = ?"
+              ).bind(room_id).run();
+            } else if (room.host_email === email) {
+              const next = await env.DB.prepare(
+                "SELECT email FROM garticphone_players WHERE room_id = ? ORDER BY turn_index ASC LIMIT 1"
+              ).bind(room_id).first();
+              if (next) {
+                await env.DB.prepare(
+                  "UPDATE garticphone_rooms SET host_email = ? WHERE id = ?"
+                ).bind(next.email, room_id).run();
+              }
+            }
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- WIKI ---
+        if (url.pathname === "/wiki/create") {
+          try {
+            const wikiId = "partition_" + Date.now();
+            const creator = body.email || "System";
+            const title = body.title || "Untitled Partition";
+
+            await env.DB.prepare("INSERT INTO wiki_metadata (id, title, description, image_url, creator_email) VALUES (?, ?, ?, ?, ?)")
+              .bind(wikiId, title, "Sector initialized.", "", creator).run();
+            await env.DB.prepare("INSERT INTO wiki_content (id, content, last_user) VALUES (?, ?, ?)")
+              .bind(wikiId, `<h1>${title}</h1><p>Record initialized.</p>`, creator).run();
+
+            return new Response(JSON.stringify({ success: true, id: wikiId }), { headers: relayHeaders });
+          } catch (dbError) {
+            return new Response(JSON.stringify({ success: false, error: dbError.message }), { headers: relayHeaders });
+          }
+        }
+
+        if (url.pathname === "/wiki/save") {
+          const meta = await env.DB.prepare("SELECT creator_email FROM wiki_metadata WHERE id = ?").bind(body.id).first();
+          const user = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.user).first();
+          const perm = await env.DB.prepare("SELECT access_level FROM wiki_permissions WHERE wiki_id = ? AND user_email = ?").bind(body.id, body.user).first();
+
+          const canEdit = (user?.is_admin === 1) || (meta?.creator_email === body.user) || (perm?.access_level === 'edit');
+
+          if (!canEdit) {
+            return new Response(JSON.stringify({ success: false, error: "Write Access Denied" }), { status: 403, headers: relayHeaders });
+          }
+
+          await env.DB.prepare("INSERT OR REPLACE INTO wiki_content (id, content, last_user, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)").bind(body.id, body.content, body.user).run();
+          await env.DB.prepare("INSERT INTO wiki_logs (wiki_id, user_email) VALUES (?, ?)").bind(body.id, body.user).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/wiki/access/update") {
+          await env.DB.prepare("INSERT OR REPLACE INTO wiki_permissions (wiki_id, user_email, access_level) VALUES (?, ?, ?)").bind(body.wikiId, body.targetEmail, body.level).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/wiki/access/delete") {
+          await env.DB.prepare("DELETE FROM wiki_permissions WHERE wiki_id = ? AND user_email = ?").bind(body.wikiId, body.userEmail).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/wiki/delete") {
+          await env.DB.prepare("DELETE FROM wiki_metadata WHERE id = ?").bind(body.id).run();
+          await env.DB.prepare("DELETE FROM wiki_content WHERE id = ?").bind(body.id).run();
+          await env.DB.prepare("DELETE FROM wiki_permissions WHERE wiki_id = ?").bind(body.id).run();
+          await env.DB.prepare("DELETE FROM wiki_logs WHERE wiki_id = ?").bind(body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/wiki/transfer") {
+          await env.DB.prepare("UPDATE wiki_metadata SET creator_email = ? WHERE id = ?").bind(body.newOwner, body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/wiki/metadata/save") {
+          await env.DB.prepare("UPDATE wiki_metadata SET title = ?, description = ?, image_url = ? WHERE id = ?").bind(body.title, body.description, body.image_url, body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- AUTH / PROFILE / CHAT ---
+        if (url.pathname === "/auth") {
+          const u = await env.DB.prepare("SELECT * FROM users WHERE email = ? AND password_hash = ?").bind(body.email, body.pass).first();
+          return new Response(JSON.stringify({ success: !!u, email: u?.email, admin: u?.is_admin }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/chat") {
+          await env.DB.prepare("INSERT INTO messages (user_email, content, is_image) VALUES (?, ?, ?)").bind(body.email, body.content, body.isImage ? 1 : 0).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/profile/save") {
+          await env.DB.prepare("UPDATE users SET display_name = ?, profile_picture = ?, bio_html = ?, bg_style = ?, text_color = ? WHERE email = ?").bind(body.name, body.pic, body.bio, body.bg, body.color, body.email).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/user/interaction") {
+          await env.DB.prepare("UPDATE users SET last_interaction = CURRENT_TIMESTAMP WHERE email = ?").bind(body.email).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GAME SCORE SAVE ---
+        if (url.pathname === "/content/a617" || url.pathname === "/game/save-score") {
+          const existing = await env.DB.prepare(
+              "SELECT score FROM game_scores WHERE user_email = ? AND game_id = ?"
+          ).bind(body.email, body.gameId).first();
+          if (!existing || body.score > existing.score) {
+            await env.DB.prepare(
+                "INSERT OR REPLACE INTO game_scores (user_email, game_id, score, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)"
+            ).bind(body.email, body.gameId, body.score).run();
+          }
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- SYSTEM DATA ---
+        if (url.pathname === "/admin/system/save" || url.pathname === "/profile/data/save") {
+          await env.DB.prepare("INSERT OR REPLACE INTO system_data (id, content) VALUES (?, ?)").bind(body.id, body.content).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- PROFILE REACTIONS / COMMENTS ---
+        if (url.pathname === "/profile/react") {
+          const { profile, email, type, data } = body;
+          if (!profile || !email || !["like", "dislike"].includes(type)) {
+            return new Response(JSON.stringify({ success: false, error: "Invalid payload" }), { headers: relayHeaders });
+          }
+          const clean = {
+            likes:    (data?.likes    || []).filter(e => typeof e === "string").slice(0, 10000),
+            dislikes: (data?.dislikes || []).filter(e => typeof e === "string").slice(0, 10000),
+          };
+          clean.likes    = clean.likes.filter(e    => !clean.dislikes.includes(e));
+          clean.dislikes = clean.dislikes.filter(e => !clean.likes.includes(e));
+          await env.DB.prepare(
+              "INSERT OR REPLACE INTO system_data (id, content) VALUES (?, ?)"
+          ).bind(`reactions__${profile}`, JSON.stringify(clean)).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/profile/comment") {
+          const { profile, email, text, display_name, profile_picture } = body;
+          if (!profile || !email || !text?.trim()) {
+            return new Response(JSON.stringify({ success: false, error: "Invalid payload" }), { status: 403, headers: relayHeaders });
+          }
+          const commenter = await env.DB.prepare(
+              "SELECT email FROM users WHERE email = ?"
+          ).bind(email).first();
+          if (!commenter) {
+            return new Response(JSON.stringify({ success: false, error: "Unknown user" }), { status: 403, headers: relayHeaders });
+          }
+          const row = await env.DB.prepare(
+              "SELECT content FROM system_data WHERE id = ?"
+          ).bind(`comments__${profile}`).first();
+          let comments = [];
+          if (row?.content) { try { comments = JSON.parse(row.content); } catch {} }
+          comments.push({
+            email,
+            display_name:    display_name    || email,
+            profile_picture: profile_picture || DEFAULT_ICON,
+            text:            text.trim().slice(0, 2000),
+            created_at:      new Date().toISOString(),
+          });
+          if (comments.length > 500) comments = comments.slice(-500);
+          await env.DB.prepare(
+              "INSERT OR REPLACE INTO system_data (id, content) VALUES (?, ?)"
+          ).bind(`comments__${profile}`, JSON.stringify(comments)).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- SPECIAL CONTENT ---
+        if (url.pathname === "/special/lock") {
+          const adminCheck = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.adminEmail).first();
+          if (!adminCheck || adminCheck.is_admin !== 1) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { headers: relayHeaders });
+          }
+          await env.DB.prepare("UPDATE special_metadata SET is_locked = 1 - is_locked WHERE id = ?").bind(body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/special/metadata/save") {
+          await env.DB.prepare("UPDATE special_metadata SET title = ?, description = ?, image_url = ? WHERE id = ?")
+              .bind(body.title, body.description, body.image_url, body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- ADMIN: ANNOUNCEMENTS ---
+        if (url.pathname === "/admin/announcement/create") {
+          const adminCheck = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.adminEmail).first();
+          if (!adminCheck || adminCheck.is_admin !== 1) return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { status: 403, headers: relayHeaders });
+
+          const id = "ann_" + Date.now();
+          await env.DB.prepare("INSERT INTO announcements (id, type, content, settings, creator_email, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)")
+              .bind(id, body.type, JSON.stringify(body.content), JSON.stringify(body.settings), body.adminEmail).run();
+          return new Response(JSON.stringify({ success: true, id }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/announcement/end") {
+          const adminCheck = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.adminEmail).first();
+          if (!adminCheck || adminCheck.is_admin !== 1) return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { status: 403, headers: relayHeaders });
+          await env.DB.prepare("UPDATE announcements SET settings = json_set(settings, '$.broadcast_until', ?) WHERE id = ?")
+              .bind(Math.floor(Date.now()/1000), body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/announcements/vote") {
+          const { announcement_id, email, votes } = body;
+          await env.DB.prepare("INSERT OR REPLACE INTO poll_votes (announcement_id, user_email, votes) VALUES (?, ?, ?)")
+              .bind(announcement_id, email, JSON.stringify(votes)).run();
+          await env.DB.prepare("INSERT OR REPLACE INTO user_announcements (user_email, announcement_id, status) VALUES (?, ?, ?)")
+              .bind(email, announcement_id, 'answered').run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/announcements/dismiss") {
+          await env.DB.prepare("INSERT OR REPLACE INTO user_announcements (user_email, announcement_id, status) VALUES (?, ?, ?)")
+              .bind(body.email, body.announcement_id, 'seen').run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- ADMIN: BADGES / PERMS / USERS ---
+        if (url.pathname === "/admin/badges/create") {
+          await env.DB.prepare("INSERT INTO badges_master (name, icon, color) VALUES (?, ?, ?)").bind(body.name, body.icon, body.color).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/badges/delete") {
+          await env.DB.prepare("DELETE FROM badges_master WHERE name = ?").bind(body.name).run();
+          await env.DB.prepare("DELETE FROM user_badges WHERE badge_name = ?").bind(body.name).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/badges/assign") {
+          await env.DB.prepare("INSERT INTO user_badges (user_email, badge_name) VALUES (?, ?)").bind(body.email, body.name).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/badges/unassign") {
+          await env.DB.prepare("DELETE FROM user_badges WHERE user_email = ? AND badge_name = ?").bind(body.email, body.name).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/create-user") {
+          await env.DB.prepare("INSERT INTO users (email, password_hash, is_admin, profile_picture) VALUES (?, ?, ?, ?)").bind(body.email, body.pass, body.isAdmin ? 1 : 0, DEFAULT_ICON).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/toggle-admin") {
+          await env.DB.prepare("UPDATE users SET is_admin = ? WHERE id = ?").bind(body.isAdmin, body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/profile/toggle-status") {
+          await env.DB.prepare("UPDATE users SET profile_disabled = ? WHERE email = ?").bind(body.status, body.email).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/delete-user") {
+          await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/add-perm") {
+          await env.DB.prepare("INSERT INTO user_permissions (user_email, perm_tag) VALUES (?, ?)").bind(body.email, body.tag).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/remove-perm") {
+          await env.DB.prepare("DELETE FROM user_permissions WHERE user_email = ? AND perm_tag = ?").bind(body.email, body.tag).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/block-user") {
+          await env.DB.prepare("INSERT INTO user_blocks (user_email, blocked_path) VALUES (?, ?)").bind(body.email, body.path).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/remove-block") {
+          await env.DB.prepare("DELETE FROM user_blocks WHERE user_email = ? AND blocked_path = ?").bind(body.email, body.path).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/lock") {
+          await env.DB.prepare("UPDATE page_settings SET is_locked = 1 - is_locked WHERE page_id = ?").bind(body.page_id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/admin/client/refresh") {
+          await env.DB.prepare("UPDATE users SET last_command = 'reload' WHERE email = ?").bind(body.email).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- CUBIC ---
+        if (url.pathname === "/cubic/publish") {
+          await env.DB.prepare(
+            "INSERT INTO cubic_levels (name, author, author_email, difficulty, color, length, objects, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+          ).bind(
+            body.name || 'Untitled',
+            body.author || 'Anonymous',
+            body.email || null,
+            body.difficulty || 'medium',
+            body.color || '#58a6ff',
+            body.length || 120,
+            body.objects || '[]',
+            body.image_url || null
+          ).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/cubic/delete") {
+          const level = await env.DB.prepare("SELECT author_email FROM cubic_levels WHERE id = ?").bind(body.id).first();
+          const user  = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.email).first();
+          const canDelete = level?.author_email === body.email || user?.is_admin === 1;
+          if (!canDelete) return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { headers: relayHeaders });
+          await env.DB.prepare("DELETE FROM cubic_levels WHERE id = ?").bind(body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/cubic/lock") {
+          const user = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(body.admin_email).first();
+          if (!user || user.is_admin !== 1) return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { headers: relayHeaders });
+          await env.DB.prepare("UPDATE cubic_levels SET is_locked = 1 - is_locked WHERE id = ?").bind(body.id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- RACING ---
+        if (url.pathname === "/racing/lobby/save") {
+          const { id, content } = body;
+          if (!id) return new Response(JSON.stringify({ success: false, error: "Missing id" }), { status: 400, headers: relayHeaders });
+          const value = typeof content === 'string' ? content : JSON.stringify(content);
+          await env.DB.prepare(
+            "INSERT OR REPLACE INTO system_data (id, content) VALUES (?, ?)"
+          ).bind(id, value).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        if (url.pathname === "/racing/lobby/delete") {
+          const { id } = body;
+          if (!id) return new Response(JSON.stringify({ success: false, error: "Missing id" }), { status: 400, headers: relayHeaders });
+          await env.DB.prepare("DELETE FROM system_data WHERE id = ?").bind(id).run();
+          return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+    // Fallback if no paths match
+    return new Response(JSON.stringify({ error: `Route ${url.pathname} not found in relay function router.` }), { status: 404, headers: relayHeaders });
+
+  } catch (err) {
+    // Catches internal SQL errors or runtime exceptions gracefully
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: relayHeaders });
+  }
+}
