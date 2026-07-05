@@ -1,20 +1,16 @@
 /**
- * ADA ARCHIVE MASTER RELAY — Pages Functions Catch-All Wrapper
- * Place this file at: /functions/api/[[path]].js
+ * ADA ARCHIVE MASTER RELAY v8.0
+ * Comprehensive Backend for Andrew Dingle Archive
  */
 
 export async function onRequest(context) {
-  // 1. Extract request, env, and ctx from the Pages context object.
-  // This ensures your database statements ('env.DB') continue working untouched!
+  // Pack Pages context parameters safely so env.DB works seamlessly
   const { request, env, ctx } = context;
   
   const url = new URL(request.url);
 
-  // 2. PATH REWRITE (CRITICAL):
-  // Strips "/api" from the front of the incoming path (e.g. "/api/sync" -> "/sync").
-  // This allows all your existing if/else checks below to work flawlessly.
+  // PATH REWRITE: Converts "/api/sync" to "/sync" so all your existing routes match perfectly
   url.pathname = url.pathname.replace(/^\/api/, "") || "/";
-
   // Global Headers for Secure Communication (From your worker)
   const relayHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -2380,6 +2376,8 @@ export async function onRequest(context) {
 
     // Fallback if no paths match
     return new Response(JSON.stringify({ error: `Route ${url.pathname} not found in relay function router.` }), { status: 404, headers: relayHeaders });
+
+      } // close if (POST)
 
   } catch (err) {
     // Catches internal SQL errors or runtime exceptions gracefully
