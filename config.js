@@ -18,7 +18,7 @@
         // Embedded Pages Function lives at functions/api/[[path]].js,
         // which is served at /api/* automatically by Cloudflare Pages.
         // The DB binding (D1) is exposed as `env.DB` inside the worker.
-        API: "https://super-night-3490.candm-web-devs-f24.workers.dev/",
+        API: "https://super-night-3490.candm-web-devs-f24.workers.dev",
 
         // How long the page-transition animation runs.
         // Keep this in sync with the duration in page-transition.js
