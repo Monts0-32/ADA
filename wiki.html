@@ -1,140 +1,525 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>ADA | Archive Editor</title>
+
+    <script src="/config.js"></script>
+    <script>window.ADA_CONFIG = Object.assign({}, window.ADA_CONFIG, { requiredTag: 'wiki_access' });</script>
+    <script src="/page-transition.js"></script>
+    <script src="/uplink.js"></script>
+    <script src="/header-engine.js"></script>
+    <script src="/announcement-engine.js"></script>
+    <script src="/chat-widget.js"></script>
+    <script src="/escape-key.js"></script>
+
     <style>
-        :root { --bg: #0d1117; --header: #161b22; --border: #30363d; --text: #c9d1d9; --btn-green: #238636; --blue: #58a6ff; --red: #f85149; }
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; }
+        :root {
+            --bg-desktop:        #0a0e14;
+            --bg-desktop-accent: #141a22;
+            --win-bg:            #1c2128;
+            --win-bg-light:      #2a313c;
+            --win-bg-dark:       #11151b;
+            --win-bg-darker:     #0a0d12;
+            --win-title:         #0d1117;
+            --win-title-active:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            --win-title-inactive:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+            --win-text:          #e6edf3;
+            --win-text-light:    #ffffff;
+            --win-border-light:  #4a525e;
+            --win-border-dark:   #080a0e;
+            --win-text-blue:     #58a6ff;
+            --taskbar-bg:        #161b22;
+            --btn-green:         #238636;
+            --blue:              #58a6ff;
+            --red:               #f85149;
+        }
 
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; overflow-x: hidden; }
-        header { background: var(--header); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .toolbar { background: #161b22; border-bottom: 1px solid var(--border); padding: 8px 24px; display: flex; gap: 8px; position: sticky; top: 0; z-index: 1000; align-items: center; flex-wrap: wrap; }
-        .toolbar button, .toolbar select, .toolbar label, .toolbar input[type="color"] { background: #21262d; border: 1px solid var(--border); color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; height: 32px; font-size: 13px; display: flex; align-items: center; box-sizing: border-box; }
-        .toolbar button:hover { background: #30363d; }
+        * { box-sizing: border-box; }
 
-        .editor-wrap { max-width: 1100px; margin: 40px auto; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; min-height: 85vh; position: relative; }
-        
-        /* The Canvas */
-        #visual-editor { width: 100%; min-height: 85vh; padding: 60px; box-sizing: border-box; outline: none; line-height: 1.6; position: relative; overflow: visible; }
-        #source-editor { width: 100%; min-height: 85vh; padding: 40px; background: #0d1117; color: #79c0ff; border: none; font-family: monospace; display: none; width: 100%; box-sizing: border-box; resize: none; outline: none; }
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--win-bg-light); border-top: 1px solid var(--win-border-light); border-left: 1px solid var(--win-border-light); border-right: 1px solid var(--win-border-dark); border-bottom: 1px solid var(--win-border-dark); }
+        ::-webkit-scrollbar-button { background: var(--win-bg-light); display: block; }
 
-        /* Robust Image System */
-        /* --- ADVANCED IMAGE UI --- */
-        .img-wrapper { 
-            position: absolute; 
-            display: inline-block; 
-            line-height: 0; 
-            cursor: move; 
-            user-select: none; 
-            border: 2px solid transparent; 
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px;
+            color: var(--win-text);
+            overflow: hidden;
+        }
+
+        #desktop {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(88,166,255,0.06), transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.30), transparent 50%),
+                var(--bg-desktop);
+            overflow: hidden;
+        }
+
+        .window {
+            position: absolute;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000, 0 0 0 1px #000;
+            display: flex; flex-direction: column;
+            min-width: 220px; min-height: 140px;
+        }
+        .window.maximized {
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: calc(100% - 32px) !important;
+            border: 2px solid var(--win-border-dark);
+        }
+
+        .titlebar {
+            background: var(--win-title-inactive);
+            color: var(--win-text-light);
+            padding: 3px 4px 3px 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 12px;
+            cursor: move;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .window.active .titlebar { background: var(--win-title-active); }
+        .titlebar-text { display: flex; align-items: center; gap: 5px; }
+        .titlebar-text .tb-icon { font-size: 13px; }
+        .titlebar-buttons { display: flex; gap: 2px; }
+
+        .titlebar-btn {
+            width: 18px; height: 16px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            display: flex; align-items: center; justify-content: center;
+            font-family: "Marlett", "MS Sans Serif", monospace;
+            font-size: 10px; line-height: 1; cursor: pointer;
+            color: var(--win-text); padding: 0;
+        }
+        .titlebar-btn:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+
+        .menubar {
+            display: flex; gap: 0;
+            background: var(--win-bg);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 1px 2px;
+            flex-shrink: 0;
+        }
+        .menubar span {
+            padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+        }
+        .menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+
+        .window-body {
+            flex: 1;
+            padding: 10px;
+            overflow: auto;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
+        }
+        .window-body.flush { padding: 0; }
+
+        .statusbar {
+            padding: 3px 6px; font-size: 11px; color: var(--win-text);
+            background: var(--win-bg);
+            border-top: 1px solid var(--win-border-dark);
+            display: flex; justify-content: space-between; gap: 4px;
+            flex-shrink: 0;
+        }
+        .statusbar-cell {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 1px 6px; flex: 1;
+            color: var(--win-text);
+        }
+
+        .btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 4px 14px;
+            font-family: inherit; font-size: 12px;
+            cursor: pointer; min-width: 75px;
+            box-shadow: 1px 1px 0 0 #000;
+            border-radius: 0;
+        }
+        .btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 5px 13px 3px 15px;
+        }
+        .btn:disabled { color: var(--win-bg-light); text-shadow: 1px 1px 0 #000; cursor: not-allowed; }
+        .btn-primary  { font-weight: bold; }
+
+        input, textarea, select, .field {
+            background: #0d1117; color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 3px 5px; font-family: inherit; font-size: 12px;
+            outline: none; width: 100%; box-sizing: border-box;
+            border-radius: 0;
+        }
+        input:focus, textarea:focus, select:focus, .field:focus {
+            background: #161b22;
+            border-right-color: var(--win-text-blue);
+            border-bottom-color: var(--win-text-blue);
+        }
+        textarea { resize: vertical; min-height: 80px; font-family: "MS Sans Serif", monospace; }
+
+        .hidden { display: none !important; }
+
+        .toolbar {
+            display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+            background: var(--win-bg);
+            padding: 4px 6px;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
+        }
+        .toolbar select, .toolbar input[type="color"] {
+            width: auto;
+            min-width: 0;
+            height: 26px;
+        }
+        .toolbar-sep {
+            width: 1px;
+            background: var(--win-border-light);
+            border-right: 1px solid var(--win-border-dark);
+            height: 20px;
+            margin: 0 4px;
+        }
+        .toolbar .btn { min-width: 0; padding: 3px 10px; height: 26px; }
+        .toolbar .btn-save { margin-left: auto; }
+
+        .editor-wrap {
+            flex: 1;
+            background: #0d1117;
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            margin: 2px;
+            position: relative;
+            overflow: auto;
+        }
+        #visual-editor {
+            padding: 40px 60px;
+            min-height: 100%;
+            box-sizing: border-box;
+            outline: none;
+            line-height: 1.6;
+            color: var(--win-text);
+            font-size: 14px;
+        }
+        #source-editor {
+            display: none;
+            width: 100%;
+            min-height: 100%;
+            padding: 30px 40px;
+            background: #0d1117;
+            color: var(--win-text-blue);
+            border: none;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            box-sizing: border-box;
+            resize: none;
+            outline: none;
+        }
+
+        .img-wrapper {
+            position: absolute;
+            display: inline-block;
+            line-height: 0;
+            cursor: move;
+            user-select: none;
+            border: 2px solid transparent;
             transition: border 0.2s, box-shadow 0.2s;
         }
-        
-        .img-wrapper img { 
-            width: 100%; 
-            height: 100%; 
-            display: block; 
-            pointer-events: none; 
-            border-radius: 4px;
+        .img-wrapper img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
         }
-        
-        /* selection state */
-        .img-wrapper.active { 
-            border: 2px solid var(--blue); 
+        .img-wrapper.active {
+            border: 2px solid var(--win-text-blue);
             box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
             z-index: 1000;
         }
-        
-        /* Circular UI Handles */
-        .resizer { 
-            position: absolute; 
-            width: 14px; 
-            height: 14px; 
-            background: var(--blue); 
-            border: 2px solid var(--bg);
-            border-radius: 50%; 
-            right: -8px; 
-            bottom: -8px; 
-            cursor: nwse-resize; 
-            display: none; 
+        .resizer {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--win-text-blue);
+            border: 2px solid var(--bg-desktop);
+            right: -8px;
+            bottom: -8px;
+            cursor: nwse-resize;
+            display: none;
         }
-        
-        .remover { 
-            position: absolute; 
-            width: 22px; 
-            height: 22px; 
-            background: var(--red); 
-            border: 2px solid var(--bg);
-            border-radius: 50%; 
-            right: -11px; 
-            top: -11px; 
-            cursor: pointer; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-size: 14px; 
+        .remover {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: var(--red);
+            border: 2px solid var(--bg-desktop);
+            right: -11px;
+            top: -11px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-        
-        /* Only show buttons when the editor is ACTIVE and image is SELECTED */
         #visual-editor[contenteditable="true"] .img-wrapper.active .resizer,
-        #visual-editor[contenteditable="true"] .img-wrapper.active .remover { 
-            display: flex !important; 
+        #visual-editor[contenteditable="true"] .img-wrapper.active .remover {
+            display: flex !important;
         }
 
-        .btn-save { background: var(--btn-green) !important; border: none !important; font-weight: bold; margin-left: auto; color: white; }
+        #back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--win-text);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 2px 8px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+        }
+        #back-link:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+
+        #taskbar {
+            position: fixed; left: 0; right: 0; bottom: 0;
+            height: 32px;
+            background: var(--taskbar-bg);
+            border-top: 2px solid var(--win-border-light);
+            display: flex; align-items: center; padding: 2px 4px; gap: 4px;
+            z-index: 9999;
+        }
+        #start-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 2px 8px; font-weight: bold; font-size: 12px;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            cursor: pointer; min-height: 24px;
+        }
+        #start-btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+        }
+        #start-btn .logo {
+            width: 16px; height: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 12px; color: white;
+            background: var(--win-text-blue);
+        }
+        #taskbar-windows { flex: 1; display: flex; gap: 3px; overflow: hidden; }
+        .taskbar-item {
+            display: flex; align-items: center; gap: 4px;
+            padding: 2px 8px; min-width: 130px; max-width: 180px;
+            font-size: 12px; cursor: pointer; user-select: none;
+            color: var(--win-text);
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .taskbar-item.active {
+            background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            box-shadow: inset 1px 1px 0 0 #000;
+        }
+        .taskbar-item .ti-icon { font-size: 13px; flex-shrink: 0; }
+        .taskbar-item .ti-text { overflow: hidden; text-overflow: ellipsis; }
+        #system-tray {
+            display: flex; align-items: center; gap: 6px;
+            padding: 2px 8px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            font-size: 12px; min-height: 24px;
+            color: var(--win-text);
+        }
+        #tray-clock { font-weight: bold; }
+
+        #start-menu {
+            position: fixed; left: 4px; bottom: 32px;
+            width: 220px;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            display: none; z-index: 9998;
+            box-shadow: 2px 2px 0 0 #000;
+        }
+        #start-menu.open { display: block; }
+        #start-menu-header {
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            color: white; font-weight: bold;
+            padding: 6px 8px; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .start-menu-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 8px; cursor: pointer; font-size: 12px;
+            color: var(--win-text);
+        }
+        .start-menu-item:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+        .start-menu-item .smi-icon { font-size: 16px; width: 20px; text-align: center; }
+        .start-menu-sep {
+            height: 1px; background: var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px 2px;
+        }
+        .start-menu-side {
+            position: absolute; top: 0; right: 0; bottom: 0;
+            width: 24px;
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            display: flex; align-items: flex-end; justify-content: center;
+            color: white; font-weight: bold;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            font-size: 18px; padding: 8px 4px; letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
-<script src="/config.js"></script>
-<script>window.ADA_CONFIG = Object.assign({}, window.ADA_CONFIG, { requiredTag: 'wiki_access' });</script>
-    <script src="/page-transition.js"></script>
-    <script src="/uplink.js"></script>
-<script src="/announcement-engine.js"></script>
-<script src="/chat-widget.js"></script>
-<script src="/escape-key.js"></script>
-<header>
-    <a href="/wikiselector.html" style="color:var(--blue); text-decoration:none; font-size:14px;">← Back to Selector</a>
-    <div id="p-label" style="font-weight:600;">Partition Editor</div>
-</header>
 
-<div class="toolbar">
-    <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
-        <option value="" disabled selected>Heading</option>
-        <option value="H1">H1</option><option value="H2">H2</option><option value="P">P</option>
-    </select>
-    <button onclick="exec('bold')">B</button>
-    <button onclick="exec('italic')">I</button>
-    <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
-    <div style="width:1px; background:var(--border); height:20px; margin:0 5px;"></div>
-    <button onclick="exec('justifyLeft')">L</button>
-    <button onclick="exec('justifyCenter')">C</button>
-    <label for="img-up">🖼 Add Image</label>
-    <input type="file" id="img-up" accept="image/*" onchange="insertImg(this)" style="display:none">
-    <button onclick="toggleSource()" id="st-btn">HTML Source</button>
-    <button class="btn-save" onclick="save()">Sync Partition</button>
+<div id="desktop">
+
+    <div id="ada-header-anchor" class="hidden"></div>
+
+    <div class="window" id="win-editor" data-win="editor" style="left: 60px; top: 40px; width: calc(100% - 120px); height: calc(100% - 110px);">
+        <div class="titlebar">
+            <div class="titlebar-text">
+                <span class="tb-icon">📄</span>
+                <span id="p-label">Partition Editor</span>
+            </div>
+            <div class="titlebar-buttons">
+                <a id="back-link" href="/wikiselector.html" title="Back to Selector">←</a>
+                <button class="titlebar-btn" onclick="maximizeWindow('editor')" title="Maximize">▢</button>
+                <button class="titlebar-btn" onclick="closeWindow('editor')" title="Close">×</button>
+            </div>
+        </div>
+        <div class="menubar"><span>File</span><span>Edit</span><span>View</span><span>Help</span></div>
+
+        <div class="toolbar">
+            <select onchange="exec('formatBlock', this.value); this.selectedIndex=0;">
+                <option value="" disabled selected>Heading</option>
+                <option value="H1">H1</option>
+                <option value="H2">H2</option>
+                <option value="P">P</option>
+            </select>
+            <button class="btn" onclick="exec('bold')">B</button>
+            <button class="btn" onclick="exec('italic')">I</button>
+            <input type="color" onchange="exec('foreColor', this.value)" title="Text Color">
+            <div class="toolbar-sep"></div>
+            <button class="btn" onclick="exec('justifyLeft')">L</button>
+            <button class="btn" onclick="exec('justifyCenter')">C</button>
+            <div class="toolbar-sep"></div>
+            <label for="img-up" class="btn" style="margin:0;cursor:pointer;">🖼 Add Image</label>
+            <input type="file" id="img-up" accept="image/*" onchange="insertImg(this)" style="display:none">
+            <button class="btn" onclick="toggleSource()" id="st-btn">HTML Source</button>
+            <button class="btn btn-primary btn-save" onclick="save()">Sync Partition</button>
+        </div>
+
+        <div class="editor-wrap">
+            <div id="visual-editor" contenteditable="true"></div>
+            <textarea id="source-editor"></textarea>
+        </div>
+
+        <div class="statusbar">
+            <div class="statusbar-cell" id="status-mode">Editable</div>
+            <div class="statusbar-cell" id="status-position">Partition Sector</div>
+        </div>
+    </div>
+
 </div>
 
-<div class="editor-wrap">
-    <div id="visual-editor" contenteditable="true"></div>
-    <textarea id="source-editor"></textarea>
+<div id="taskbar">
+    <button id="start-btn" onclick="toggleStartMenu()">
+        <span class="logo">A</span>
+        <span>Start</span>
+    </button>
+    <div id="taskbar-windows"></div>
+    <div id="system-tray">
+        <span title="Network">🌐</span>
+        <span title="Volume">🔊</span>
+        <span id="tray-clock">--:--</span>
+    </div>
 </div>
-<script>
-    async function init() {
-        const data = await runNeuralGuard('wiki_access');
-        if(!data) return;
 
-        // Run your wiki loading code
-        loadWiki(); 
-    }
-    init();
-</script>
+<div id="start-menu">
+    <div id="start-menu-header"><span>🪟</span><span>ADA OS</span></div>
+    <div class="start-menu-item" ondblclick="navigateTo('/dash.html')">
+        <span class="smi-icon">🏠</span><span>Desktop</span>
+    </div>
+    <div class="start-menu-item" ondblclick="navigateTo('/wikiselector.html')">
+        <span class="smi-icon">📚</span><span>Partition Network</span>
+    </div>
+    <div class="start-menu-sep"></div>
+    <div class="start-menu-item" ondblclick="navigateTo('/login.html')">
+        <span class="smi-icon">🚪</span><span>Log Out</span>
+    </div>
+    <div class="start-menu-item" ondblclick="navigateTo('/blocked.html')">
+        <span class="smi-icon">🚫</span><span>Blocked</span>
+    </div>
+    <div class="start-menu-side">ADA OS</div>
+</div>
+
 <script>
     const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
     const urlParams = new URLSearchParams(window.location.search);
@@ -142,6 +527,120 @@
     const visual = document.getElementById('visual-editor');
     const source = document.getElementById('source-editor');
     let isSource = false;
+
+    var openWindows = new Set(['editor']);
+    var windowStack = ['editor'];
+    var activeWindow = 'editor';
+    var zCounter = 100;
+    var trayClockTimer = null;
+
+    function setupWindowManagement() {
+        document.querySelectorAll('.window').forEach(win => {
+            const tb = win.querySelector('.titlebar');
+            if (!tb) return;
+            let dragging = false, offX = 0, offY = 0;
+            tb.addEventListener('mousedown', e => {
+                if (e.target.closest('.titlebar-btn') || e.target.closest('#back-link')) return;
+                dragging = true;
+                const rect = win.getBoundingClientRect();
+                offX = e.clientX - rect.left;
+                offY = e.clientY - rect.top;
+                focusWindow(win.dataset.win);
+                e.preventDefault();
+            });
+            tb.addEventListener('dblclick', e => {
+                if (e.target.closest('.titlebar-btn') || e.target.closest('#back-link')) return;
+                maximizeWindow(win.dataset.win);
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                win.style.left = (e.clientX - offX) + 'px';
+                win.style.top  = Math.max(0, e.clientY - offY) + 'px';
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+            win.addEventListener('mousedown', () => focusWindow(win.dataset.win));
+        });
+        document.addEventListener('mousedown', e => {
+            if (!e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
+                document.getElementById('start-menu').classList.remove('open');
+            }
+        });
+    }
+
+    function focusWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        zCounter += 1;
+        win.style.zIndex = zCounter;
+        document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+        win.classList.add('active');
+        activeWindow = id;
+        renderTaskbar();
+    }
+
+    function closeWindow(id) {
+        if (id === 'editor') {
+            if (confirm("Discard changes and close?")) {
+                window.location.href = '/wikiselector.html';
+            }
+            return;
+        }
+    }
+
+    function maximizeWindow(id) {
+        const win = document.getElementById('win-' + id);
+        if (!win) return;
+        win.classList.toggle('maximized');
+        focusWindow(id);
+    }
+
+    function renderTaskbar() {
+        const tray = document.getElementById('taskbar-windows');
+        tray.innerHTML = '';
+        windowStack.forEach(id => {
+            if (!openWindows.has(id)) return;
+            const win = document.getElementById('win-' + id);
+            if (!win) return;
+            const tb = win.querySelector('.titlebar-text');
+            const icon = tb ? tb.querySelector('.tb-icon') : null;
+            const txt  = tb ? tb.lastChild.textContent.trim() : id;
+            const item = document.createElement('div');
+            item.className = 'taskbar-item' + (id === activeWindow ? ' active' : '');
+            item.innerHTML = `<span class="ti-icon">${icon ? icon.textContent : '▣'}</span><span class="ti-text">${txt}</span>`;
+            item.onclick = () => focusWindow(id);
+            tray.appendChild(item);
+        });
+    }
+
+    function toggleStartMenu() {
+        document.getElementById('start-menu').classList.toggle('open');
+    }
+
+    function navigateTo(url) {
+        document.getElementById('start-menu').classList.remove('open');
+        window.location.href = url;
+    }
+
+    function startTrayClock() {
+        function tick() {
+            const now = new Date();
+            document.getElementById('tray-clock').textContent =
+                `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        }
+        tick();
+        trayClockTimer = setInterval(tick, 1000);
+    }
+
+    async function init() {
+        if (typeof runNeuralGuard !== 'function') { setTimeout(init, 100); return; }
+        const data = await runNeuralGuard('wiki_access');
+        if (!data) return;
+        setupWindowManagement();
+        renderTaskbar();
+        focusWindow('editor');
+        startTrayClock();
+        loadWiki();
+    }
 
     async function loadWiki() {
         const email = localStorage.getItem('ada_user_email');
@@ -155,61 +654,52 @@
         if (data.accessLevel === 'view') {
             visual.contentEditable = "false";
             const toolbar = document.querySelector('.toolbar');
-            if(toolbar) toolbar.style.display = 'none';
+            if (toolbar) toolbar.style.display = 'none';
             document.getElementById('p-label').innerText += " [READ-ONLY]";
-            // DO NOT call attachInteractions() here
+            document.getElementById('status-mode').textContent = 'Read-Only';
         } else {
             visual.contentEditable = "true";
-            attachInteractions(); // Only call for editors
+            document.getElementById('status-mode').textContent = 'Editable';
+            attachInteractions();
         }
     }
 
     function attachInteractions() {
         if (visual.contentEditable === "false") return;
-    
         visual.querySelectorAll('.img-wrapper').forEach(wrap => {
             wrap.onmousedown = function(e) {
                 if (visual.contentEditable === "false") return;
-                
-                // Handle deletion
                 if (e.target.classList.contains('remover')) {
                     wrap.remove();
                     return;
                 }
-    
-                // Select this image, deselect others
                 visual.querySelectorAll('.img-wrapper').forEach(w => w.classList.remove('active'));
                 wrap.classList.add('active');
-    
                 let resizing = e.target.classList.contains('resizer');
                 let startX = e.clientX, startY = e.clientY;
                 let startW = wrap.offsetWidth, startL = wrap.offsetLeft, startT = wrap.offsetTop;
-    
                 function move(me) {
                     if (resizing) {
                         let newWidth = startW + (me.clientX - startX);
-                        // Constrain width to editor size
                         wrap.style.width = Math.max(50, Math.min(newWidth, visual.offsetWidth - 40)) + 'px';
                     } else {
                         let newLeft = startL + (me.clientX - startX);
                         let newTop = startT + (me.clientY - startY);
-                        // Keep image inside editor bounds
                         wrap.style.left = Math.max(0, newLeft) + 'px';
                         wrap.style.top = Math.max(0, newTop) + 'px';
                     }
                 }
-    
                 function stop() {
                     window.removeEventListener('mousemove', move);
                     window.removeEventListener('mouseup', stop);
                 }
-    
                 window.addEventListener('mousemove', move);
                 window.addEventListener('mouseup', stop);
                 e.preventDefault();
             };
         });
     }
+
     function toggleSource() {
         isSource = !isSource;
         if (isSource) {
@@ -232,11 +722,9 @@
             reader.onload = (e) => {
                 const wrap = document.createElement('div');
                 wrap.className = 'img-wrapper';
-                // Default safe starting point
-                wrap.style.left = '50px'; 
-                wrap.style.top = '50px'; 
-                wrap.style.width = '250px'; 
-                // Injects UI structure
+                wrap.style.left = '50px';
+                wrap.style.top = '50px';
+                wrap.style.width = '250px';
                 wrap.innerHTML = `
                     <img src="${e.target.result}">
                     <div class="resizer"></div>
@@ -250,26 +738,28 @@
     }
 
     async function save() {
-        // Double-check if the UI was tampered with
         if (visual.contentEditable === "false") return;
-
         const content = visual.innerHTML;
         const res = await fetch(`${API}/wiki/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                id: wikiId, 
-                content: content, 
-                user: localStorage.getItem('ada_user_email') 
+            body: JSON.stringify({
+                id: wikiId,
+                content: content,
+                user: localStorage.getItem('ada_user_email')
             })
         });
         const result = await res.json();
-        if(!result.success) alert("Critical: " + result.error);
+        if (!result.success) alert("Critical: " + result.error);
         else alert("Data Synchronized.");
     }
 
     function exec(c, v=null) { document.execCommand(c, false, v); visual.focus(); }
-    loadWiki();
+
+    init();
 </script>
+
+<script src="/changelog.js"></script>
+
 </body>
 </html>
