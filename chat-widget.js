@@ -1,150 +1,1613 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ADA OS — Archive Comms Widget (Win95 Retro Edition)
+   ────────────────────────────────────────────────────────────────────────────
+   Three-pane messenger:
+     • Global chat (the original room)
+     • Direct Messages (1:1)
+     • Group chat (create / join / leave)
+   Aggressive attention system:
+     • Flashing bevel on the taskbar icon
+     • Title-bar (browser tab) flashing prefix
+     • Toast notifications slide in from bottom-right
+     • Optional audible beep (off by default — first interaction unlocks it)
+     • Unread badge per pane + total badge on the launcher
+   ════════════════════════════════════════════════════════════════════════════ */
 (function() {
-    // --- CONFIGURATION ---
-    const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
-    const email = localStorage.getItem('ada_user_email');
-    const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+"use strict";
 
-    let isChatOpen = false;
-    let lastChatId = 0;
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
+const email = localStorage.getItem('ada_user_email');
+const DEFAULT_ICON = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
+const POLL_MS = 2500; // notification poll
+const CHAT_POLL_MS = 3000; // active channel poll
 
-    // --- 1. INJECT CSS ---
-    const style = document.createElement('style');
-    style.innerHTML = `
-        #ada-chat-widget { position: fixed; bottom: 80px; right: 25px; z-index: 99999; font-family: -apple-system, sans-serif; }
-        #chat-icon { width: 56px; height: 56px; background: #238636; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative; transition: transform 0.2s; }
-        #chat-icon:hover { transform: scale(1.05); }
-        #chat-notif { position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; background: #f85149; border-radius: 50%; border: 2px solid #0d1117; display: none; }
-        
-        #chat-window { width: 380px; height: 550px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        #chat-header { background: #21262d; padding: 14px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; color: white; }
-        #chat-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #0d1117; scroll-behavior: smooth; }
-        
-        /* Message Rows */
-        .chat-row { display: flex; gap: 10px; align-items: flex-end; max-width: 90%; }
-        .chat-row.me { flex-direction: row-reverse; align-self: flex-end; }
-        .chat-row img.chat-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #30363d; background: #0d1117; flex-shrink: 0; object-fit: cover; }
-        
-        .chat-bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; word-wrap: break-word; position: relative; color: white; }
-        .chat-row.other .chat-bubble { background: #21262d; border: 1px solid #30363d; border-bottom-left-radius: 2px; }
-        .chat-row.me .chat-bubble { background: #238636; border-bottom-right-radius: 2px; }
-        .chat-user-label { font-size: 9px; opacity: 0.5; display: block; margin-bottom: 2px; color: #c9d1d9; }
+// Channel modes: "global" | "dm" | "group"
+let activeChannel = "global";
+let activeDmPartner = null;        // email string
+let activeGroupId = null;          // group id string
+let lastChatId = 0;                // global
+let lastDmId = {};                 // other_email -> id
+let lastGroupId = {};              // group_id -> id
+let lastNotifTotal = 0;
+let isOpen = false;
+let isMuted = true;                // for sound (audio policy)
+let audioCtx = null;
+let toastCount = 0;
 
-        #chat-footer { padding: 12px; border-top: 1px solid #30363d; display: flex; gap: 8px; align-items: center; background: #161b22; }
-        #chat-msg-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 13px; }
-        
-        .chat-btn { background: #21262d; border: 1px solid #30363d; color: white; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
-        .chat-btn:hover { background: #30363d; border-color: #8b949e; }
-        .btn-send { background: #238636; border: none; }
-        .btn-send:hover { background: #2ea043; }
+// ─── 1. STYLE (Win95 chiseled chrome) ─────────────────────────────────────
+const style = document.createElement('style');
+style.textContent = `
+:root {
+    --win-bg:         #1c2128;
+    --win-bg-light:   #2a313c;
+    --win-bg-dark:    #11151b;
+    --win-bg-darker:  #0a0d12;
+    --win-title-act:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+    --win-title-inact:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+    --win-text:       #e6edf3;
+    --win-text-blue:  #58a6ff;
+    --win-text-mute:  #8b949e;
+    --win-border-l:   #4a525e;
+    --win-border-d:   #080a0e;
+    --accent:         #238636;
+}
 
-        /* Scrollbar */
-        #chat-body::-webkit-scrollbar { width: 6px; }
-        #chat-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-    `;
-    document.head.appendChild(style);
+/* Launcher button */
+#ada-chat-launch {
+    position: fixed; bottom: 12px; right: 12px;
+    width: 32px; height: 32px;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    box-shadow: 1px 1px 0 0 #000;
+    cursor: pointer; z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: transform 0.1s;
+}
+#ada-chat-launch:active {
+    border-top:    2px solid var(--win-border-d);
+    border-left:   2px solid var(--win-border-d);
+    border-right:  2px solid var(--win-border-l);
+    border-bottom: 2px solid var(--win-border-l);
+    transform: translate(1px, 1px);
+}
+#ada-chat-launch.has-unread {
+    animation: ada-flash 0.8s steps(2, end) infinite;
+}
+@keyframes ada-flash {
+    0%   { background: var(--win-bg); }
+    50%  { background: #f85149; color: #fff; }
+    100% { background: var(--win-bg); }
+}
+#ada-chat-launch .unread-badge {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 16px; height: 16px; padding: 0 3px;
+    background: #f85149; color: #fff;
+    border-top:    1px solid #ff8a82;
+    border-left:   1px solid #ff8a82;
+    border-right:  1px solid #800000;
+    border-bottom: 1px solid #800000;
+    font-size: 10px; font-weight: bold;
+    display: none; align-items: center; justify-content: center;
+    pointer-events: none;
+}
+#ada-chat-launch .unread-badge.show { display: flex; }
 
-    // --- 2. INJECT HTML ---
-    const widget = document.createElement('div');
-    widget.id = 'ada-chat-widget';
-    widget.innerHTML = `
-        <div id="chat-window">
-            <div id="chat-header">
-                <span>Archive Comms</span>
-                <span id="close-chat" style="cursor:pointer;opacity:0.6;">✕</span>
+/* Main window */
+#ada-chat-window {
+    position: fixed; bottom: 52px; right: 12px;
+    width: 460px; height: 560px;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    box-shadow: 2px 2px 0 0 #000, 0 0 0 1px #000;
+    display: none; flex-direction: column;
+    z-index: 99998;
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", sans-serif;
+    font-size: 12px;
+}
+#ada-chat-window.open { display: flex; }
+#ada-chat-window.maximized {
+    top: 0; left: 0; right: 0; bottom: 32px;
+    width: auto; height: auto;
+}
+
+/* Title bar */
+.ada-tb {
+    background: var(--win-title-act);
+    color: #fff;
+    padding: 3px 4px 3px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: bold; font-size: 12px;
+    user-select: none;
+}
+.ada-tb-text { display: flex; align-items: center; gap: 5px; cursor: move; flex: 1; }
+.ada-tb-text .tb-icon { font-size: 13px; }
+.ada-tb-btns { display: flex; gap: 2px; }
+.ada-tb-btn {
+    width: 18px; height: 16px;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Marlett", "MS Sans Serif", monospace;
+    font-size: 10px; cursor: pointer; padding: 0; line-height: 1;
+}
+.ada-tb-btn:active {
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+
+/* Menubar */
+.ada-menubar {
+    display: flex; gap: 0;
+    background: var(--win-bg);
+    border-bottom: 1px solid var(--win-border-d);
+    padding: 1px 2px;
+}
+.ada-menubar span {
+    padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+}
+.ada-menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+
+/* Body layout: sidebar + main */
+.ada-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background: var(--win-bg);
+}
+.ada-sidebar {
+    width: 130px;
+    background: var(--win-bg);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    margin: 2px 0 2px 2px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+}
+.ada-tab-bar {
+    display: flex; border-bottom: 1px solid var(--win-border-d);
+}
+.ada-tab {
+    flex: 1; padding: 4px 0;
+    background: var(--win-bg-dark);
+    color: var(--win-text-mute);
+    font-size: 10px; font-weight: bold;
+    text-align: center; cursor: pointer;
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    user-select: none;
+    position: relative;
+}
+.ada-tab.active {
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-bg);
+    margin-bottom: -1px;
+}
+.ada-tab .tab-badge {
+    position: absolute; top: 1px; right: 3px;
+    min-width: 12px; height: 12px; padding: 0 3px;
+    background: #f85149; color: #fff;
+    font-size: 8px; font-weight: bold;
+    display: none; align-items: center; justify-content: center;
+    border-radius: 6px;
+}
+.ada-tab .tab-badge.show { display: flex; }
+
+.ada-pane-list {
+    flex: 1; overflow-y: auto;
+    background: var(--win-bg);
+    padding: 2px;
+}
+.ada-list-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; cursor: pointer;
+    font-size: 11px; color: var(--win-text);
+    border-top:    1px solid transparent;
+    border-left:   1px solid transparent;
+    border-right:  1px solid transparent;
+    border-bottom: 1px solid transparent;
+    user-select: none;
+}
+.ada-list-item:hover {
+    background: var(--win-text-blue);
+    color: var(--win-bg-darker);
+}
+.ada-list-item.active {
+    background: var(--win-bg-dark);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+.ada-list-item.active:hover { background: var(--win-bg-dark); }
+.ada-list-item img {
+    width: 24px; height: 24px;
+    background: #0d1117;
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    flex-shrink: 0; object-fit: cover;
+}
+.ada-list-item .li-text {
+    flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    display: flex; flex-direction: column; min-width: 0;
+}
+.ada-list-item .li-name { font-weight: bold; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.ada-list-item .li-preview { font-size: 9px; color: var(--win-text-mute); overflow: hidden; text-overflow: ellipsis; }
+.ada-list-item.active .li-preview { color: #8b949e; }
+.ada-list-item:hover .li-preview { color: var(--win-bg-darker); }
+.ada-list-item .li-badge {
+    min-width: 14px; height: 14px; padding: 0 4px;
+    background: #f85149; color: #fff;
+    font-size: 9px; font-weight: bold;
+    display: none; align-items: center; justify-content: center;
+    border-radius: 7px;
+    flex-shrink: 0;
+}
+.ada-list-item .li-badge.show { display: flex; }
+.ada-list-item.new-dm {
+    color: var(--win-text-blue);
+    font-style: italic;
+}
+
+.ada-sidebar-actions {
+    display: flex; gap: 2px; padding: 2px;
+    background: var(--win-bg);
+    border-top: 1px solid var(--win-border-l);
+}
+.ada-mini-btn {
+    flex: 1;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    padding: 3px 4px; font-size: 10px;
+    cursor: pointer; font-family: inherit;
+    text-align: center;
+}
+.ada-mini-btn:active {
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+.ada-mini-btn:disabled { color: var(--win-bg-light); cursor: not-allowed; }
+
+/* Main pane (messages) */
+.ada-main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    margin: 2px;
+    background: var(--win-bg);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    overflow: hidden;
+}
+.ada-main-header {
+    padding: 4px 8px;
+    background: var(--win-bg-dark);
+    border-bottom: 1px solid var(--win-border-l);
+    font-weight: bold; font-size: 12px;
+    color: var(--win-text);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+.ada-main-header .hdr-meta { font-size: 10px; color: var(--win-text-mute); font-weight: normal; }
+.ada-main-header .hdr-actions { display: flex; gap: 4px; }
+.ada-main-header .hdr-actions button {
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    padding: 1px 6px; font-size: 10px;
+    cursor: pointer; font-family: inherit;
+}
+.ada-main-header .hdr-actions button:active {
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+
+.ada-msg-area {
+    flex: 1; overflow-y: auto;
+    padding: 8px;
+    background: var(--win-bg-darker);
+    display: flex; flex-direction: column; gap: 6px;
+    scroll-behavior: smooth;
+}
+.ada-msg-area::-webkit-scrollbar { width: 14px; }
+.ada-msg-area::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+.ada-msg-area::-webkit-scrollbar-thumb {
+    background: var(--win-bg-light);
+    border-top: 1px solid var(--win-border-l);
+    border-left: 1px solid var(--win-border-l);
+    border-right: 1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+}
+
+.ada-msg {
+    display: flex; gap: 6px; align-items: flex-end;
+    max-width: 92%;
+}
+.ada-msg.me { flex-direction: row-reverse; align-self: flex-end; }
+.ada-msg .msg-avatar {
+    width: 22px; height: 22px;
+    background: var(--win-bg);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    flex-shrink: 0; object-fit: cover;
+}
+.ada-msg .msg-stack { display: flex; flex-direction: column; max-width: 100%; }
+.ada-msg.me .msg-stack { align-items: flex-end; }
+.ada-msg .msg-author {
+    font-size: 9px; color: var(--win-text-mute);
+    margin: 0 4px 1px 4px;
+    display: flex; gap: 6px;
+}
+.ada-msg .msg-author .msg-time { color: #5a6470; }
+.ada-msg .msg-bubble {
+    padding: 5px 8px;
+    font-size: 12px; line-height: 1.35;
+    word-wrap: break-word;
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    background: var(--win-bg-light);
+    color: var(--win-text);
+    max-width: 100%;
+}
+.ada-msg.me .msg-bubble {
+    background: var(--accent);
+    color: #fff;
+    border-top:    1px solid #46c668;
+    border-left:   1px solid #46c668;
+    border-right:  1px solid #15401f;
+    border-bottom: 1px solid #15401f;
+}
+.ada-msg .msg-bubble img {
+    max-width: 220px; max-height: 220px;
+    display: block; margin-top: 4px;
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    cursor: pointer;
+}
+.ada-msg.system {
+    align-self: center; max-width: 80%;
+    font-size: 10px; font-style: italic;
+    color: var(--win-text-mute);
+    padding: 2px 0;
+}
+
+.ada-msg .msg-img-only { padding: 2px; }
+
+.ada-msg-area .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--win-text-mute);
+    font-style: italic;
+    font-size: 12px;
+    padding: 20px;
+}
+
+/* Footer (input) */
+.ada-footer {
+    display: flex; gap: 4px; align-items: center;
+    padding: 4px;
+    background: var(--win-bg);
+    border-top: 1px solid var(--win-border-l);
+    flex-shrink: 0;
+}
+.ada-input {
+    flex: 1;
+    background: var(--win-bg-darker);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    padding: 4px 6px;
+    font-family: inherit; font-size: 12px;
+    outline: none;
+}
+.ada-input:focus {
+    background: var(--win-bg-dark);
+    border-right-color: var(--win-text-blue);
+    border-bottom-color: var(--win-text-blue);
+}
+.ada-send-btn {
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    padding: 4px 12px; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+    font-weight: bold;
+}
+.ada-send-btn:active {
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+.ada-icon-btn {
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    padding: 3px 6px; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+}
+.ada-icon-btn:active {
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+
+/* Status bar */
+.ada-statusbar {
+    display: flex; gap: 4px;
+    padding: 2px;
+    background: var(--win-bg);
+    border-top: 1px solid var(--win-border-l);
+    flex-shrink: 0;
+}
+.ada-status-cell {
+    flex: 1;
+    padding: 2px 6px;
+    font-size: 11px;
+    color: var(--win-text);
+    background: var(--win-bg);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    display: flex; align-items: center; gap: 4px;
+}
+.ada-status-cell .s-icon { font-size: 10px; color: var(--win-text-mute); }
+.ada-status-cell .s-online { color: #46c668; font-size: 8px; }
+
+/* Modal dialog (DM / Group) */
+.ada-modal-bg {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none; align-items: center; justify-content: center;
+    z-index: 10;
+}
+.ada-modal-bg.open { display: flex; }
+.ada-modal {
+    width: 320px;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    box-shadow: 2px 2px 0 0 #000;
+    display: flex; flex-direction: column;
+}
+.ada-modal .ada-tb { cursor: default; }
+.ada-modal-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ada-modal .field-group { display: flex; flex-direction: column; gap: 3px; }
+.ada-modal .field-group label { font-size: 11px; font-weight: bold; }
+.ada-modal .ada-field {
+    background: var(--win-bg-darker); color: var(--win-text);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    padding: 3px 5px; font-family: inherit; font-size: 12px;
+    outline: none;
+}
+.ada-modal .ada-field:focus {
+    background: var(--win-bg-dark);
+    border-right-color: var(--win-text-blue);
+    border-bottom-color: var(--win-text-blue);
+}
+.ada-modal .modal-actions {
+    display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px;
+}
+.ada-btn {
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    padding: 3px 14px; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+    min-width: 75px;
+}
+.ada-btn:active {
+    border-top:    2px solid var(--win-border-d);
+    border-left:   2px solid var(--win-border-d);
+    border-right:  2px solid var(--win-border-l);
+    border-bottom: 2px solid var(--win-border-l);
+}
+.ada-btn.primary { font-weight: bold; }
+
+.ada-search-results {
+    max-height: 130px; overflow-y: auto;
+    background: var(--win-bg-darker);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+}
+.ada-search-results .ada-list-item { font-size: 11px; }
+.ada-modal .modal-error { color: #f85149; font-size: 11px; min-height: 14px; }
+
+/* Toast notifications (attention grabbers) */
+#ada-toast-wrap {
+    position: fixed; bottom: 52px; right: 16px;
+    z-index: 100000; display: flex; flex-direction: column-reverse; gap: 6px;
+    pointer-events: none;
+}
+.ada-toast {
+    width: 280px;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    box-shadow: 2px 2px 0 0 #000;
+    display: flex; flex-direction: column;
+    pointer-events: auto;
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", sans-serif;
+    font-size: 12px;
+    animation: ada-toast-in 0.25s ease-out;
+}
+@keyframes ada-toast-in {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+.ada-toast.dm  { border-top-color: #58a6ff; }
+.ada-toast.group{ border-top-color: #d29922; }
+.ada-toast .ada-tb { padding: 3px 4px 3px 6px; }
+.ada-toast .toast-body {
+    padding: 6px 8px;
+    background: var(--win-bg-darker);
+    display: flex; gap: 8px; align-items: center;
+}
+.ada-toast .toast-body img {
+    width: 28px; height: 28px;
+    background: var(--win-bg);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    object-fit: cover; flex-shrink: 0;
+}
+.ada-toast .toast-text { flex: 1; min-width: 0; }
+.ada-toast .toast-who { font-weight: bold; font-size: 11px; }
+.ada-toast .toast-msg {
+    font-size: 11px; color: var(--win-text-mute);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ada-toast .toast-close {
+    cursor: pointer; opacity: 0.7; font-size: 12px; padding: 0 4px;
+}
+.ada-toast .toast-close:hover { opacity: 1; }
+`;
+document.head.appendChild(style);
+
+// ─── 2. HTML ───────────────────────────────────────────────────────────────
+const widget = document.createElement('div');
+widget.id = 'ada-chat-widget';
+widget.innerHTML = `
+    <div id="ada-chat-launch" title="Open Archive Comms">
+        💬
+        <div class="unread-badge" id="ada-launch-badge">0</div>
+    </div>
+
+    <div id="ada-chat-window">
+        <div class="ada-tb" id="ada-drag-handle">
+            <div class="ada-tb-text">
+                <span class="tb-icon">💬</span>
+                <span id="ada-win-title">Archive Comms</span>
             </div>
-            <div id="chat-body"></div>
-            <form id="chat-footer">
-                <input type="text" id="chat-msg-input" placeholder="Type a message..." autocomplete="off">
-                <button type="button" class="chat-btn" id="trigger-img">🖼️</button>
-                <input type="file" id="chat-file" hidden accept="image/*">
-                <button type="submit" class="chat-btn btn-send">Send</button>
-            </form>
+            <div class="ada-tb-btns">
+                <button class="ada-tb-btn" id="ada-btn-mute" title="Mute / Unmute">🔔</button>
+                <button class="ada-tb-btn" id="ada-btn-max" title="Maximize">▢</button>
+                <button class="ada-tb-btn" id="ada-btn-close" title="Close">×</button>
+            </div>
         </div>
-        <div id="chat-icon">
-            💬
-            <div id="chat-notif"></div>
+        <div class="ada-menubar">
+            <span id="ada-menu-newdm">File ▾</span>
+            <span id="ada-menu-newgroup">New Group</span>
+            <span id="ada-menu-mute">Sound</span>
         </div>
-    `;
-    document.body.appendChild(widget);
+        <div class="ada-body">
+            <div class="ada-sidebar">
+                <div class="ada-tab-bar">
+                    <div class="ada-tab active" data-tab="global">Global<span class="tab-badge" id="tab-badge-global"></span></div>
+                    <div class="ada-tab" data-tab="dm">DM<span class="tab-badge" id="tab-badge-dm"></span></div>
+                    <div class="ada-tab" data-tab="group">Groups<span class="tab-badge" id="tab-badge-group"></span></div>
+                </div>
+                <div class="ada-pane-list" id="ada-pane-list"></div>
+                <div class="ada-sidebar-actions" id="ada-sidebar-actions">
+                    <button class="ada-mini-btn" id="ada-side-newdm">+ New DM</button>
+                </div>
+            </div>
+            <div class="ada-main">
+                <div class="ada-main-header">
+                    <span id="ada-main-title">Global Chat</span>
+                    <span class="hdr-meta" id="ada-main-meta">All members</span>
+                    <span class="hdr-actions" id="ada-main-actions"></span>
+                </div>
+                <div class="ada-msg-area" id="ada-msg-area">
+                    <div class="empty-state">Select a conversation to begin.</div>
+                </div>
+                <form class="ada-footer" id="ada-msg-form">
+                    <button type="button" class="ada-icon-btn" id="ada-btn-img" title="Send image">🖼️</button>
+                    <input type="file" id="ada-file" hidden accept="image/*">
+                    <input type="text" class="ada-input" id="ada-msg-input" placeholder="Type a message..." autocomplete="off" disabled>
+                    <button type="submit" class="ada-send-btn" id="ada-send-btn" disabled>Send</button>
+                </form>
+            </div>
+        </div>
+        <div class="ada-statusbar">
+            <div class="ada-status-cell">
+                <span class="s-icon">👤</span>
+                <span id="ada-status-user">guest</span>
+            </div>
+            <div class="ada-status-cell">
+                <span class="s-online">●</span>
+                <span id="ada-status-channel">Global</span>
+            </div>
+            <div class="ada-status-cell">
+                <span class="s-icon">✉</span>
+                <span id="ada-status-unread">0 unread</span>
+            </div>
+        </div>
 
-    // --- 3. LOGIC & EVENTS ---
-    const chatIcon = document.getElementById('chat-icon');
-    const chatWindow = document.getElementById('chat-window');
-    const chatBody = document.getElementById('chat-body');
-    const chatInput = document.getElementById('chat-msg-input');
-    const chatForm = document.getElementById('chat-footer');
-    const fileInput = document.getElementById('chat-file');
+        <!-- Modal overlay -->
+        <div class="ada-modal-bg" id="ada-modal-bg">
+            <div class="ada-modal" id="ada-modal">
+                <div class="ada-tb">
+                    <div class="ada-tb-text"><span class="tb-icon">📨</span><span id="ada-modal-title">New DM</span></div>
+                </div>
+                <div class="ada-modal-body" id="ada-modal-body"></div>
+            </div>
+        </div>
+    </div>
 
-    chatIcon.onclick = toggleChat;
-    document.getElementById('close-chat').onclick = toggleChat;
-    document.getElementById('trigger-img').onclick = () => fileInput.click();
+    <div id="ada-toast-wrap"></div>
+`;
+document.body.appendChild(widget);
 
-    function toggleChat() {
-        isChatOpen = !isChatOpen;
-        chatWindow.style.display = isChatOpen ? 'flex' : 'none';
-        if(isChatOpen) {
-            document.getElementById('chat-notif').style.display = 'none';
-            chatBody.scrollTop = chatBody.scrollHeight;
+// ─── 3. ELEMENTS & STATE ───────────────────────────────────────────────────
+const $launch       = document.getElementById('ada-chat-launch');
+const $launchBadge  = document.getElementById('ada-launch-badge');
+const $window       = document.getElementById('ada-chat-window');
+const $winTitle     = document.getElementById('ada-win-title');
+const $msgArea      = document.getElementById('ada-msg-area');
+const $msgForm      = document.getElementById('ada-msg-form');
+const $msgInput     = document.getElementById('ada-msg-input');
+const $sendBtn      = document.getElementById('ada-send-btn');
+const $btnImg       = document.getElementById('ada-btn-img');
+const $fileInput    = document.getElementById('ada-file');
+const $paneList     = document.getElementById('ada-pane-list');
+const $mainTitle    = document.getElementById('ada-main-title');
+const $mainMeta     = document.getElementById('ada-main-meta');
+const $mainActions  = document.getElementById('ada-main-actions');
+const $statusUser   = document.getElementById('ada-status-user');
+const $statusCh     = document.getElementById('ada-status-channel');
+const $statusUnrd   = document.getElementById('ada-status-unread');
+const $btnClose     = document.getElementById('ada-btn-close');
+const $btnMax       = document.getElementById('ada-btn-max');
+const $btnMute      = document.getElementById('ada-btn-mute');
+const $modalBg      = document.getElementById('ada-modal-bg');
+const $modalTitle   = document.getElementById('ada-modal-title');
+const $modalBody    = document.getElementById('ada-modal-body');
+const $toastWrap    = document.getElementById('ada-toast-wrap');
+
+document.getElementById('ada-status-user').textContent = (email || 'guest').split('@')[0];
+
+// Tab elements
+const tabs = document.querySelectorAll('.ada-tab');
+const tabBadges = {
+    global: document.getElementById('tab-badge-global'),
+    dm:     document.getElementById('tab-badge-dm'),
+    group:  document.getElementById('tab-badge-group')
+};
+
+// ─── 4. OPEN / CLOSE ───────────────────────────────────────────────────────
+function openWindow() {
+    isOpen = true;
+    $window.classList.add('open');
+    $launch.classList.remove('has-unread');
+    $launchBadge.classList.remove('show');
+    // Clear unread for current view as soon as it's opened
+    markActiveRead();
+    refreshPane();
+    setTimeout(() => $msgInput.focus(), 50);
+}
+function closeWindow() {
+    isOpen = false;
+    $window.classList.remove('open');
+}
+function toggleWindow() { isOpen ? closeWindow() : openWindow(); }
+
+$launch.addEventListener('click', toggleWindow);
+$btnClose.addEventListener('click', closeWindow);
+$btnMax.addEventListener('click', () => $window.classList.toggle('maximized'));
+
+$btnMute.addEventListener('click', () => {
+    isMuted = !isMuted;
+    $btnMute.textContent = isMuted ? '🔕' : '🔔';
+    $btnMute.title = isMuted ? 'Unmute' : 'Mute';
+});
+document.getElementById('ada-menu-mute').addEventListener('click', () => $btnMute.click());
+$btnMute.textContent = '🔕';
+
+// Escape closes
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if ($modalBg.classList.contains('open')) closeModal();
+        else if (isOpen) closeWindow();
+    }
+});
+
+// ─── 5. TABS ───────────────────────────────────────────────────────────────
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        switchTab(tab.dataset.tab);
+    });
+});
+
+function switchTab(tab) {
+    tabs.forEach(t => t.classList.toggle('active', t === tabs[tab === 'global' ? 0 : tab === 'dm' ? 1 : 2]));
+    activeChannel = tab;
+    if (tab === 'global') {
+        activeDmPartner = null;
+        activeGroupId = null;
+    } else if (tab === 'dm') {
+        activeGroupId = null;
+    } else {
+        activeDmPartner = null;
+    }
+    $mainActions.innerHTML = '';
+    renderPaneList();
+    renderActiveMessages();
+    updateChannelHeader();
+    markActiveRead();
+    // Sound first-interaction
+    if (isMuted) {
+        // do nothing
+    } else {
+        try { initAudio(); } catch (e) {}
+    }
+}
+
+// ─── 6. PANE LISTS ─────────────────────────────────────────────────────────
+let dmConversations = [];
+let groupList = [];
+
+async function loadDmConversations() {
+    if (!email) return;
+    try {
+        const res = await fetch(`${API}/dm/conversations?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        dmConversations = (data.conversations || []);
+    } catch (e) { dmConversations = []; }
+}
+
+async function loadGroupList() {
+    if (!email) return;
+    try {
+        const res = await fetch(`${API}/groups/list?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        groupList = (data.groups || []);
+    } catch (e) { groupList = []; }
+}
+
+function renderPaneList() {
+    if (activeChannel === 'global') {
+        $paneList.innerHTML = `
+            <div class="ada-list-item active" data-action="open-global">
+                <img src="${DEFAULT_ICON}" alt="">
+                <div class="li-text">
+                    <span class="li-name"># global</span>
+                    <span class="li-preview">All members</span>
+                </div>
+            </div>
+        `;
+        $paneList.querySelector('[data-action="open-global"]').onclick = () => {
+            activeDmPartner = null; activeGroupId = null;
+            renderPaneList(); renderActiveMessages(); updateChannelHeader(); markActiveRead();
+        };
+        document.getElementById('ada-sidebar-actions').innerHTML = '';
+        return;
+    }
+    if (activeChannel === 'dm') {
+        if (!dmConversations.length) {
+            $paneList.innerHTML = `<div style="padding:10px;font-size:11px;color:var(--win-text-mute);font-style:italic;text-align:center;">No conversations yet.<br>Click "+ New DM" to start one.</div>`;
+        } else {
+            $paneList.innerHTML = dmConversations.map(c => {
+                const isActive = c.other_email === activeDmPartner;
+                const preview = c.latest
+                    ? (c.latest.is_image ? '🖼 Image' : (c.latest.content || '').slice(0, 40))
+                    : '—';
+                return `
+                <div class="ada-list-item ${isActive ? 'active' : ''}" data-email="${c.other_email}">
+                    <img src="${c.profile_picture || DEFAULT_ICON}" alt="">
+                    <div class="li-text">
+                        <span class="li-name">${escapeHtml(c.display_name || c.other_email)}</span>
+                        <span class="li-preview">${escapeHtml(preview)}</span>
+                    </div>
+                    <span class="li-badge ${c.unread ? 'show' : ''}">${c.unread || ''}</span>
+                </div>`;
+            }).join('');
+            $paneList.querySelectorAll('.ada-list-item[data-email]').forEach(el => {
+                el.onclick = () => openDm(el.dataset.email);
+            });
+        }
+        document.getElementById('ada-sidebar-actions').innerHTML =
+            '<button class="ada-mini-btn" id="ada-side-newdm">+ New DM</button>';
+        document.getElementById('ada-side-newdm').onclick = openNewDmModal;
+        return;
+    }
+    if (activeChannel === 'group') {
+        if (!groupList.length) {
+            $paneList.innerHTML = `<div style="padding:10px;font-size:11px;color:var(--win-text-mute);font-style:italic;text-align:center;">No groups yet.<br>Click "New Group" above to create one.</div>`;
+        } else {
+            $paneList.innerHTML = groupList.map(g => {
+                const isActive = g.id === activeGroupId;
+                return `
+                <div class="ada-list-item ${isActive ? 'active' : ''}" data-group="${g.id}">
+                    <img src="${DEFAULT_ICON}" alt="">
+                    <div class="li-text">
+                        <span class="li-name">${escapeHtml(g.name)}</span>
+                        <span class="li-preview">${g.member_count} member${g.member_count === 1 ? '' : 's'}${g.is_member ? '' : ' · not joined'}</span>
+                    </div>
+                    <span class="li-badge ${g.unread ? 'show' : ''}">${g.unread || ''}</span>
+                </div>`;
+            }).join('');
+            $paneList.querySelectorAll('.ada-list-item[data-group]').forEach(el => {
+                el.onclick = () => openGroup(el.dataset.group);
+            });
+        }
+        document.getElementById('ada-sidebar-actions').innerHTML =
+            '<button class="ada-mini-btn" id="ada-side-newgroup">+ New Group</button>';
+        document.getElementById('ada-side-newgroup').onclick = openNewGroupModal;
+        return;
+    }
+}
+
+function updateChannelHeader() {
+    if (activeChannel === 'global') {
+        $mainTitle.textContent = '# global';
+        $mainMeta.textContent = 'All members';
+        $statusCh.textContent = 'Global';
+        $mainActions.innerHTML = '';
+    } else if (activeChannel === 'dm') {
+        const c = dmConversations.find(x => x.other_email === activeDmPartner);
+        $mainTitle.textContent = c ? (c.display_name || c.other_email) : (activeDmPartner || 'Select a DM');
+        $mainMeta.textContent = c ? c.other_email : '';
+        $statusCh.textContent = 'DM';
+        $mainActions.innerHTML = '';
+    } else {
+        const g = groupList.find(x => x.id === activeGroupId);
+        $mainTitle.textContent = g ? g.name : (activeGroupId ? 'Group' : 'Select a group');
+        $mainMeta.textContent = g ? `${g.member_count} members` : '';
+        $statusCh.textContent = 'Group';
+        if (g && g.is_member) {
+            $mainActions.innerHTML = '<button id="ada-leave-group">Leave</button>';
+            const leaveBtn = document.getElementById('ada-leave-group');
+            if (leaveBtn) leaveBtn.onclick = leaveActiveGroup;
+        } else if (g && !g.is_member) {
+            $mainActions.innerHTML = '<button id="ada-join-group">Join</button>';
+            const joinBtn = document.getElementById('ada-join-group');
+            if (joinBtn) joinBtn.onclick = joinActiveGroup;
+        } else {
+            $mainActions.innerHTML = '';
         }
     }
+    // Input enabled state
+    const enabled =
+        (activeChannel === 'global') ||
+        (activeChannel === 'dm' && !!activeDmPartner) ||
+        (activeChannel === 'group' && !!activeGroupId);
+    $msgInput.disabled = !enabled;
+    $sendBtn.disabled = !enabled;
+    $msgInput.placeholder = enabled
+        ? (activeChannel === 'global' ? 'Broadcast to all members…'
+            : activeChannel === 'dm' ? `DM ${(activeDmPartner || '').split('@')[0]}…`
+            : 'Message the group…')
+        : 'Select a conversation to begin.';
+}
 
-    async function syncMessages() {
-        if (!email) return;
-        try {
-            const res = await fetch(`${API}/chat/load`);
-            const messages = await res.json();
-            
-            const latest = messages[messages.length - 1];
-            if (latest && latest.id > lastChatId) {
-                // Show notification if window is closed
-                if (!isChatOpen && lastChatId !== 0) {
-                    document.getElementById('chat-notif').style.display = 'block';
+// ─── 7. OPEN DM / GROUP ────────────────────────────────────────────────────
+function openDm(otherEmail) {
+    activeChannel = 'dm';
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'dm'));
+    activeDmPartner = otherEmail;
+    activeGroupId = null;
+    renderPaneList();
+    renderActiveMessages();
+    updateChannelHeader();
+    markActiveRead();
+    setTimeout(() => $msgInput.focus(), 50);
+}
+function openGroup(groupId) {
+    activeChannel = 'group';
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'group'));
+    activeGroupId = groupId;
+    activeDmPartner = null;
+    renderPaneList();
+    renderActiveMessages();
+    updateChannelHeader();
+    markActiveRead();
+    setTimeout(() => $msgInput.focus(), 50);
+}
+
+// ─── 8. MESSAGE RENDERING ──────────────────────────────────────────────────
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderMsgRow(m, mine) {
+    const avatar = m.profile_picture || DEFAULT_ICON;
+    const author = m.display_name || m.user_email || m.sender_email || 'unknown';
+    const time = m.created_at ? new Date(m.created_at + (m.created_at.includes('Z') ? '' : 'Z')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const isImg = m.is_image || m.isImage;
+    const content = m.content;
+    const bubbleInner = isImg
+        ? `<div class="msg-img-only"><img src="${escapeHtml(content)}" alt="image" onclick="window.open(this.src,'_blank')"></div>`
+        : escapeHtml(content);
+    return `
+        <div class="ada-msg ${mine ? 'me' : ''}">
+            <img src="${avatar}" class="msg-avatar" alt="">
+            <div class="msg-stack">
+                <div class="msg-author">
+                    <span>${escapeHtml(author)}</span>
+                    <span class="msg-time">${time}</span>
+                </div>
+                <div class="msg-bubble">${bubbleInner}</div>
+            </div>
+        </div>`;
+}
+
+function renderEmpty(text) {
+    $msgArea.innerHTML = `<div class="empty-state">${text}</div>`;
+    return;
+}
+
+// ─── 9. SYNC EACH CHANNEL ──────────────────────────────────────────────────
+async function syncGlobal() {
+    if (!email) return;
+    try {
+        const res = await fetch(`${API}/chat/load`);
+        const messages = await res.json();
+        const latest = messages[messages.length - 1];
+        const prevLast = lastChatId;
+        if (latest) {
+            // Compute new count since we last saw
+            const newOnes = messages.filter(m => m.id > prevLast && m.user_email !== email);
+            if (prevLast > 0 && newOnes.length > 0) {
+                // Notify
+                if (activeChannel !== 'global' || !isOpen) {
+                    bumpUnread('global', newOnes.length);
+                    newOnes.forEach(m => pushToast({
+                        type: 'global',
+                        who: m.display_name || m.user_email,
+                        pic: m.profile_picture || DEFAULT_ICON,
+                        msg: m.is_image ? 'Sent an image' : (m.content || '').slice(0, 60)
+                    }));
+                } else {
+                    // In global + open — just clear badge if any
+                    bumpUnread('global', 0);
                 }
-                lastChatId = latest.id;
-                
-                // Render
-                chatBody.innerHTML = messages.map(m => `
-                    <div class="chat-row ${m.user_email === email ? 'me' : 'other'}">
-                        <img src="${m.profile_picture || DEFAULT_ICON}" class="chat-avatar">
-                        <div class="chat-bubble">
-                            <span class="chat-user-label">${m.display_name || m.user_email}</span>
-                            ${m.is_image ? `<img src="${m.content}" style="max-width:100%;border-radius:6px;margin-top:5px;cursor:pointer;" onclick="window.open(this.src)">` : m.content}
-                        </div>
-                    </div>
-                `).join('');
-                
-                if (isChatOpen) chatBody.scrollTop = chatBody.scrollHeight;
             }
-        } catch (e) { console.error("Chat Sync Failed"); }
-    }
+            lastChatId = Math.max(lastChatId, latest.id);
+        }
+        if (activeChannel === 'global') renderGlobal(messages);
+    } catch (e) {}
+}
 
-    chatForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const content = chatInput.value.trim();
-        if(!content) return;
-        chatInput.value = '';
+function renderGlobal(messages) {
+    if (!messages.length) { renderEmpty('No messages yet. Say hello!'); return; }
+    $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
+    scrollMsgArea();
+}
+
+async function syncDm() {
+    if (!email) return;
+    // Refresh conversation list (cheap)
+    await loadDmConversations();
+    if (activeChannel === 'dm') {
+        if (!activeDmPartner) { renderEmpty('Select a conversation to begin.'); return; }
+        try {
+            const res = await fetch(`${API}/dm/load?email=${encodeURIComponent(email)}&other=${encodeURIComponent(activeDmPartner)}`);
+            const data = await res.json();
+            const messages = data.messages || [];
+            const lastId = messages.length ? messages[messages.length - 1].id : 0;
+            const prev = lastDmId[activeDmPartner] || 0;
+            if (prev > 0 && lastId > prev) {
+                const newOnes = messages.filter(m => m.id > prev && m.user_email !== email);
+                if (newOnes.length) {
+                    if (isOpen) {
+                        // already focused — just optional beep
+                    } else {
+                        newOnes.forEach(m => pushToast({
+                            type: 'dm',
+                            who: m.display_name || m.user_email,
+                            pic: m.profile_picture || DEFAULT_ICON,
+                            msg: m.is_image ? 'Sent an image' : (m.content || '').slice(0, 60)
+                        }));
+                    }
+                }
+            }
+            if (lastId) lastDmId[activeDmPartner] = lastId;
+            renderActiveMessages();
+            updateChannelHeader();
+            renderPaneList();
+        } catch (e) { renderEmpty('Failed to load conversation.'); }
+    } else {
+        renderPaneList();
+    }
+}
+
+async function syncGroup() {
+    if (!email) return;
+    await loadGroupList();
+    if (activeChannel === 'group') {
+        if (!activeGroupId) { renderEmpty('Select or create a group to begin.'); return; }
+        try {
+            const res = await fetch(`${API}/groups/load?id=${encodeURIComponent(activeGroupId)}&email=${encodeURIComponent(email)}`);
+            const data = await res.json();
+            if (data.error) { renderEmpty(data.error); return; }
+            const messages = data.messages || [];
+            const lastId = messages.length ? messages[messages.length - 1].id : 0;
+            const prev = lastGroupId[activeGroupId] || 0;
+            if (prev > 0 && lastId > prev) {
+                const newOnes = messages.filter(m => m.id > prev && m.user_email !== email);
+                if (newOnes.length) {
+                    if (!isOpen) {
+                        newOnes.forEach(m => pushToast({
+                            type: 'group',
+                            who: m.display_name || m.user_email,
+                            pic: m.profile_picture || DEFAULT_ICON,
+                            msg: m.is_image ? 'Sent an image' : (m.content || '').slice(0, 60)
+                        }));
+                    }
+                }
+            }
+            if (lastId) lastGroupId[activeGroupId] = lastId;
+            renderActiveMessages();
+            updateChannelHeader();
+            renderPaneList();
+        } catch (e) { renderEmpty('Failed to load group.'); }
+    } else {
+        renderPaneList();
+    }
+}
+
+function renderActiveMessages() {
+    if (activeChannel === 'global') {
+        // Already handled by syncGlobal renderGlobal
+    } else if (activeChannel === 'dm') {
+        if (!activeDmPartner) { renderEmpty('Select a conversation to begin.'); return; }
+        // Re-fetch
+        fetch(`${API}/dm/load?email=${encodeURIComponent(email)}&other=${encodeURIComponent(activeDmPartner)}`)
+            .then(r => r.json())
+            .then(data => {
+                const messages = data.messages || [];
+                if (!messages.length) { renderEmpty('No messages yet. Say hi!'); return; }
+                $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
+                scrollMsgArea();
+            });
+    } else if (activeChannel === 'group') {
+        if (!activeGroupId) { renderEmpty('Select or create a group to begin.'); return; }
+        fetch(`${API}/groups/load?id=${encodeURIComponent(activeGroupId)}&email=${encodeURIComponent(email)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { renderEmpty(data.error); return; }
+                const messages = data.messages || [];
+                if (!messages.length) { renderEmpty('No messages in this group yet.'); return; }
+                $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
+                scrollMsgArea();
+            });
+    }
+}
+
+function scrollMsgArea() {
+    $msgArea.scrollTop = $msgArea.scrollHeight;
+}
+
+// ─── 10. SEND ──────────────────────────────────────────────────────────────
+$msgForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = $msgInput.value.trim();
+    if (!text) return;
+    if (activeChannel === 'global') {
         await fetch(`${API}/chat`, {
             method: 'POST',
-            body: JSON.stringify({ email, content, isImage: false })
+            body: JSON.stringify({ email, content: text, isImage: false })
         });
-        syncMessages();
-    };
+        $msgInput.value = '';
+        syncGlobal();
+    } else if (activeChannel === 'dm' && activeDmPartner) {
+        await fetch(`${API}/dm/send`, {
+            method: 'POST',
+            body: JSON.stringify({ sender: email, recipient: activeDmPartner, content: text, isImage: false })
+        });
+        $msgInput.value = '';
+        syncDm();
+    } else if (activeChannel === 'group' && activeGroupId) {
+        await fetch(`${API}/groups/send`, {
+            method: 'POST',
+            body: JSON.stringify({ group_id: activeGroupId, email, content: text, isImage: false })
+        });
+        $msgInput.value = '';
+        syncGroup();
+    }
+});
 
-    fileInput.onchange = async () => {
-        if (fileInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                await fetch(`${API}/chat`, {
-                    method: 'POST',
-                    body: JSON.stringify({ email, content: e.target.result, isImage: true })
-                });
-                syncMessages();
-            };
-            reader.readAsDataURL(fileInput.files[0]);
+$btnImg.addEventListener('click', () => $fileInput.click());
+$fileInput.addEventListener('change', () => {
+    if (!$fileInput.files[0]) return;
+    const file = $fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        if (activeChannel === 'global') {
+            await fetch(`${API}/chat`, {
+                method: 'POST',
+                body: JSON.stringify({ email, content: dataUrl, isImage: true })
+            });
+            syncGlobal();
+        } else if (activeChannel === 'dm' && activeDmPartner) {
+            await fetch(`${API}/dm/send`, {
+                method: 'POST',
+                body: JSON.stringify({ sender: email, recipient: activeDmPartner, content: dataUrl, isImage: true })
+            });
+            syncDm();
+        } else if (activeChannel === 'group' && activeGroupId) {
+            await fetch(`${API}/groups/send`, {
+                method: 'POST',
+                body: JSON.stringify({ group_id: activeGroupId, email, content: dataUrl, isImage: true })
+            });
+            syncGroup();
         }
     };
+    reader.readAsDataURL(file);
+    $fileInput.value = '';
+});
 
-    // Initial Start
-    setInterval(syncMessages, 3000);
-    syncMessages();
+// ─── 11. UNREAD & ATTENTION ────────────────────────────────────────────────
+const unreadCounts = { global: 0, dm: 0, group: 0 };
+function bumpUnread(channel, delta) {
+    unreadCounts[channel] = Math.max(0, (unreadCounts[channel] || 0) + delta);
+    refreshBadges();
+}
+function setUnread(channel, value) {
+    unreadCounts[channel] = Math.max(0, value);
+    refreshBadges();
+}
+function refreshBadges() {
+    const total = (unreadCounts.global || 0) + (unreadCounts.dm || 0) + (unreadCounts.group || 0);
+    // Tab badges
+    Object.entries(unreadCounts).forEach(([k, v]) => {
+        if (!tabBadges[k]) return;
+        if (v > 0) { tabBadges[k].classList.add('show'); tabBadges[k].textContent = v > 99 ? '99+' : String(v); }
+        else { tabBadges[k].classList.remove('show'); }
+    });
+    // Launcher badge + flash
+    if (total > 0) {
+        $launchBadge.textContent = total > 99 ? '99+' : String(total);
+        $launchBadge.classList.add('show');
+        if (!isOpen) $launch.classList.add('has-unread');
+        else $launch.classList.remove('has-unread');
+    } else {
+        $launchBadge.classList.remove('show');
+        $launch.classList.remove('has-unread');
+    }
+    // Status bar
+    $statusUnrd.textContent = total === 0 ? '0 unread' : `${total} unread`;
+    // Browser title flash
+    flashBrowserTitle(total);
+}
+
+function markActiveRead() {
+    if (!isOpen) return;
+    if (activeChannel === 'global') {
+        setUnread('global', 0);
+    } else if (activeChannel === 'dm') {
+        if (activeDmPartner) {
+            const c = dmConversations.find(x => x.other_email === activeDmPartner);
+            if (c) c.unread = 0;
+            const lastId = lastDmId[activeDmPartner] || 0;
+            if (lastId > 0) {
+                fetch(`${API}/dm/mark-read`, {
+                    method: 'POST',
+                    body: JSON.stringify({ user_email: email, other_email: activeDmPartner, last_id: lastId })
+                });
+            }
+        }
+    } else if (activeChannel === 'group') {
+        if (activeGroupId) {
+            const g = groupList.find(x => x.id === activeGroupId);
+            if (g) g.unread = 0;
+            const lastId = lastGroupId[activeGroupId] || 0;
+            if (lastId > 0) {
+                fetch(`${API}/groups/mark-read`, {
+                    method: 'POST',
+                    body: JSON.stringify({ group_id: activeGroupId, email, last_id: lastId })
+                });
+            }
+        }
+    }
+    refreshBadges();
+    renderPaneList();
+}
+
+// Browser title flash
+let titleBase = document.title;
+let titleTimer = null;
+function flashBrowserTitle(total) {
+    if (titleTimer) { clearInterval(titleTimer); titleTimer = null; }
+    if (total <= 0) { document.title = titleBase; return; }
+    let on = false;
+    titleBase = (titleBase.replace(/^\(\d+\) /, '')) || document.title.replace(/^\(\d+\) /, '');
+    titleTimer = setInterval(() => {
+        on = !on;
+        document.title = on ? `(${total}) NEW MESSAGE — ${titleBase}` : titleBase;
+    }, 900);
+}
+// Refresh title base on changes (best-effort)
+const _titleObserver = new MutationObserver(() => {
+    titleBase = document.title.replace(/^\(\d+\) (NEW MESSAGE — )?/, '');
+});
+_titleObserver.observe(document.querySelector('title') || document.head, { childList: true, subtree: true, characterData: true });
+
+// Toast notifications
+function pushToast({ type, who, pic, msg }) {
+    toastCount++;
+    const el = document.createElement('div');
+    el.className = `ada-toast ${type}`;
+    el.innerHTML = `
+        <div class="ada-tb" style="padding:2px 4px 2px 6px;">
+            <div class="ada-tb-text">
+                <span class="tb-icon">${type === 'dm' ? '✉' : type === 'group' ? '👥' : '📢'}</span>
+                <span>${type === 'dm' ? 'Direct Message' : type === 'group' ? 'Group Message' : 'Global Chat'}</span>
+            </div>
+            <div class="ada-tb-btns">
+                <button class="ada-tb-btn toast-close" title="Dismiss">×</button>
+            </div>
+        </div>
+        <div class="toast-body">
+            <img src="${pic}" alt="">
+            <div class="toast-text">
+                <div class="toast-who">${escapeHtml(who)}</div>
+                <div class="toast-msg">${escapeHtml(msg)}</div>
+            </div>
+        </div>
+    `;
+    el.querySelector('.toast-close').onclick = () => el.remove();
+    el.onclick = (e) => {
+        if (e.target.closest('.toast-close')) return;
+        openWindow();
+        if (type === 'global') switchTab('global');
+        else if (type === 'dm') { switchTab('dm'); openDm(el.dataset.dm || ''); }
+        else if (type === 'group') { switchTab('group'); openGroup(el.dataset.group || ''); }
+        el.remove();
+    };
+    if (type === 'dm') el.dataset.dm = who;
+    if (type === 'group') el.dataset.group = who;
+    $toastWrap.appendChild(el);
+    // Auto-dismiss after 6s
+    setTimeout(() => el.remove(), 6000);
+    // Audible beep
+    if (!isMuted) beep();
+}
+
+// Optional sound (lazy-init on first user interaction)
+function initAudio() {
+    if (audioCtx) return;
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {}
+}
+document.addEventListener('click', initAudio, { once: true });
+document.addEventListener('keydown', initAudio, { once: true });
+function beep() {
+    initAudio();
+    if (!audioCtx) return;
+    try {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = 880;
+        g.gain.value = 0.05;
+        o.connect(g).connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + 0.12);
+    } catch (e) {}
+}
+
+// ─── 12. NOTIFICATION POLLING (cross-channel) ──────────────────────────────
+async function pollNotifications() {
+    if (!email) return;
+    try {
+        const res = await fetch(`${API}/notifications/check`, {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        // Update unread per channel
+        if (activeChannel !== 'global' || !isOpen) {
+            setUnread('global', data.global && data.global.sender !== email ? 1 : 0);
+        } else {
+            setUnread('global', 0);
+        }
+        // DM
+        let dmTotal = 0;
+        Object.entries(data.dm_unread || {}).forEach(([sender, cnt]) => {
+            if (activeChannel === 'dm' && isOpen && activeDmPartner === sender) {
+                // already in this thread — don't count
+            } else {
+                dmTotal += cnt;
+            }
+        });
+        setUnread('dm', dmTotal);
+        // Group
+        let groupTotal = 0;
+        Object.entries(data.group_unread || {}).forEach(([gid, cnt]) => {
+            if (activeChannel === 'group' && isOpen && activeGroupId === gid) {
+                // already viewing
+            } else {
+                groupTotal += cnt;
+            }
+        });
+        setUnread('group', groupTotal);
+        refreshBadges();
+        // Toasts for truly-new events (only show when window not open OR different channel)
+        if (!isOpen) {
+            if (data.global && data.global.sender !== email) {
+                pushToast({
+                    type: 'global',
+                    who: data.global.sender,
+                    pic: DEFAULT_ICON,
+                    msg: data.global.is_image ? 'Sent an image' : (data.global.content || '').slice(0, 60)
+                });
+            }
+        }
+    } catch (e) {}
+}
+
+// ─── 13. MODALS: NEW DM & NEW GROUP ────────────────────────────────────────
+function openModal(title, html) {
+    $modalTitle.textContent = title;
+    $modalBody.innerHTML = html;
+    $modalBg.classList.add('open');
+    setTimeout(() => {
+        const f = $modalBody.querySelector('input,textarea,button');
+        if (f) f.focus();
+    }, 50);
+}
+function closeModal() {
+    $modalBg.classList.remove('open');
+    $modalBody.innerHTML = '';
+}
+$modalBg.addEventListener('click', (e) => { if (e.target === $modalBg) closeModal(); });
+
+function openNewDmModal() {
+    openModal('New Direct Message', `
+        <div class="field-group">
+            <label>Search a member</label>
+            <input type="text" class="ada-field" id="ada-dm-search" placeholder="name or email" autocomplete="off">
+        </div>
+        <div class="ada-search-results" id="ada-dm-results" style="display:none;"></div>
+        <div class="modal-error" id="ada-dm-error"></div>
+        <div class="modal-actions">
+            <button class="ada-btn" id="ada-dm-cancel">Cancel</button>
+        </div>
+    `);
+    document.getElementById('ada-dm-cancel').onclick = closeModal;
+    const searchEl = document.getElementById('ada-dm-search');
+    const resultsEl = document.getElementById('ada-dm-results');
+    let timer = null;
+    searchEl.addEventListener('input', () => {
+        const q = searchEl.value.trim();
+        clearTimeout(timer);
+        if (!q) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
+        timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API}/users/search?q=${encodeURIComponent(q)}&email=${encodeURIComponent(email || '')}`);
+                const data = await res.json();
+                const users = data.users || [];
+                if (!users.length) { resultsEl.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--win-text-mute);">No users found.</div>'; }
+                else {
+                    resultsEl.innerHTML = users.map(u => `
+                        <div class="ada-list-item" data-email="${escapeHtml(u.email)}">
+                            <img src="${u.profile_picture || DEFAULT_ICON}" alt="">
+                            <div class="li-text">
+                                <span class="li-name">${escapeHtml(u.display_name || u.email)}</span>
+                                <span class="li-preview">${escapeHtml(u.email)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    resultsEl.querySelectorAll('.ada-list-item').forEach(el => {
+                        el.onclick = () => {
+                            const target = el.dataset.email;
+                            closeModal();
+                            openDm(target);
+                        };
+                    });
+                }
+                resultsEl.style.display = '';
+            } catch (e) {}
+        }, 220);
+    });
+}
+
+function openNewGroupModal() {
+    openModal('Create Group', `
+        <div class="field-group">
+            <label>Group Name</label>
+            <input type="text" class="ada-field" id="ada-grp-name" placeholder="e.g. Ops Team" maxlength="50">
+        </div>
+        <div class="field-group">
+            <label>Description (optional)</label>
+            <input type="text" class="ada-field" id="ada-grp-desc" placeholder="What's this group about?" maxlength="120">
+        </div>
+        <div class="modal-error" id="ada-grp-error"></div>
+        <div class="modal-actions">
+            <button class="ada-btn primary" id="ada-grp-create">Create</button>
+            <button class="ada-btn" id="ada-grp-cancel">Cancel</button>
+        </div>
+    `);
+    document.getElementById('ada-grp-cancel').onclick = closeModal;
+    document.getElementById('ada-grp-create').onclick = async () => {
+        const name = document.getElementById('ada-grp-name').value.trim();
+        const desc = document.getElementById('ada-grp-desc').value.trim();
+        const err = document.getElementById('ada-grp-error');
+        if (!name) { err.textContent = 'Group name is required.'; return; }
+        err.textContent = '';
+        try {
+            const res = await fetch(`${API}/groups/create`, {
+                method: 'POST',
+                body: JSON.stringify({ name, description: desc, creator: email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeModal();
+                await loadGroupList();
+                openGroup(data.group_id);
+            } else {
+                err.textContent = data.error || 'Failed to create group.';
+            }
+        } catch (e) {
+            err.textContent = 'Network error.';
+        }
+    };
+}
+
+async function joinActiveGroup() {
+    if (!activeGroupId || !email) return;
+    await fetch(`${API}/groups/join`, {
+        method: 'POST',
+        body: JSON.stringify({ group_id: activeGroupId, email })
+    });
+    await loadGroupList();
+    renderActiveMessages();
+    updateChannelHeader();
+    renderPaneList();
+}
+async function leaveActiveGroup() {
+    if (!activeGroupId || !email) return;
+    if (!confirm('Leave this group?')) return;
+    await fetch(`${API}/groups/leave`, {
+        method: 'POST',
+        body: JSON.stringify({ group_id: activeGroupId, email })
+    });
+    activeGroupId = null;
+    await loadGroupList();
+    renderPaneList();
+    updateChannelHeader();
+    renderActiveMessages();
+}
+
+document.getElementById('ada-menu-newdm').onclick = openNewDmModal;
+document.getElementById('ada-menu-newgroup').onclick = openNewGroupModal;
+
+// ─── 14. DRAGGING THE WINDOW ───────────────────────────────────────────────
+(function setupDrag() {
+    const handle = document.getElementById('ada-drag-handle');
+    if (!handle) return;
+    let dragging = false, ox = 0, oy = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.ada-tb-btn')) return;
+        if ($window.classList.contains('maximized')) return;
+        dragging = true;
+        const rect = $window.getBoundingClientRect();
+        ox = e.clientX - rect.left;
+        oy = e.clientY - rect.top;
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const x = Math.max(0, e.clientX - ox);
+        const y = Math.max(0, e.clientY - oy);
+        $window.style.left = x + 'px';
+        $window.style.top = y + 'px';
+        $window.style.right = 'auto';
+        $window.style.bottom = 'auto';
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+    // Double-click title to maximize
+    handle.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.ada-tb-btn')) return;
+        $window.classList.toggle('maximized');
+    });
+})();
+
+// ─── 15. BOOTSTRAP ─────────────────────────────────────────────────────────
+async function refreshPane() {
+    if (activeChannel === 'global') renderPaneList();
+    else if (activeChannel === 'dm') { await loadDmConversations(); renderPaneList(); }
+    else if (activeChannel === 'group') { await loadGroupList(); renderPaneList(); }
+    updateChannelHeader();
+}
+
+(async function init() {
+    if (!email) return;
+    renderPaneList();
+    updateChannelHeader();
+    await syncGlobal();
+    await loadDmConversations();
+    await loadGroupList();
+    renderPaneList();
+    setInterval(pollNotifications, POLL_MS);
+    setInterval(syncGlobal, CHAT_POLL_MS);
+    setInterval(syncDm, CHAT_POLL_MS);
+    setInterval(syncGroup, CHAT_POLL_MS);
+    setInterval(pollNotifications, POLL_MS);
+    pollNotifications();
+})();
 })();
