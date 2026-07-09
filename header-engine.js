@@ -4,13 +4,59 @@
 
     const style = document.createElement('style');
     style.innerHTML = `
-        .ada-header { background: #161b22; border-bottom: 1px solid #30363d; padding: 6px 170px 6px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9999; font-family: -apple-system, sans-serif; min-height: 38px; }
-        .ada-nav-group { display: flex; align-items: center; gap: 10px; }
-        .ada-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; cursor: pointer; background: #21262d; color: white; font-size: 12px; text-decoration: none; font-weight: 500; transition: 0.2s; }
-        .ada-user-pill { display: flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid #30363d; padding: 3px 12px; border-radius: 20px; text-decoration: none; color: #c9d1d9; font-size: 12px; position: relative; }
-        .ada-user-pill img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-        .status-indicator { width: 8px; height: 8px; border-radius: 50%; position: absolute; bottom: 2px; left: 24px; border: 2px solid #161b22; }
-        .status-online { background: #3fb950; box-shadow: 0 0 8px #3fb950; }
+        .ada-header {
+            background: var(--win-bg, #1c2128);
+            border-top:    2px solid var(--win-border-light, #4a525e);
+            border-left:   2px solid var(--win-border-light, #4a525e);
+            border-right:  2px solid var(--win-border-dark, #080a0e);
+            border-bottom: 2px solid var(--win-border-dark, #080a0e);
+            padding: 4px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 9999;
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px; min-height: 28px;
+            color: var(--win-text, #e6edf3);
+        }
+        .ada-nav-group { display: flex; align-items: center; gap: 6px; }
+        .ada-title {
+            font-weight: bold; color: var(--win-text-light, #ffffff);
+            text-decoration: none; padding: 0 6px 0 2px; letter-spacing: 1px;
+            font-size: 12px;
+        }
+        .ada-btn {
+            background: var(--win-bg, #1c2128);
+            color: var(--win-text, #e6edf3);
+            border-top:    2px solid var(--win-border-light, #4a525e);
+            border-left:   2px solid var(--win-border-light, #4a525e);
+            border-right:  2px solid var(--win-border-dark, #080a0e);
+            border-bottom: 2px solid var(--win-border-dark, #080a0e);
+            padding: 3px 12px; font-family: inherit; font-size: 12px;
+            cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 4px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .ada-btn:active {
+            border-top:    2px solid var(--win-border-dark, #080a0e);
+            border-left:   2px solid var(--win-border-dark, #080a0e);
+            border-right:  2px solid var(--win-border-light, #4a525e);
+            border-bottom: 2px solid var(--win-border-light, #4a525e);
+            padding: 4px 11px 2px 13px;
+        }
+        .ada-user-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--win-bg, #1c2128);
+            color: var(--win-text, #e6edf3);
+            border-top:    2px solid var(--win-border-light, #4a525e);
+            border-left:   2px solid var(--win-border-light, #4a525e);
+            border-right:  2px solid var(--win-border-dark, #080a0e);
+            border-bottom: 2px solid var(--win-border-dark, #080a0e);
+            padding: 2px 10px 2px 4px; text-decoration: none;
+            font-size: 12px; position: relative;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .ada-user-pill img { width: 18px; height: 18px; object-fit: cover; }
+        .status-indicator { width: 8px; height: 8px; position: absolute; bottom: 1px; left: 16px; border: 1px solid #000; }
+        .status-online { background: #3fb950; box-shadow: 0 0 4px #3fb950; }
         .status-offline { background: #8b949e; }
     `;
     document.head.appendChild(style);
@@ -32,7 +78,7 @@
             anchor.innerHTML = `
                 <header class="ada-header">
                     <div class="ada-nav-group">
-                        <a href="/dash.html" style="text-decoration:none; font-weight:600; color:white;">ADA ARCHIVE</a>
+                        <a href="/dash.html" class="ada-title">ADA ARCHIVE</a>
                         <a href="/index.html" class="ada-btn">Index</a>
                         ${isAdmin ? `<a href="/account-manager.html" class="ada-btn">Manager</a>` : ''}
                     </div>
@@ -42,7 +88,7 @@
                             <div class="status-indicator ${dotClass}"></div>
                             <span>${user.display_name || user.email}</span>
                         </a>
-                        <button class="ada-btn" style="color:#f85149" onclick="localStorage.clear(); location.href='/login.html'">Logout</button>
+                        <button class="ada-btn" onclick="localStorage.clear(); location.href='/login.html'">Logout</button>
                     </div>
                 </header>
             `;
