@@ -584,8 +584,11 @@ export default {
             name TEXT NOT NULL,
             description TEXT DEFAULT '',
             creator_email TEXT NOT NULL,
+            is_public INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )`).run();
+          // Idempotent migration: add is_public to older tables that don't have it.
+          try { await env.DB.prepare("ALTER TABLE group_chats ADD COLUMN is_public INTEGER DEFAULT 0").run(); } catch (e) { /* already exists */ }
           await env.DB.prepare(`CREATE TABLE IF NOT EXISTS group_members (
             group_id TEXT NOT NULL, user_email TEXT NOT NULL,
             joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -634,6 +637,7 @@ export default {
               creator_name: g.creator_name || g.creator_email,
               member_count: g.member_count,
               is_member: !!g.is_member,
+              is_public: !!g.is_public,
               unread: unreadMap[g.id] || 0
             }))
           }), { headers: relayHeaders });
@@ -648,6 +652,8 @@ export default {
         const me = url.searchParams.get("email");
         if (!groupId) return new Response(JSON.stringify({ error: "Missing id" }), { status: 400, headers: relayHeaders });
         try {
+          // Idempotent migration for old tables
+          try { await env.DB.prepare("ALTER TABLE group_chats ADD COLUMN is_public INTEGER DEFAULT 0").run(); } catch (e) { /* already exists */ }
           const group = await env.DB.prepare(
             "SELECT g.*, u.display_name as creator_name FROM group_chats g LEFT JOIN users u ON u.email = g.creator_email WHERE g.id = ?"
           ).bind(groupId).first();
@@ -668,6 +674,10 @@ export default {
             LIMIT 200
           `).bind(groupId).all();
           const isMember = me ? !!(members.results || []).find(m => m.user_email === me) : false;
+        // Auto-join public groups on first view
+        if (me && !isMember && group.is_public) {
+          await env.DB.prepare("INSERT OR IGNORE INTO group_members (group_id, user_email) VALUES (?, ?)").bind(groupId, me).run();
+        }
           return new Response(JSON.stringify({
             group: {
               id: group.id,
@@ -681,7 +691,8 @@ export default {
                 display_name: m.display_name || m.user_email,
                 profile_picture: m.profile_picture || DEFAULT_ICON
               })),
-              is_member: isMember
+              is_member: isMember,
+              is_public: !!group.is_public
             },
             messages: (messages.results || []).map(m => ({
               ...m,
@@ -2452,10 +2463,17 @@ export default {
             content TEXT NOT NULL, is_image INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )`).run();
-          const member = await env.DB.prepare(
+          const grp = await env.DB.prepare("SELECT is_public FROM group_chats WHERE id = ?").bind(group_id).first();
+          if (!grp) {
+            return new Response(JSON.stringify({ success: false, error: "Group not found" }), { status: 404, headers: relayHeaders });
+          }
+          let member = await env.DB.prepare(
             "SELECT 1 FROM group_members WHERE group_id = ? AND user_email = ?"
           ).bind(group_id, email).first();
-          if (!member) {
+          if (!member && grp.is_public) {
+            // Auto-join public groups when sending
+            await env.DB.prepare("INSERT OR IGNORE INTO group_members (group_id, user_email) VALUES (?, ?)").bind(group_id, email).run();
+          } else if (!member) {
             return new Response(JSON.stringify({ success: false, error: "Not a member" }), { status: 403, headers: relayHeaders });
           }
           const result = await env.DB.prepare(
@@ -2477,6 +2495,241 @@ export default {
             "INSERT OR REPLACE INTO group_reads (group_id, user_email, last_read_id) VALUES (?, ?, ?)"
           ).bind(group_id, email, last_id).run();
           return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+        }
+
+        // --- GROUPS: TOGGLE PUBLIC (creator only) ---
+        if (url.pathname === "/groups/toggle-public") {
+          const { group_id, email, is_public } = body;
+          if (!group_id || !email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          try {
+            await env.DB.prepare(`CREATE TABLE IF NOT EXISTS group_chats (
+              id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT '',
+              creator_email TEXT NOT NULL, is_public INTEGER DEFAULT 0,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`).run();
+            const g = await env.DB.prepare("SELECT creator_email FROM group_chats WHERE id = ?").bind(group_id).first();
+            if (!g) return new Response(JSON.stringify({ success: false, error: "Not found" }), { status: 404, headers: relayHeaders });
+            if (g.creator_email !== email) {
+              const u = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(email).first();
+              if (!u || u.is_admin !== 1) {
+                return new Response(JSON.stringify({ success: false, error: "Not the creator" }), { status: 403, headers: relayHeaders });
+              }
+            }
+            await env.DB.prepare("UPDATE group_chats SET is_public = ? WHERE id = ?").bind(is_public ? 1 : 0, group_id).run();
+            return new Response(JSON.stringify({ success: true, is_public: !!is_public }), { headers: relayHeaders });
+          } catch (e) {
+            return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: relayHeaders });
+          }
+        }
+
+        // --- GROUPS: ADD MEMBER (creator only) ---
+        if (url.pathname === "/groups/add-member") {
+          const { group_id, creator_email, user_email } = body;
+          if (!group_id || !creator_email || !user_email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          try {
+            await env.DB.prepare(`CREATE TABLE IF NOT EXISTS group_chats (
+              id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT '',
+              creator_email TEXT NOT NULL, is_public INTEGER DEFAULT 0,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`).run();
+            await env.DB.prepare(`CREATE TABLE IF NOT EXISTS group_members (
+              group_id TEXT NOT NULL, user_email TEXT NOT NULL,
+              joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (group_id, user_email)
+            )`).run();
+            const g = await env.DB.prepare("SELECT creator_email FROM group_chats WHERE id = ?").bind(group_id).first();
+            if (!g) return new Response(JSON.stringify({ success: false, error: "Not found" }), { status: 404, headers: relayHeaders });
+            if (g.creator_email !== creator_email) {
+              return new Response(JSON.stringify({ success: false, error: "Not the creator" }), { status: 403, headers: relayHeaders });
+            }
+            const userExists = await env.DB.prepare("SELECT email FROM users WHERE email = ?").bind(user_email).first();
+            if (!userExists) {
+              return new Response(JSON.stringify({ success: false, error: "User does not exist" }), { status: 404, headers: relayHeaders });
+            }
+            await env.DB.prepare("INSERT OR IGNORE INTO group_members (group_id, user_email) VALUES (?, ?)").bind(group_id, user_email).run();
+            return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+          } catch (e) {
+            return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: relayHeaders });
+          }
+        }
+
+        // --- GROUPS: REMOVE MEMBER (creator only) ---
+        if (url.pathname === "/groups/remove-member") {
+          const { group_id, creator_email, user_email } = body;
+          if (!group_id || !creator_email || !user_email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          try {
+            const g = await env.DB.prepare("SELECT creator_email FROM group_chats WHERE id = ?").bind(group_id).first();
+            if (!g) return new Response(JSON.stringify({ success: false, error: "Not found" }), { status: 404, headers: relayHeaders });
+            if (g.creator_email !== creator_email) {
+              return new Response(JSON.stringify({ success: false, error: "Not the creator" }), { status: 403, headers: relayHeaders });
+            }
+            if (g.creator_email === user_email) {
+              return new Response(JSON.stringify({ success: false, error: "Creator cannot be removed" }), { status: 400, headers: relayHeaders });
+            }
+            await env.DB.prepare("DELETE FROM group_members WHERE group_id = ? AND user_email = ?").bind(group_id, user_email).run();
+            return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+          } catch (e) {
+            return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: relayHeaders });
+          }
+        }
+
+        // --- GROUPS: DELETE GROUP (creator only, or admin) ---
+        if (url.pathname === "/groups/delete") {
+          const { group_id, email } = body;
+          if (!group_id || !email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400, headers: relayHeaders });
+          }
+          try {
+            const g = await env.DB.prepare("SELECT creator_email FROM group_chats WHERE id = ?").bind(group_id).first();
+            if (!g) return new Response(JSON.stringify({ success: false, error: "Not found" }), { status: 404, headers: relayHeaders });
+            let allowed = (g.creator_email === email);
+            if (!allowed) {
+              const u = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(email).first();
+              allowed = !!(u && u.is_admin === 1);
+            }
+            if (!allowed) {
+              return new Response(JSON.stringify({ success: false, error: "Not authorized" }), { status: 403, headers: relayHeaders });
+            }
+            await env.DB.prepare("DELETE FROM group_messages WHERE group_id = ?").bind(group_id).run();
+            await env.DB.prepare("DELETE FROM group_members WHERE group_id = ?").bind(group_id).run();
+            await env.DB.prepare("DELETE FROM group_reads WHERE group_id = ?").bind(group_id).run();
+            await env.DB.prepare("DELETE FROM group_chats WHERE id = ?").bind(group_id).run();
+            return new Response(JSON.stringify({ success: true }), { headers: relayHeaders });
+          } catch (e) {
+            return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: relayHeaders });
+          }
+        }
+
+        // --- ADMIN: ALL CHAT LOGS (admin only) ---
+        if (url.pathname === "/admin/all-chats") {
+          const { admin_email, keyword, sender, channel, from, to, limit } = body || {};
+          if (!admin_email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing admin_email" }), { status: 400, headers: relayHeaders });
+          }
+          const admin = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(admin_email).first();
+          if (!admin || admin.is_admin !== 1) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { status: 403, headers: relayHeaders });
+          }
+          const lim = Math.max(1, Math.min(parseInt(limit) || 200, 500));
+          const kw = (keyword || "").trim();
+          const senderFilter = (sender || "").trim();
+          const fromFilter = (from || "").trim();
+          const toFilter = (to || "").trim();
+          const wantChannel = (channel || "all").trim();
+          const results = [];
+
+          // Global
+          if (wantChannel === "all" || wantChannel === "global") {
+            let sql = `SELECT m.id, m.user_email, m.content, m.is_image, m.created_at, 'global' as channel, u.display_name, u.profile_picture
+                       FROM messages m LEFT JOIN users u ON u.email = m.user_email WHERE 1=1`;
+            const binds = [];
+            if (kw) { sql += " AND m.content LIKE ?"; binds.push(`%${kw}%`); }
+            if (senderFilter) { sql += " AND m.user_email = ?"; binds.push(senderFilter); }
+            if (fromFilter) { sql += " AND m.created_at >= ?"; binds.push(fromFilter); }
+            if (toFilter)   { sql += " AND m.created_at <= ?"; binds.push(toFilter); }
+            sql += " ORDER BY m.id DESC LIMIT ?"; binds.push(lim);
+            try {
+              const rows = await env.DB.prepare(sql).bind(...binds).all();
+              (rows.results || []).forEach(r => results.push({
+                id: r.id, channel: 'global', user_email: r.user_email,
+                display_name: r.display_name || r.user_email,
+                profile_picture: r.profile_picture || DEFAULT_ICON,
+                content: r.content, is_image: !!r.is_image, created_at: r.created_at
+              }));
+            } catch (e) {}
+          }
+
+          // DMs
+          if (wantChannel === "all" || wantChannel === "dm") {
+            let sql = `SELECT m.id, m.sender_email, m.recipient_email, m.content, m.is_image, m.created_at, 'dm' as channel,
+                              us.display_name as sname, us.profile_picture as spic,
+                              ur.display_name as rname, ur.profile_picture as rpic
+                       FROM dm_messages m
+                       LEFT JOIN users us ON us.email = m.sender_email
+                       LEFT JOIN users ur ON ur.email = m.recipient_email
+                       WHERE 1=1`;
+            const binds = [];
+            if (kw) { sql += " AND m.content LIKE ?"; binds.push(`%${kw}%`); }
+            if (senderFilter) { sql += " AND (m.sender_email = ? OR m.recipient_email = ?)"; binds.push(senderFilter, senderFilter); }
+            if (fromFilter) { sql += " AND m.created_at >= ?"; binds.push(fromFilter); }
+            if (toFilter)   { sql += " AND m.created_at <= ?"; binds.push(toFilter); }
+            sql += " ORDER BY m.id DESC LIMIT ?"; binds.push(lim);
+            try {
+              const rows = await env.DB.prepare(sql).bind(...binds).all();
+              (rows.results || []).forEach(r => results.push({
+                id: r.id, channel: 'dm',
+                user_email: r.sender_email,
+                display_name: r.sname || r.sender_email,
+                profile_picture: r.spic || DEFAULT_ICON,
+                other_email: r.recipient_email,
+                other_name: r.rname || r.recipient_email,
+                content: r.content, is_image: !!r.is_image, created_at: r.created_at
+              }));
+            } catch (e) {}
+          }
+
+          // Groups
+          if (wantChannel === "all" || wantChannel === "group") {
+            let sql = `SELECT m.id, m.group_id, m.user_email, m.content, m.is_image, m.created_at, 'group' as channel,
+                              g.name as group_name,
+                              u.display_name, u.profile_picture
+                       FROM group_messages m
+                       LEFT JOIN group_chats g ON g.id = m.group_id
+                       LEFT JOIN users u ON u.email = m.user_email
+                       WHERE 1=1`;
+            const binds = [];
+            if (kw) { sql += " AND m.content LIKE ?"; binds.push(`%${kw}%`); }
+            if (senderFilter) { sql += " AND m.user_email = ?"; binds.push(senderFilter); }
+            if (fromFilter) { sql += " AND m.created_at >= ?"; binds.push(fromFilter); }
+            if (toFilter)   { sql += " AND m.created_at <= ?"; binds.push(toFilter); }
+            sql += " ORDER BY m.id DESC LIMIT ?"; binds.push(lim);
+            try {
+              const rows = await env.DB.prepare(sql).bind(...binds).all();
+              (rows.results || []).forEach(r => results.push({
+                id: r.id, channel: 'group',
+                user_email: r.user_email,
+                display_name: r.display_name || r.user_email,
+                profile_picture: r.profile_picture || DEFAULT_ICON,
+                group_id: r.group_id, group_name: r.group_name || 'Group',
+                content: r.content, is_image: !!r.is_image, created_at: r.created_at
+              }));
+            } catch (e) {}
+          }
+
+          // Sort all by created_at desc (string compare works for ISO; our format is sortable)
+          results.sort((a, b) => {
+            if (a.created_at && b.created_at) return b.created_at.localeCompare(a.created_at);
+            return (b.id || 0) - (a.id || 0);
+          });
+
+          return new Response(JSON.stringify({ success: true, results: results.slice(0, lim) }), { headers: relayHeaders });
+        }
+
+        // --- ADMIN: USER LIST (admin only, for filter dropdown) ---
+        if (url.pathname === "/admin/users-list") {
+          const admin_email = (body || {}).admin_email;
+          if (!admin_email) {
+            return new Response(JSON.stringify({ success: false, error: "Missing admin_email" }), { status: 400, headers: relayHeaders });
+          }
+          const admin = await env.DB.prepare("SELECT is_admin FROM users WHERE email = ?").bind(admin_email).first();
+          if (!admin || admin.is_admin !== 1) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), { status: 403, headers: relayHeaders });
+          }
+          const rows = await env.DB.prepare("SELECT email, display_name, profile_picture FROM users ORDER BY display_name ASC LIMIT 500").all();
+          return new Response(JSON.stringify({
+            success: true,
+            users: (rows.results || []).map(u => ({
+              email: u.email,
+              display_name: u.display_name || u.email,
+              profile_picture: u.profile_picture || DEFAULT_ICON
+            }))
+          }), { headers: relayHeaders });
         }
 
         // ──────────────────────────────────────────────────────────

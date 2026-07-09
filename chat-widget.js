@@ -30,10 +30,18 @@ let lastChatId = 0;                // global
 let lastDmId = {};                 // other_email -> id
 let lastGroupId = {};              // group_id -> id
 let lastNotifTotal = 0;
+let lastNotifGlobalId = 0;         // de-dupe global toasts across polls
 let isOpen = false;
 let isMuted = true;                // for sound (audio policy)
 let audioCtx = null;
 let toastCount = 0;
+let isAdminUser = localStorage.getItem('ada_admin') === '1';
+let adminMode = false;             // "all chat logs" mode for admins
+let adminFilter = { keyword: '', sender: '', channel: 'all', from: '', to: '' };
+let adminResults = [];
+let adminUsersList = [];
+let stickyBottom = true;           // for global chat scroll-up behavior
+let groupDetailsCache = {};        // group_id -> { members, is_public, creator_email }
 
 // ─── 1. STYLE (Win95 chiseled chrome) ─────────────────────────────────────
 const style = document.createElement('style');
@@ -196,6 +204,9 @@ style.textContent = `
     border-bottom: 1px solid var(--win-border-l);
     user-select: none;
     position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .ada-tab.active {
     background: var(--win-bg);
@@ -215,6 +226,10 @@ style.textContent = `
     border-radius: 6px;
 }
 .ada-tab .tab-badge.show { display: flex; }
+
+/* Admin tab is gold to differentiate from the rest */
+.ada-tab.admin-tab { color: #d29922; }
+.ada-tab.admin-tab.active { color: #d29922; }
 
 .ada-pane-list {
     flex: 1; overflow-y: auto;
@@ -344,7 +359,6 @@ style.textContent = `
     padding: 8px;
     background: var(--win-bg-darker);
     display: flex; flex-direction: column; gap: 6px;
-    scroll-behavior: smooth;
 }
 .ada-msg-area::-webkit-scrollbar { width: 14px; }
 .ada-msg-area::-webkit-scrollbar-track { background: var(--win-bg-dark); }
@@ -577,6 +591,95 @@ style.textContent = `
 .ada-search-results .ada-list-item { font-size: 11px; }
 .ada-modal .modal-error { color: #f85149; font-size: 11px; min-height: 14px; }
 
+/* Admin Logs (filter + result rows) */
+.ada-admin-bar {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    padding: 5px 6px;
+    background: var(--win-bg);
+    border-bottom: 1px solid var(--win-border-l);
+    align-items: center;
+    flex-shrink: 0;
+}
+.ada-admin-bar .ada-field {
+    background: var(--win-bg-darker); color: var(--win-text);
+    border-top:    1px solid var(--win-border-d);
+    border-left:   1px solid var(--win-border-d);
+    border-right:  1px solid var(--win-border-l);
+    border-bottom: 1px solid var(--win-border-l);
+    padding: 2px 5px; font-family: inherit; font-size: 11px;
+    outline: none;
+}
+.ada-admin-bar .ada-field:focus {
+    background: var(--win-bg-dark);
+    border-right-color: #d29922;
+    border-bottom-color: #d29922;
+}
+.ada-admin-bar select.ada-field { padding-right: 4px; }
+.ada-admin-bar .ada-field-label { font-size: 10px; color: var(--win-text-mute); }
+.ada-admin-row {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: var(--win-bg-light);
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+    word-wrap: break-word;
+}
+.ada-admin-row .row-meta {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    font-size: 9px; color: var(--win-text-mute); margin-bottom: 2px;
+}
+.ada-admin-row .row-tag {
+    font-size: 9px; font-weight: bold; padding: 0 4px;
+    border-top:    1px solid var(--win-border-l);
+    border-left:   1px solid var(--win-border-l);
+    border-right:  1px solid var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-d);
+}
+.ada-admin-row .row-tag.global { background: #58a6ff; color: #0a0d12; }
+.ada-admin-row .row-tag.dm     { background: #a371f7; color: #0a0d12; }
+.ada-admin-row .row-tag.group  { background: #d29922; color: #0a0d12; }
+.ada-admin-row .row-content {
+    color: var(--win-text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.ada-admin-row .row-content mark {
+    background: #d29922; color: #0a0d12; padding: 0 1px;
+}
+
+/* Group context menu (creator / member management) */
+.ada-group-menu {
+    position: absolute;
+    background: var(--win-bg);
+    color: var(--win-text);
+    border-top:    2px solid var(--win-border-l);
+    border-left:   2px solid var(--win-border-l);
+    border-right:  2px solid var(--win-border-d);
+    border-bottom: 2px solid var(--win-border-d);
+    box-shadow: 2px 2px 0 0 #000;
+    z-index: 20;
+    min-width: 160px;
+    display: flex; flex-direction: column;
+    font-size: 12px;
+}
+.ada-group-menu .ada-menu-item {
+    padding: 5px 12px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    user-select: none;
+}
+.ada-group-menu .ada-menu-item:hover {
+    background: var(--win-text-blue);
+    color: var(--win-bg-darker);
+}
+.ada-group-menu .ada-menu-sep {
+    height: 1px; background: var(--win-border-d);
+    border-bottom: 1px solid var(--win-border-l);
+}
+.ada-group-menu .ada-menu-danger { color: #f85149; }
+.ada-group-menu .ada-menu-danger:hover { background: #f85149; color: #fff; }
+
 /* Toast notifications (attention grabbers) */
 #ada-toast-wrap {
     position: fixed; bottom: 52px; right: 16px;
@@ -657,6 +760,7 @@ widget.innerHTML = `
             <span id="ada-menu-newdm">File ▾</span>
             <span id="ada-menu-newgroup">New Group</span>
             <span id="ada-menu-mute">Sound</span>
+            <span id="ada-menu-admin" style="display:none;color:#d29922;font-weight:bold;">🔒 Admin Logs</span>
         </div>
         <div class="ada-body">
             <div class="ada-sidebar">
@@ -664,6 +768,7 @@ widget.innerHTML = `
                     <div class="ada-tab active" data-tab="global">Global<span class="tab-badge" id="tab-badge-global"></span></div>
                     <div class="ada-tab" data-tab="dm">DM<span class="tab-badge" id="tab-badge-dm"></span></div>
                     <div class="ada-tab" data-tab="group">Groups<span class="tab-badge" id="tab-badge-group"></span></div>
+                    <div class="ada-tab admin-tab" data-tab="admin" id="ada-tab-admin" style="display:none;">Logs<span class="tab-badge" id="tab-badge-admin"></span></div>
                 </div>
                 <div class="ada-pane-list" id="ada-pane-list"></div>
                 <div class="ada-sidebar-actions" id="ada-sidebar-actions">
@@ -750,8 +855,17 @@ const tabs = document.querySelectorAll('.ada-tab');
 const tabBadges = {
     global: document.getElementById('tab-badge-global'),
     dm:     document.getElementById('tab-badge-dm'),
-    group:  document.getElementById('tab-badge-group')
+    group:  document.getElementById('tab-badge-group'),
+    admin:  document.getElementById('tab-badge-admin')
 };
+
+// Show admin tab + menu item only for site admins
+if (isAdminUser) {
+    const adminTab = document.getElementById('ada-tab-admin');
+    if (adminTab) adminTab.style.display = '';
+    const adminMenu = document.getElementById('ada-menu-admin');
+    if (adminMenu) adminMenu.style.display = '';
+}
 
 // ─── 4. OPEN / CLOSE ───────────────────────────────────────────────────────
 function openWindow() {
@@ -798,15 +912,27 @@ tabs.forEach(tab => {
 });
 
 function switchTab(tab) {
-    tabs.forEach(t => t.classList.toggle('active', t === tabs[tab === 'global' ? 0 : tab === 'dm' ? 1 : 2]));
+    // Index map — admin tab only exists when isAdminUser is true. Map safely.
+    let idx = 0;
+    if (tab === 'dm') idx = 1;
+    else if (tab === 'group') idx = 2;
+    else if (tab === 'admin') idx = isAdminUser ? 3 : 0;
+    tabs.forEach(t => t.classList.toggle('active', t === tabs[idx]));
     activeChannel = tab;
+    stickyBottom = true; // fresh view = always start at bottom
     if (tab === 'global') {
         activeDmPartner = null;
         activeGroupId = null;
     } else if (tab === 'dm') {
         activeGroupId = null;
-    } else {
+    } else if (tab === 'group') {
         activeDmPartner = null;
+    } else if (tab === 'admin') {
+        activeDmPartner = null;
+        activeGroupId = null;
+        // Lazy-load users list and run initial search
+        loadAdminUsersList();
+        runAdminSearch();
     }
     $mainActions.innerHTML = '';
     renderPaneList();
@@ -895,12 +1021,13 @@ function renderPaneList() {
         } else {
             $paneList.innerHTML = groupList.map(g => {
                 const isActive = g.id === activeGroupId;
+                const pubTag = g.is_public ? ' · 🌐 public' : '';
                 return `
                 <div class="ada-list-item ${isActive ? 'active' : ''}" data-group="${g.id}">
                     <img src="${DEFAULT_ICON}" alt="">
                     <div class="li-text">
                         <span class="li-name">${escapeHtml(g.name)}</span>
-                        <span class="li-preview">${g.member_count} member${g.member_count === 1 ? '' : 's'}${g.is_member ? '' : ' · not joined'}</span>
+                        <span class="li-preview">${g.member_count} member${g.member_count === 1 ? '' : 's'}${g.is_member ? '' : ' · not joined'}${pubTag}</span>
                     </div>
                     <span class="li-badge ${g.unread ? 'show' : ''}">${g.unread || ''}</span>
                 </div>`;
@@ -912,6 +1039,19 @@ function renderPaneList() {
         document.getElementById('ada-sidebar-actions').innerHTML =
             '<button class="ada-mini-btn" id="ada-side-newgroup">+ New Group</button>';
         document.getElementById('ada-side-newgroup').onclick = openNewGroupModal;
+        return;
+    }
+    if (activeChannel === 'admin') {
+        $paneList.innerHTML = `
+            <div class="ada-list-item active" style="font-style:italic;color:#d29922;">
+                <img src="${DEFAULT_ICON}" alt="">
+                <div class="li-text">
+                    <span class="li-name">All Chat Logs</span>
+                    <span class="li-preview">Search & filter everything</span>
+                </div>
+            </div>
+        `;
+        document.getElementById('ada-sidebar-actions').innerHTML = '';
         return;
     }
 }
@@ -928,15 +1068,22 @@ function updateChannelHeader() {
         $mainMeta.textContent = c ? c.other_email : '';
         $statusCh.textContent = 'DM';
         $mainActions.innerHTML = '';
-    } else {
+    } else if (activeChannel === 'group') {
         const g = groupList.find(x => x.id === activeGroupId);
         $mainTitle.textContent = g ? g.name : (activeGroupId ? 'Group' : 'Select a group');
-        $mainMeta.textContent = g ? `${g.member_count} members` : '';
+        $mainMeta.textContent = g ? `${g.member_count} members${g.is_public ? ' · 🌐 public' : ''}` : '';
         $statusCh.textContent = 'Group';
+        let actionsHtml = '';
         if (g && g.is_member) {
-            $mainActions.innerHTML = '<button id="ada-leave-group">Leave</button>';
+            actionsHtml = '<button id="ada-leave-group">Leave</button>';
+            if (g.creator_email === email || isAdminUser) {
+                actionsHtml += ' <button id="ada-group-settings" title="Group settings">⚙ Settings</button>';
+            }
+            $mainActions.innerHTML = actionsHtml;
             const leaveBtn = document.getElementById('ada-leave-group');
             if (leaveBtn) leaveBtn.onclick = leaveActiveGroup;
+            const settingsBtn = document.getElementById('ada-group-settings');
+            if (settingsBtn) settingsBtn.onclick = (e) => openGroupSettingsMenu(e.currentTarget);
         } else if (g && !g.is_member) {
             $mainActions.innerHTML = '<button id="ada-join-group">Join</button>';
             const joinBtn = document.getElementById('ada-join-group');
@@ -944,8 +1091,13 @@ function updateChannelHeader() {
         } else {
             $mainActions.innerHTML = '';
         }
+    } else if (activeChannel === 'admin') {
+        $mainTitle.textContent = '🔒 All Chat Logs';
+        $mainMeta.textContent = isAdminUser ? 'Admin view' : '';
+        $statusCh.textContent = 'Admin';
+        $mainActions.innerHTML = '';
     }
-    // Input enabled state
+    // Input enabled state — admin view is read-only
     const enabled =
         (activeChannel === 'global') ||
         (activeChannel === 'dm' && !!activeDmPartner) ||
@@ -956,7 +1108,7 @@ function updateChannelHeader() {
         ? (activeChannel === 'global' ? 'Broadcast to all members…'
             : activeChannel === 'dm' ? `DM ${(activeDmPartner || '').split('@')[0]}…`
             : 'Message the group…')
-        : 'Select a conversation to begin.';
+        : (activeChannel === 'admin' ? 'Read-only — admin logs view' : 'Select a conversation to begin.');
 }
 
 // ─── 7. OPEN DM / GROUP ────────────────────────────────────────────────────
@@ -965,6 +1117,7 @@ function openDm(otherEmail) {
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'dm'));
     activeDmPartner = otherEmail;
     activeGroupId = null;
+    stickyBottom = true;
     renderPaneList();
     renderActiveMessages();
     updateChannelHeader();
@@ -976,6 +1129,7 @@ function openGroup(groupId) {
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'group'));
     activeGroupId = groupId;
     activeDmPartner = null;
+    stickyBottom = true;
     renderPaneList();
     renderActiveMessages();
     updateChannelHeader();
@@ -1051,9 +1205,23 @@ async function syncGlobal() {
 }
 
 function renderGlobal(messages) {
-    if (!messages.length) { renderEmpty('No messages yet. Say hello!'); return; }
+    if (!messages.length) { renderEmpty('No messages yet. Say hello!'); stickyBottom = true; return; }
+    // Preserve scroll position when re-rendering so the user can scroll up to
+    // read history without being yanked back to the bottom on every poll.
+    // We snapshot the scroll offset from the *bottom* (so re-renders that
+    // prepend/append messages don't shift the user's reading position).
+    const wasAtBottom = stickyBottom;
+    const prevScrollHeight = $msgArea.scrollHeight;
+    const prevScrollTop = $msgArea.scrollTop;
     $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
-    scrollMsgArea();
+    if (wasAtBottom) {
+        $msgArea.scrollTop = $msgArea.scrollHeight;
+        stickyBottom = true;
+    } else {
+        // Adjust by how much content was added above the current viewport
+        const added = $msgArea.scrollHeight - prevScrollHeight;
+        $msgArea.scrollTop = prevScrollTop + added;
+    }
 }
 
 async function syncDm() {
@@ -1138,7 +1306,7 @@ function renderActiveMessages() {
             .then(r => r.json())
             .then(data => {
                 const messages = data.messages || [];
-                if (!messages.length) { renderEmpty('No messages yet. Say hi!'); return; }
+                if (!messages.length) { renderEmpty('No messages yet. Say hi!'); stickyBottom = true; return; }
                 $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
                 scrollMsgArea();
             });
@@ -1149,16 +1317,31 @@ function renderActiveMessages() {
             .then(data => {
                 if (data.error) { renderEmpty(data.error); return; }
                 const messages = data.messages || [];
-                if (!messages.length) { renderEmpty('No messages in this group yet.'); return; }
+                if (!messages.length) { renderEmpty('No messages in this group yet.'); stickyBottom = true; return; }
                 $msgArea.innerHTML = messages.map(m => renderMsgRow(m, m.user_email === email)).join('');
                 scrollMsgArea();
             });
+    } else if (activeChannel === 'admin') {
+        renderAdminResults();
     }
 }
 
-function scrollMsgArea() {
-    $msgArea.scrollTop = $msgArea.scrollHeight;
+function scrollMsgArea(force) {
+    // Only auto-scroll to bottom if user is already at (or near) the bottom.
+    // If they have scrolled up to read history, leave the scroll position alone.
+    if (force || stickyBottom) {
+        $msgArea.scrollTop = $msgArea.scrollHeight;
+    }
 }
+
+// Track whether the user is at the bottom of the message area so we know
+// whether to auto-scroll on new messages. The area fires 'scroll' constantly;
+// we sample once per frame with rAF to keep this cheap.
+$msgArea.addEventListener('scroll', () => {
+    const slack = 40; // px of "close enough to bottom"
+    const atBottom = ($msgArea.scrollHeight - $msgArea.scrollTop - $msgArea.clientHeight) <= slack;
+    stickyBottom = atBottom;
+}, { passive: true });
 
 // ─── 10. SEND ──────────────────────────────────────────────────────────────
 $msgForm.addEventListener('submit', async (e) => {
@@ -1406,9 +1589,16 @@ async function pollNotifications() {
         });
         setUnread('group', groupTotal);
         refreshBadges();
-        // Toasts for truly-new events (only show when window not open OR different channel)
-        if (!isOpen) {
-            if (data.global && data.global.sender !== email) {
+        // Toasts for genuinely new global messages (de-duped by id so we don't
+        // spam the user with the same "new" message on every poll cycle).
+        // The very first poll only primes lastNotifGlobalId — it doesn't toast
+        // anything. This stops a 5-toast burst on every page reload.
+        if (!isOpen && data.global && data.global.sender !== email) {
+            const gid = data.global.id || 0;
+            if (lastNotifGlobalId === 0) {
+                lastNotifGlobalId = gid; // prime, no toast
+            } else if (gid > lastNotifGlobalId) {
+                lastNotifGlobalId = gid;
                 pushToast({
                     type: 'global',
                     who: data.global.sender,
@@ -1555,6 +1745,384 @@ async function leaveActiveGroup() {
 
 document.getElementById('ada-menu-newdm').onclick = openNewDmModal;
 document.getElementById('ada-menu-newgroup').onclick = openNewGroupModal;
+if (isAdminUser) {
+    document.getElementById('ada-menu-admin').onclick = () => switchTab('admin');
+}
+
+// ─── 15. GROUP SETTINGS MENU (creator / admin only) ────────────────────────
+function closeGroupMenu() {
+    const existing = document.getElementById('ada-group-menu');
+    if (existing) existing.remove();
+    document.removeEventListener('click', closeGroupMenu, true);
+}
+
+function openGroupSettingsMenu(anchorEl) {
+    closeGroupMenu();
+    if (!activeGroupId) return;
+    const g = groupList.find(x => x.id === activeGroupId);
+    if (!g) return;
+    const isCreator = g.creator_email === email;
+    const canManage = isCreator || isAdminUser;
+
+    const menu = document.createElement('div');
+    menu.id = 'ada-group-menu';
+    menu.className = 'ada-group-menu';
+
+    // Add member
+    if (isCreator) {
+        const addItem = document.createElement('div');
+        addItem.className = 'ada-menu-item';
+        addItem.innerHTML = '👤+ Add member';
+        addItem.onclick = (e) => { e.stopPropagation(); closeGroupMenu(); openAddMemberModal(); };
+        menu.appendChild(addItem);
+    }
+
+    // Toggle public (creator or admin)
+    if (canManage) {
+        const pubItem = document.createElement('div');
+        pubItem.className = 'ada-menu-item';
+        pubItem.innerHTML = g.is_public ? '🔒 Make private' : '🌐 Make public';
+        pubItem.onclick = (e) => { e.stopPropagation(); closeGroupMenu(); toggleGroupPublic(); };
+        menu.appendChild(pubItem);
+    }
+
+    // View members (always)
+    const viewItem = document.createElement('div');
+    viewItem.className = 'ada-menu-item';
+    viewItem.innerHTML = '👥 View members';
+    viewItem.onclick = (e) => { e.stopPropagation(); closeGroupMenu(); openMembersModal(); };
+    menu.appendChild(viewItem);
+
+    // Delete (creator or admin)
+    if (canManage) {
+        const sep = document.createElement('div');
+        sep.className = 'ada-menu-sep';
+        menu.appendChild(sep);
+
+        const delItem = document.createElement('div');
+        delItem.className = 'ada-menu-item ada-menu-danger';
+        delItem.innerHTML = '🗑 Delete group';
+        delItem.onclick = (e) => { e.stopPropagation(); closeGroupMenu(); deleteActiveGroup(); };
+        menu.appendChild(delItem);
+    }
+
+    // Position near the anchor
+    const rect = anchorEl.getBoundingClientRect();
+    const winRect = $window.getBoundingClientRect();
+    menu.style.position = 'absolute';
+    menu.style.top = (rect.bottom - winRect.top) + 'px';
+    menu.style.right = (winRect.right - rect.right) + 'px';
+    $window.appendChild(menu);
+
+    // Dismiss on outside click
+    setTimeout(() => document.addEventListener('click', closeGroupMenu, true), 0);
+}
+
+async function openAddMemberModal() {
+    if (!activeGroupId) return;
+    openModal('Add Member', `
+        <div class="field-group">
+            <label>Search a user to add</label>
+            <input type="text" class="ada-field" id="ada-addmem-search" placeholder="name or email" autocomplete="off">
+        </div>
+        <div class="ada-search-results" id="ada-addmem-results" style="display:none;"></div>
+        <div class="modal-error" id="ada-addmem-error"></div>
+        <div class="modal-actions">
+            <button class="ada-btn" id="ada-addmem-cancel">Close</button>
+        </div>
+    `);
+    document.getElementById('ada-addmem-cancel').onclick = closeModal;
+    const searchEl = document.getElementById('ada-addmem-search');
+    const resultsEl = document.getElementById('ada-addmem-results');
+    const errEl = document.getElementById('ada-addmem-error');
+    let timer = null;
+    searchEl.addEventListener('input', () => {
+        const q = searchEl.value.trim();
+        clearTimeout(timer);
+        if (!q) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
+        timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`${API}/users/search?q=${encodeURIComponent(q)}&email=${encodeURIComponent(email || '')}`);
+                const data = await res.json();
+                const users = data.users || [];
+                if (!users.length) {
+                    resultsEl.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--win-text-mute);">No users found.</div>';
+                } else {
+                    resultsEl.innerHTML = users.map(u => `
+                        <div class="ada-list-item" data-email="${escapeHtml(u.email)}">
+                            <img src="${u.profile_picture || DEFAULT_ICON}" alt="">
+                            <div class="li-text">
+                                <span class="li-name">${escapeHtml(u.display_name || u.email)}</span>
+                                <span class="li-preview">${escapeHtml(u.email)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    resultsEl.querySelectorAll('.ada-list-item').forEach(el => {
+                        el.onclick = async () => {
+                            const target = el.dataset.email;
+                            errEl.textContent = '';
+                            try {
+                                const r = await fetch(`${API}/groups/add-member`, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ group_id: activeGroupId, creator_email: email, user_email: target })
+                                });
+                                const d = await r.json();
+                                if (d.success) {
+                                    errEl.style.color = '#46c668';
+                                    errEl.textContent = `Added ${target}.`;
+                                    await loadGroupList();
+                                    updateChannelHeader();
+                                } else {
+                                    errEl.style.color = '#f85149';
+                                    errEl.textContent = d.error || 'Failed to add member.';
+                                }
+                            } catch (e) {
+                                errEl.style.color = '#f85149';
+                                errEl.textContent = 'Network error.';
+                            }
+                        };
+                    });
+                }
+                resultsEl.style.display = '';
+            } catch (e) {}
+        }, 220);
+    });
+}
+
+async function toggleGroupPublic() {
+    if (!activeGroupId) return;
+    const g = groupList.find(x => x.id === activeGroupId);
+    if (!g) return;
+    const newVal = !g.is_public;
+    try {
+        const res = await fetch(`${API}/groups/toggle-public`, {
+            method: 'POST',
+            body: JSON.stringify({ group_id: activeGroupId, email, is_public: newVal })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await loadGroupList();
+            updateChannelHeader();
+            renderPaneList();
+        } else {
+            alert(data.error || 'Failed to update group.');
+        }
+    } catch (e) {
+        alert('Network error.');
+    }
+}
+
+async function openMembersModal() {
+    if (!activeGroupId) return;
+    let members = [];
+    try {
+        const res = await fetch(`${API}/groups/load?id=${encodeURIComponent(activeGroupId)}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (data.group) members = data.group.members || [];
+    } catch (e) {}
+    const g = groupList.find(x => x.id === activeGroupId);
+    const isCreator = g && g.creator_email === email;
+    const body = `
+        <div class="field-group">
+            <label>${members.length} member${members.length === 1 ? '' : 's'}</label>
+            <div class="ada-search-results" style="max-height:240px;">
+                ${members.length ? members.map(m => `
+                    <div class="ada-list-item">
+                        <img src="${m.profile_picture || DEFAULT_ICON}" alt="">
+                        <div class="li-text">
+                            <span class="li-name">${escapeHtml(m.display_name || m.email)}${m.email === g.creator_email ? ' 👑' : ''}</span>
+                            <span class="li-preview">${escapeHtml(m.email)}</span>
+                        </div>
+                        ${(isCreator && m.email !== g.creator_email) ? `<button class="ada-mini-btn" data-kick="${escapeHtml(m.email)}" style="flex:0 0 auto;">Kick</button>` : ''}
+                    </div>
+                `).join('') : '<div style="padding:8px;font-size:11px;color:var(--win-text-mute);">No members.</div>'}
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="ada-btn" id="ada-mem-close">Close</button>
+        </div>
+    `;
+    openModal('Group Members', body);
+    document.getElementById('ada-mem-close').onclick = closeModal;
+    $modalBody.querySelectorAll('[data-kick]').forEach(btn => {
+        btn.onclick = async () => {
+            const target = btn.getAttribute('data-kick');
+            if (!confirm(`Remove ${target} from this group?`)) return;
+            try {
+                const r = await fetch(`${API}/groups/remove-member`, {
+                    method: 'POST',
+                    body: JSON.stringify({ group_id: activeGroupId, creator_email: email, user_email: target })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    await loadGroupList();
+                    closeModal();
+                    openMembersModal();
+                    updateChannelHeader();
+                    renderPaneList();
+                } else {
+                    alert(d.error || 'Failed to remove.');
+                }
+            } catch (e) {
+                alert('Network error.');
+            }
+        };
+    });
+}
+
+async function deleteActiveGroup() {
+    if (!activeGroupId) return;
+    const g = groupList.find(x => x.id === activeGroupId);
+    if (!g) return;
+    if (!confirm(`Delete group "${g.name}"? This cannot be undone — all messages will be wiped.`)) return;
+    try {
+        const r = await fetch(`${API}/groups/delete`, {
+            method: 'POST',
+            body: JSON.stringify({ group_id: activeGroupId, email })
+        });
+        const d = await r.json();
+        if (d.success) {
+            activeGroupId = null;
+            await loadGroupList();
+            renderPaneList();
+            updateChannelHeader();
+            renderActiveMessages();
+        } else {
+            alert(d.error || 'Failed to delete group.');
+        }
+    } catch (e) {
+        alert('Network error.');
+    }
+}
+
+// ─── 16. ADMIN LOGS (admin only) ────────────────────────────────────────────
+async function loadAdminUsersList() {
+    if (!isAdminUser || adminUsersList.length) return;
+    try {
+        const res = await fetch(`${API}/admin/users-list`, {
+            method: 'POST',
+            body: JSON.stringify({ admin_email: email })
+        });
+        const data = await res.json();
+        if (data.success) adminUsersList = data.users || [];
+    } catch (e) { adminUsersList = []; }
+}
+
+async function runAdminSearch() {
+    if (!isAdminUser) return;
+    try {
+        const payload = {
+            admin_email: email,
+            keyword: adminFilter.keyword || '',
+            sender: adminFilter.sender || '',
+            channel: adminFilter.channel || 'all',
+            from: adminFilter.from || '',
+            to: adminFilter.to || '',
+            limit: 200
+        };
+        const res = await fetch(`${API}/admin/all-chats`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        adminResults = (data.results || []);
+    } catch (e) { adminResults = []; }
+    renderAdminResults();
+}
+
+function renderAdminResults() {
+    if (activeChannel !== 'admin') return;
+    // Render filter bar + results in the message area. Build it once and re-render
+    // rows when adminResults changes.
+    let bar = document.getElementById('ada-admin-bar');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'ada-admin-bar';
+        bar.className = 'ada-admin-bar';
+        const userOpts = adminUsersList.map(u =>
+            `<option value="${escapeHtml(u.email)}" ${adminFilter.sender === u.email ? 'selected' : ''}>${escapeHtml(u.display_name || u.email)}</option>`
+        ).join('');
+        bar.innerHTML = `
+            <span class="ada-field-label">🔍</span>
+            <input type="text" class="ada-field" id="ada-admin-kw" placeholder="keyword" value="${escapeHtml(adminFilter.keyword)}" style="flex:1;min-width:120px;">
+            <select class="ada-field" id="ada-admin-sender" style="max-width:140px;">
+                <option value="">All users</option>
+                ${userOpts}
+            </select>
+            <select class="ada-field" id="ada-admin-channel">
+                <option value="all"${adminFilter.channel === 'all' ? ' selected' : ''}>All channels</option>
+                <option value="global"${adminFilter.channel === 'global' ? ' selected' : ''}>Global</option>
+                <option value="dm"${adminFilter.channel === 'dm' ? ' selected' : ''}>DM</option>
+                <option value="group"${adminFilter.channel === 'group' ? ' selected' : ''}>Group</option>
+            </select>
+            <input type="date" class="ada-field" id="ada-admin-from" value="${escapeHtml(adminFilter.from)}" title="From date">
+            <input type="date" class="ada-field" id="ada-admin-to" value="${escapeHtml(adminFilter.to)}" title="To date">
+            <button class="ada-mini-btn" id="ada-admin-go">Search</button>
+            <button class="ada-mini-btn" id="ada-admin-clear">Clear</button>
+        `;
+        $msgArea.parentNode.insertBefore(bar, $msgArea);
+        // Bind events
+        document.getElementById('ada-admin-go').onclick = () => {
+            adminFilter.keyword = document.getElementById('ada-admin-kw').value.trim();
+            adminFilter.sender = document.getElementById('ada-admin-sender').value;
+            adminFilter.channel = document.getElementById('ada-admin-channel').value;
+            adminFilter.from = document.getElementById('ada-admin-from').value;
+            adminFilter.to = document.getElementById('ada-admin-to').value;
+            runAdminSearch();
+        };
+        document.getElementById('ada-admin-clear').onclick = () => {
+            adminFilter = { keyword: '', sender: '', channel: 'all', from: '', to: '' };
+            runAdminSearch();
+        };
+        // Enter to search
+        document.getElementById('ada-admin-kw').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('ada-admin-go').click();
+        });
+    } else {
+        // Update select values that may have changed
+        const senderSel = document.getElementById('ada-admin-sender');
+        if (senderSel && senderSel.value !== adminFilter.sender) senderSel.value = adminFilter.sender;
+        const chanSel = document.getElementById('ada-admin-channel');
+        if (chanSel && chanSel.value !== adminFilter.channel) chanSel.value = adminFilter.channel;
+        const kwEl = document.getElementById('ada-admin-kw');
+        if (kwEl && document.activeElement !== kwEl) kwEl.value = adminFilter.keyword;
+    }
+
+    if (!adminResults.length) {
+        renderEmpty('No messages match the current filters.');
+        return;
+    }
+    const kw = adminFilter.keyword;
+    const rows = adminResults.map(r => {
+        const tag = `<span class="row-tag ${r.channel}">${r.channel.toUpperCase()}</span>`;
+        const who = r.display_name || r.user_email;
+        const where = r.channel === 'dm'
+            ? `↔ ${escapeHtml(r.other_name || r.other_email || '')}`
+            : r.channel === 'group'
+                ? `# ${escapeHtml(r.group_name || '')}`
+                : '';
+        const time = r.created_at ? new Date(r.created_at + (r.created_at.includes('Z') ? '' : 'Z')).toLocaleString() : '';
+        let body = r.is_image ? '<em>(image)</em>' : escapeHtml(r.content || '');
+        if (kw && body) {
+            const safe = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            body = body.replace(new RegExp(`(${safe})`, 'gi'), '<mark>$1</mark>');
+        }
+        return `
+        <div class="ada-admin-row">
+            <div class="row-meta">
+                ${tag}
+                <strong>${escapeHtml(who)}</strong>
+                <span>${escapeHtml(r.user_email)}</span>
+                <span>${where}</span>
+                <span style="margin-left:auto;">${escapeHtml(time)}</span>
+            </div>
+            <div class="row-content">${body}</div>
+        </div>`;
+    }).join('');
+    $msgArea.innerHTML = rows;
+    stickyBottom = true;
+    scrollMsgArea(true);
+}
 
 // ─── 14. DRAGGING THE WINDOW ───────────────────────────────────────────────
 (function setupDrag() {
