@@ -1,0 +1,1092 @@
+( () => {
+    "use strict";
+    var e = {
+        479: (e, t) => {
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            }),
+            t.extractStringValueFromJsonArrayBlocklistLine = t.generateUrlVariationsForIwf = t.generateUrlVariationsForLookup = void 0;
+            t.generateUrlVariationsForLookup = (e, t=!1, o=!1) => {
+                const n = getDomainLevels(e)
+                  , s = getPathLevels(e)
+                  , r = "/" !== e.search && e.search.length > 0
+                  , i = [];
+                o && n.pop();
+                for (let o = 1; o <= n.length; o++) {
+                    let a = n.slice(-o).join(".");
+                    t && (a = [...a].reverse().join("") + "."),
+                    i.push(a);
+                    for (let e = 1; e <= s.length; e++)
+                        i.push(a + "/" + s.slice(0, e).join("/"));
+                    r && i.push(a + e.pathname + e.search)
+                }
+                return i
+            }
+            ;
+            t.generateUrlVariationsForIwf = e => {
+                const t = []
+                  , o = e.hostname
+                  , n = getDomainLevels(e)
+                  , s = getPathLevels(e);
+                "" !== o && t.push(o),
+                "www" === n[0] && t.push(n.slice(1).join("."));
+                for (let e = 1; e <= s.length; e++)
+                    t.push(o + "/" + s.slice(0, e).join("/"));
+                return e.searchParams.size > 0 && t.push(o + "/" + s.join("/") + e.search),
+                t
+            }
+            ;
+            const getDomainLevels = e => e.hostname.split(".").filter((e => e.length > 0))
+              , getPathLevels = e => e.pathname.split("/").filter((e => e.length > 0));
+            t.extractStringValueFromJsonArrayBlocklistLine = e => {
+                const t = e.indexOf('"')
+                  , o = e.lastIndexOf('"');
+                if (t === o)
+                    throw new Error("Expected a quoted string. Actual value: " + e);
+                return e.substring(t + 1, o)
+            }
+        }
+        ,
+        482: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(5227))
+              , r = n(o(3674));
+            class RequestPageContentMessage extends s.default {
+                constructor() {
+                    super(RequestPageContentMessage.type)
+                }
+            }
+            RequestPageContentMessage.type = r.default.RequestPageContent,
+            t.default = RequestPageContentMessage,
+            s.default.registerMessageType(RequestPageContentMessage)
+        },
+        1857: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(5227))
+              , r = n(o(3674));
+            class AcknowledgementMessage extends s.default {
+                constructor() {
+                    super(AcknowledgementMessage.type)
+                }
+            }
+            AcknowledgementMessage.type = r.default.Acknowledgement,
+            t.default = AcknowledgementMessage,
+            s.default.registerMessageType(AcknowledgementMessage)
+        },
+        3295: (e, t) => {
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            }),
+            t.jsBodyMods = t.getSWBlockedNode = t.findAndRemoveBySelector = t.captureParentNodes = t.safelyRemoveElement = t.isProtectedElement = void 0;
+            const o = ['div[aria-label="Ads"]', "[data-text-ad]", '[id^="google_ads_"]', ".commercial-unit-desktop-rhs", ".b_ad", ".b_adTop", ".b_adBottom", ".b_adLastChild", ".sb_adTA", ".pa_sb", ".pa_carousel_mlo", "li.b_ad", ".b_adProvider", ".sb_adsN", ".sb_adsW"]
+              , n = ['#watch-sidebar-live-chat:not([role="dialog"]):not([role="menu"])', '#watch-discussion:not([role="dialog"]):not([role="menu"])', 'ytd-comments:not([role="dialog"]):not([role="menu"])', 'ytd-live-chat-frame:not([role="dialog"]):not([role="menu"])', '#comments:not([role="dialog"]):not([role="menu"])']
+              , s = ['#donation-shelf:not([role="dialog"]):not([role="menu"])', '#chat:not([role="dialog"]):not([role="menu"])', '#related:not([role="dialog"]):not([role="menu"])']
+              , r = "video-stream html5-main-video"
+              , i = ".ytp-autonav-toggle-button"
+              , a = [".fb-comment-embed", ".fb-comments", ".x1jx94hy.x78zum5.xdt5ytf.x2lah0s.xw2csxc.x1odjw0f.xmd6oqt.x13o0s5z"]
+              , l = ["#disqus_thread"]
+              , d = [".comments#comments"]
+              , c = ["#content #comments"]
+              , u = ['[role="dialog"][aria-label*="Restricted Mode"]', 'a[href="#"][role="menuitem"][aria-label*="Restricted Mode"]', 'paper-toggle-button[aria-label*="Activate Restricted Mode"]', 'a[href="#"][aria-label="Back"]', 'a[href="#"][role="menuitem"]', "ytd-toggle-button-renderer", 'yt-formatted-string[id="text"]', "tp-yt-paper-item", "ytd-menu-service-item-renderer"];
+            var h;
+            !function(e) {
+                e.isSearchEngine = e => e.startsWith("google.") || e.startsWith("www.google.") || e.startsWith("bing.") || e.startsWith("www.bing.")
+            }(h || (h = {}));
+            const m = {
+                getContentModScriptById: e => {
+                    switch (e) {
+                    case 69:
+                        return m.forceSafeSearch;
+                    case 222:
+                        return m.removeYoutubeComments;
+                    case 392:
+                        return m.bakeYoutubeSafetyModeCookie;
+                    case 440:
+                        return m.enforceBBCiPlayerParentalGuidance;
+                    case 441:
+                        return m.removeFacebookCommentsPlugin;
+                    case 442:
+                        return m.removeDisqusComments;
+                    case 457:
+                        return m.removeBloggerComments;
+                    case 458:
+                        return m.removeWordPressComments;
+                    case 476:
+                        return m.removeYoutubeSidebar;
+                    case 478:
+                        return m.enforceITVPlayerParentalGuidance;
+                    case 524:
+                        return m.removeTranslationGoogleBingSearch;
+                    case 525:
+                        return m.blockDoodleGames;
+                    case 526:
+                        return m.removeAdsFromSearchEngines;
+                    case 579:
+                        return m.removeYoutubeVideosFromSearch;
+                    case 615:
+                        return m.forceVimeoMatureContentFilter;
+                    case 630:
+                        return m.googleWebSearchBasicMode;
+                    case 633:
+                        return m.disableYoutubeMiniPlayer;
+                    case 635:
+                        return m.removeYoutubeAds;
+                    case 636:
+                        return m.webSearchRemoveLyrics;
+                    case 1558:
+                        return m.removeYouTubeShortsUI;
+                    default:
+                        return
+                    }
+                }
+                ,
+                forceSafeSearch: () => {
+                    const e = [];
+                    return (window.location.hostname.startsWith("pixabay.") || window.location.hostname.startsWith("www.pixabay.")) && (document.cookie.includes("g_rated=1") ? e.push(!1) : (document.cookie = "g_rated=1;domain=.pixabay.com",
+                    location.reload(),
+                    e.push(!0))),
+                    (window.location.hostname.startsWith("ecosia.") || window.location.hostname.startsWith("www.ecosia.")) && document.cookie.split(";").forEach((t => {
+                        !t.startsWith("ECFG=") && !t.startsWith(" ECFG=") || t.includes("f=y") ? e.push(!1) : (document.cookie = "ECFG=f=y;domain=.ecosia.org",
+                        location.reload(),
+                        e.push(!0))
+                    }
+                    )),
+                    0 === e.length ? [null] : e
+                }
+                ,
+                removeYoutubeComments: () => {
+                    if (!window.location.hostname.startsWith("youtube.com") && !window.location.hostname.startsWith("www.youtube."))
+                        return [null];
+                    const e = [];
+                    n.forEach((o => {
+                        document.querySelectorAll(o).forEach((o => {
+                            (0,
+                            t.isProtectedElement)(o) || null !== o.closest('[role="dialog"]') ? console.debug("Skipping protected comment section:", o) : e.push(o)
+                        }
+                        ))
+                    }
+                    ));
+                    const o = [];
+                    e.forEach((e => {
+                        o.push({
+                            parentNode: e.parentNode,
+                            height: e.clientHeight,
+                            width: e.clientWidth
+                        })
+                    }
+                    ));
+                    let s = !1;
+                    e.forEach((e => {
+                        (0,
+                        t.safelyRemoveElement)(e) && (s = !0)
+                    }
+                    ));
+                    const r = [s];
+                    return r.includes(!0) && o.forEach((e => {
+                        null != e.parentNode && e.parentNode instanceof Element && !(0,
+                        t.isProtectedElement)(e.parentNode) && e.parentNode.appendChild(getSWBlockedNode("removeYoutubeComments", e.height, e.width))
+                    }
+                    )),
+                    r
+                }
+                ,
+                bakeYoutubeSafetyModeCookie: () => {
+                    if (!window.location.hostname.startsWith("youtube.com") && !window.location.hostname.startsWith("www.youtube."))
+                        return [null];
+                    if (window === window.parent && !/PREF=[^;]*f2=800000/.test(document.cookie)) {
+                        document.cookie = "PREF=f2=8000000;domain=.youtube.com";
+                        const handleSettingsInteraction = e => {
+                            const t = e.target;
+                            if (null == t)
+                                return document.removeEventListener("click", handleSettingsInteraction, !0),
+                                void setTimeout(( () => {
+                                    "visible" === document.visibilityState && location.reload()
+                                }
+                                ), 500);
+                            const o = t.closest('[role="dialog"][aria-label*="Restricted Mode"]')
+                              , n = t.closest('a[href="#"][role="menuitem"][aria-label*="Restricted Mode"]');
+                            null == o && null == n && (document.removeEventListener("click", handleSettingsInteraction, !0),
+                            setTimeout(( () => {
+                                "visible" === document.visibilityState && location.reload()
+                            }
+                            ), 500))
+                        }
+                        ;
+                        return setTimeout(( () => {
+                            document.addEventListener("click", handleSettingsInteraction, !0)
+                        }
+                        ), 2e3),
+                        [!0]
+                    }
+                    return [!1]
+                }
+                ,
+                enforceBBCiPlayerParentalGuidance: () => {
+                    var e, t, o;
+                    if (!window.location.hostname.startsWith("bbc.com") && !window.location.hostname.startsWith("www.bbc."))
+                        return [null];
+                    if (null == document.querySelector(".banner.guidance-banner"))
+                        return [!1];
+                    const n = document.querySelector("smp-toucan-player");
+                    if (null !== n) {
+                        const o = null === (e = n.shadowRoot) || void 0 === e ? void 0 : e.querySelector("smp-playback");
+                        if (null !== o) {
+                            const e = null === (t = null == o ? void 0 : o.shadowRoot) || void 0 === t ? void 0 : t.querySelector("video");
+                            null != e && (e.muted = !0)
+                        }
+                        n.remove()
+                    }
+                    const s = null === (o = document.querySelector(".play-cta__inner.play-cta__inner--button")) || void 0 === o ? void 0 : o.parentElement;
+                    return null != s ? (s.innerHTML = "<span style='color:white; font-size:14pt;'>Blocked by Smoothwall</span>",
+                    [!0]) : [!1]
+                }
+                ,
+                removeFacebookCommentsPlugin: () => {
+                    if (!window.location.hostname.endsWith("facebook.com"))
+                        return [null];
+                    const e = a
+                      , t = captureParentNodes(e)
+                      , o = findAndRemoveBySelector(e);
+                    return o.includes(!0) && t.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeFacebookCommentsPlugin", e.height, e.width)))),
+                    o
+                }
+                ,
+                removeDisqusComments: () => {
+                    const e = l
+                      , t = captureParentNodes(e)
+                      , o = findAndRemoveBySelector(e);
+                    return o.includes(!0) && t.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeDisqusComments", e.height, e.width)))),
+                    o
+                }
+                ,
+                removeBloggerComments: () => {
+                    const e = d
+                      , t = captureParentNodes(e)
+                      , o = findAndRemoveBySelector(e);
+                    return o.includes(!0) && t.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeBloggerComments", e.height, e.width)))),
+                    o
+                }
+                ,
+                removeWordPressComments: () => {
+                    const e = c
+                      , t = captureParentNodes(e)
+                      , o = findAndRemoveBySelector(e);
+                    return o.includes(!0) && t.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeWordPressComments", e.height, e.width)))),
+                    o
+                }
+                ,
+                removeYoutubeSidebar: () => {
+                    if (!window.location.hostname.endsWith("youtube.com"))
+                        return [null];
+                    const e = s
+                      , o = captureParentNodes(e)
+                      , n = findAndRemoveBySelector(e);
+                    n.includes(!0) && o.forEach((e => {
+                        null === e.parentNode || void 0 === e.parentNode || (0,
+                        t.isProtectedElement)(e.parentNode) || e.parentNode.appendChild(getSWBlockedNode("removeYoutubeSidebar", e.height, e.width))
+                    }
+                    ));
+                    const r = document.querySelector(i);
+                    return null != r && !(0,
+                    t.isProtectedElement)(r) && null === r.closest('[role="dialog"]') && null === r.closest('[role="menu"]') && "true" === r.getAttribute("aria-checked") && r.checkVisibility() ? (r.click(),
+                    n.push(!0)) : n.push(!1),
+                    n
+                }
+                ,
+                enforceITVPlayerParentalGuidance: () => {
+                    var e, t;
+                    if (!window.location.hostname.startsWith("itv.com") && !window.location.hostname.startsWith("www.itv."))
+                        return [null];
+                    const o = document.querySelector(".cp_guidance__paragraph")
+                      , n = document.getElementsByClassName("cp_guidance__container")
+                      , s = [null != o && (o.innerText = "Parental Guidance enforced by Smoothwall",
+                    !0), null != o && (null === (e = document.querySelector(".videoPlayerActionButtons")) || void 0 === e || e.setAttribute("style", "pointer-events: none; opacity: 0.6"),
+                    !0)]
+                      , r = [];
+                    if (null != n)
+                        for (const e of n) {
+                            e.textContent = "Parental Guidance enforced by Smoothwall",
+                            r.push(!0);
+                            const o = null === (t = e.parentNode) || void 0 === t ? void 0 : t.querySelector(".now-next-buttons");
+                            null != o ? (o.remove(),
+                            r.push(!0)) : r.push(!1)
+                        }
+                    return [...s, ...r]
+                }
+                ,
+                removeTranslationGoogleBingSearch: () => {
+                    if (!(window.location.hostname.startsWith("google.") || window.location.hostname.startsWith("www.google.") || window.location.hostname.startsWith("bing.") || window.location.hostname.startsWith("www.bing.")))
+                        return [null];
+                    const e = findAndRemoveBySelector(['div[class="rLrQHf"][role=presentation]'])
+                      , t = ["div#search *> div#tw-main", "#tta_container", "li.b_top", ".KIy09e", ".b_ans", ".AuVD.cUnQKe.vt6azd"]
+                      , o = captureParentNodes(t);
+                    return e.concat(findAndRemoveBySelector(t)),
+                    e.includes(!0) && o.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeTranslationGoogleBingSearch", 60, e.width)))),
+                    e
+                }
+                ,
+                blockDoodleGames: () => {
+                    if (!window.location.hostname.startsWith("google.") && !window.location.hostname.startsWith("www.google."))
+                        return [null];
+                    const e = []
+                      , t = new Set;
+                    return ['//img[contains(@src, "google.com/logos/")]//ancestor::block-component'].forEach((e => {
+                        const o = document.evaluate(e, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                        for (let e = 0; e < o.snapshotLength; e++)
+                            t.add(o.snapshotItem(e))
+                    }
+                    )),
+                    t.forEach((t => {
+                        const o = getSWBlockedNode("blockDoodleGames", 60, t.childNodes[0].clientWidth);
+                        o.style.marginBottom = "30px",
+                        t.replaceWith(o),
+                        e.push(!0)
+                    }
+                    )),
+                    e
+                }
+                ,
+                removeAdsFromSearchEngines: () => {
+                    const e = window.location.hostname;
+                    if (!h.isSearchEngine(e))
+                        return [null];
+                    const t = o
+                      , n = captureParentNodes(t)
+                      , s = findAndRemoveBySelector(t);
+                    return s.includes(!0) && n.forEach((e => e.parentNode.appendChild(getSWBlockedNode("removeAdsFromSearchEngines", 60, e.width)))),
+                    s
+                }
+                ,
+                removeYoutubeVideosFromSearch: () => {
+                    if (!window.location.hostname.startsWith("google.") && !window.location.hostname.startsWith("www.google."))
+                        return [null];
+                    const e = []
+                      , o = new Set;
+                    ['#search *> [href*="youtube.com/watch"]', '#search *> [href*="youtube.com/playlist"]'].forEach((e => {
+                        document.querySelectorAll(e).forEach((e => {
+                            if ((0,
+                            t.isProtectedElement)(e))
+                                return void console.debug("Skipping protected UI element in search results:", e);
+                            if (null !== e.closest('[role="dialog"]'))
+                                return void console.debug("Skipping element in protected dialog:", e);
+                            const n = e.closest(".MjjYud");
+                            if (null != (null == n ? void 0 : n.querySelector(".ESvzac.DfMusf")))
+                                return void o.add(n);
+                            const s = e.closest(".g");
+                            if (null != s) {
+                                if ((0,
+                                t.isProtectedElement)(s))
+                                    return void console.debug("Skipping protected search result:", s);
+                                if (null !== s.closest('[role="dialog"]'))
+                                    return void console.debug("Skipping search result in protected dialog:", s);
+                                o.add(s)
+                            }
+                        }
+                        ))
+                    }
+                    ));
+                    return ['//div[@id="search"]//div[@role="heading"]//span[text()="Videos"]//ancestor::div[@data-hveid][1]'].forEach((e => {
+                        const n = document.evaluate(e, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                        for (let e = 0; e < n.snapshotLength; e++) {
+                            const s = n.snapshotItem(e);
+                            (0,
+                            t.isProtectedElement)(s) ? console.debug("Skipping protected UI element in search results:", s) : null === s.closest('[role="dialog"]') ? o.add(s) : console.debug("Skipping element in protected dialog:", s)
+                        }
+                    }
+                    )),
+                    o.forEach((t => {
+                        const o = getSWBlockedNode("removeYouTubeVideosFromSearch", 60, t.clientWidth);
+                        o.style.marginBottom = "30px",
+                        t.replaceWith(o),
+                        e.push(!0)
+                    }
+                    )),
+                    e
+                }
+                ,
+                forceVimeoMatureContentFilter: () => {
+                    if (!window.location.hostname.endsWith("vimeo.com") || window !== window.parent)
+                        return [null];
+                    return [!document.cookie.includes("content_rating=7") && (document.cookie = "content_rating=7;domain=.vimeo.com",
+                    location.reload(),
+                    !0)]
+                }
+                ,
+                googleWebSearchBasicMode: () => {
+                    if (!window.location.hostname.startsWith("google.") && !window.location.hostname.startsWith("www.google."))
+                        return [null];
+                    return findAndRemoveBySelector([".TzHB6b.j8lBAb.p7kDMc.cLjAic:not(.K7khPe)", "div[role=complementary]"])
+                }
+                ,
+                disableYoutubeMiniPlayer: () => {
+                    if (!window.location.hostname.startsWith("youtube.") && !window.location.hostname.startsWith("www.youtube."))
+                        return [null];
+                    const e = []
+                      , o = document.getElementsByTagName("ytd-miniplayer");
+                    if (0 !== o.length) {
+                        let n = !1;
+                        [...o].forEach((e => {
+                            (0,
+                            t.isProtectedElement)(e) || null !== e.closest('[role="dialog"]') ? console.debug("Skipping protected mini player:", e) : (0,
+                            t.safelyRemoveElement)(e) && (n = !0)
+                        }
+                        )),
+                        e.push(n)
+                    } else
+                        e.push(!1);
+                    return e
+                }
+                ,
+                removeYoutubeAds: () => {
+                    if (!window.location.hostname.startsWith("youtube.") && !window.location.hostname.startsWith("www.youtube."))
+                        return [null];
+                    const e = []
+                      , o = document.getElementsByClassName(r);
+                    for (const n of o) {
+                        if ((0,
+                        t.isProtectedElement)(n)) {
+                            console.debug("Skipping YouTube video in protected UI element:", n),
+                            e.push(!1);
+                            continue
+                        }
+                        if (null !== n.getAttribute("sw-cmod-controlled")) {
+                            e.push(!1);
+                            continue
+                        }
+                        if (null !== n.closest('[role="dialog"]') || null !== n.closest('[role="menu"]')) {
+                            console.debug("Skipping YouTube video in protected dialog/menu:", n),
+                            e.push(!1);
+                            continue
+                        }
+                        const o = String(Date.now());
+                        n.setAttribute("sw-cmod-controlled", o),
+                        setInterval(( () => {
+                            if ((0,
+                            t.isProtectedElement)(n))
+                                return n.muted = !1,
+                                n.hidden = !1,
+                                n.playbackRate = 1,
+                                void n.removeAttribute("sw-cmod-controlled");
+                            const e = n.closest(".html5-video-player");
+                            if (null == e)
+                                return;
+                            if (e.classList.contains("ad-showing")) {
+                                if (n.hidden)
+                                    return;
+                                console.log("Advert detected in: " + o),
+                                n.muted = !0,
+                                n.hidden = !0,
+                                n.playbackRate = 5
+                            } else {
+                                if (!n.hidden)
+                                    return;
+                                console.log("Regular video detected in: " + o);
+                                const t = e.querySelector(".ytp-volume-panel")
+                                  , s = null != t ? t.getAttribute("aria-valuetext") : null
+                                  , r = null !== s && s.includes("muted");
+                                n.muted = r,
+                                n.hidden = !1,
+                                n.playbackRate = 1
+                            }
+                        }
+                        ), 200),
+                        e.push(!0)
+                    }
+                    return e
+                }
+                ,
+                webSearchRemoveLyrics: () => {
+                    if (!window.location.hostname.startsWith("google.") && !window.location.hostname.startsWith("www.google."))
+                        return [null];
+                    const e = [".b_heroLyrics", 'div[data-attrid="kc:/music/recording_cluster:lyrics"]', ".cu-container"]
+                      , t = captureParentNodes(e)
+                      , o = findAndRemoveBySelector(e);
+                    return o.includes(!0) && t.forEach((e => e.parentNode.appendChild(getSWBlockedNode("webSearchRemoveLyrics", 60, e.width)))),
+                    o
+                }
+                ,
+                removeYouTubeShortsUI: () => {
+                    if (!window.location.hostname.startsWith("youtube.") && !window.location.hostname.startsWith("www.youtube."))
+                        return [null];
+                    return findAndRemoveBySelector(['yt-chip-cloud-chip-renderer[chip-style="STYLE_HOME_FILTER"]', 'ytd-mini-guide-entry-renderer:has(a[title="Shorts"])', 'ytd-guide-entry-renderer:has(a[title="Shorts"])', 'ytd-rich-shelf-renderer:has(a[href^="/shorts"])', 'ytd-rich-shelf-renderer:has(a[href^="/shorts-container"])', 'grid-shelf-view-model:has(a[href*="/shorts"])', 'ytd-video-renderer:has(a#thumbnail[href^="/shorts"])', "ytd-shorts", "#shorts-inner-container"])
+                }
+            };
+            t.jsBodyMods = m;
+            t.isProtectedElement = e => {
+                for (const t of u)
+                    if (e.matches(t) || null !== e.closest(t))
+                        return !0;
+                return !1
+            }
+            ;
+            t.safelyRemoveElement = (e, o=!0) => (0,
+            t.isProtectedElement)(e) ? (o && console.debug("Skipping protected YouTube UI element:", e),
+            !1) : (e.innerHTML = "",
+            e.remove(),
+            !0);
+            const findAndRemoveBySelector = e => {
+                const o = [];
+                return e.forEach((e => {
+                    if (null != document.querySelector(e)) {
+                        let n = !1;
+                        document.querySelectorAll(e).forEach((e => {
+                            (0,
+                            t.safelyRemoveElement)(e) && (n = !0)
+                        }
+                        )),
+                        o.push(n)
+                    } else
+                        o.push(!1)
+                }
+                )),
+                o
+            }
+            ;
+            t.findAndRemoveBySelector = findAndRemoveBySelector;
+            const captureParentNodes = e => {
+                const t = [];
+                return e.forEach((e => {
+                    document.querySelectorAll(e).forEach((e => {
+                        const o = {
+                            parentNode: e.parentNode,
+                            height: e.clientHeight,
+                            width: e.clientWidth
+                        };
+                        t.push(o)
+                    }
+                    ))
+                }
+                )),
+                t
+            }
+            ;
+            t.captureParentNodes = captureParentNodes;
+            const getSWBlockedNode = (e, t, o) => {
+                const n = document.createElement("div");
+                n.style.width = o < 100 ? "100px" : `${o}px`,
+                n.style.height = t < 50 ? "50px" : `${t}px`,
+                n.style.marginTop = "4px",
+                n.style.border = "1px dashed #B2B2B2",
+                n.style.display = "flex",
+                n.style.flexDirection = "column",
+                n.style.justifyContent = "center",
+                n.style.alignItems = "center",
+                n.id = e,
+                n.className = "sw-block-node";
+                const s = document.createElement("span");
+                return s.style.color = "#B2B2B2",
+                s.style.fontSize = "14px",
+                s.innerText = "Blocked by Smoothwall",
+                n.appendChild(s),
+                n
+            }
+            ;
+            t.getSWBlockedNode = getSWBlockedNode
+        }
+        ,
+        3454: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = new (n(o(6389)).default);
+            s.addListeners(),
+            s.start()
+        },
+        3577: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(5227))
+              , r = n(o(3674));
+            class PageContentMessage extends s.default {
+                constructor(e="", t="", o="") {
+                    super(PageContentMessage.type),
+                    this.url = e,
+                    this.content = t,
+                    this.title = o
+                }
+            }
+            PageContentMessage.load = e => {
+                if ((null == e ? void 0 : e.type) !== PageContentMessage.type)
+                    throw new Error(`Missing or invalid message type. Expected ${PageContentMessage.type}.`);
+                if ("string" != typeof (null == e ? void 0 : e.url) || "string" != typeof (null == e ? void 0 : e.content) || "string" != typeof (null == e ? void 0 : e.title))
+                    throw new Error("Invalid PageContentMessage.");
+                return new PageContentMessage(e.url,e.content,e.title)
+            }
+            ,
+            PageContentMessage.type = r.default.PageContent,
+            t.default = PageContentMessage,
+            s.default.registerMessageType(PageContentMessage)
+        },
+        3674: (e, t) => {
+            var o;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            }),
+            function(e) {
+                e.PrivateIpRequest = "private-ip-request",
+                e.PrivateIpResponse = "private-ip-response",
+                e.Acknowledgement = "acknowledgement",
+                e.AllowContent = "allow-content",
+                e.EnableYoutubeHandling = "enable-youtube-handling",
+                e.PageContent = "page-content",
+                e.RequestPageContent = "request-page-content",
+                e.YoutubeBlockedIds = "youtube-blocked-ids",
+                e.YoutubePageHrefs = "youtube-page-hrefs",
+                e.YoutubeVideoIds = "youtube-video-ids",
+                e.BlockContent = "block-content",
+                e.CheckConnection = "check-connection",
+                e.TestMessageWithData = "test-message-with-data",
+                e.TestMessageWithoutData = "test-message-without-data",
+                e.TemporaryTestMessage = "temporary-test-message",
+                e.TemporaryTestMessage1 = "temporary-test-message-1",
+                e.TemporaryTestMessage2 = "temporary-test-message-2",
+                e.NotAValidType = "not-a-valid-type",
+                e.YoutubeContentScriptReady = "youtube-content-script-ready"
+            }(o || (o = {})),
+            t.default = o
+        }
+        ,
+        5227: (e, t) => {
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            class ContentScriptMessage {
+                constructor(e) {
+                    if ("string" != typeof e)
+                        throw new Error("Content script message type must be a string");
+                    if ("" === e)
+                        throw new Error("Content script message type must not be empty");
+                    this.type = e
+                }
+            }
+            ContentScriptMessage.registerMessageType = e => {
+                if (e.name === ContentScriptMessage.name)
+                    throw new TypeError("Registering the ContentScriptMessage base class is not allowed");
+                const t = null == e ? void 0 : e.type;
+                if ("string" != typeof t || "" === t)
+                    throw new Error("Message type name is missing or invalid");
+                ContentScriptMessage._registeredMessageTypes.set(t, e)
+            }
+            ,
+            ContentScriptMessage.unregisterMessageType = e => {
+                const t = null == e ? void 0 : e.type;
+                if ("string" != typeof t)
+                    throw new Error("Message type name is missing or invalid");
+                ContentScriptMessage._registeredMessageTypes.delete(t)
+            }
+            ,
+            ContentScriptMessage.load = e => {
+                if (null === e || "object" != typeof e)
+                    throw new Error("Cannot load content script message from empty value");
+                const t = null == e ? void 0 : e.type;
+                if ("string" != typeof t || "" === t)
+                    throw new Error("Missing type property in message value");
+                const o = ContentScriptMessage._registeredMessageTypes.get(t);
+                if (void 0 === o)
+                    throw new Error(`Content script message type not recognised: ${t}`);
+                if (!Object.prototype.hasOwnProperty.call(o, "load") || "function" != typeof o.load) {
+                    const e = new o;
+                    if (e.type !== t)
+                        throw new Error(`Message instance does not have expected message type name.Expected: ${t}. Actual: ${e.type}.`);
+                    return e
+                }
+                const n = o.load(e);
+                if (!(n instanceof ContentScriptMessage))
+                    throw new Error("Message class load() function did not return a sub-class of ContentScriptMessage.");
+                if (n.constructor.name !== o.name)
+                    throw new Error(`Message class load() function did not return an instance of the expected class. Expected: ${o.name}. Actual: ${n.constructor.name}.`);
+                if (n.type !== t)
+                    throw new Error(`Message class load() function did not return an instance with the expected message type name. Expected: ${t}. Actual: ${n.type}.`);
+                return n
+            }
+            ,
+            ContentScriptMessage._registeredMessageTypes = new Map,
+            t.default = ContentScriptMessage
+        }
+        ,
+        6389: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(1857))
+              , r = n(o(8237))
+              , i = n(o(9493))
+              , a = n(o(5227))
+              , l = n(o(3577))
+              , d = n(o(482))
+              , c = o(479)
+              , u = o(9360)
+              , h = o(3295);
+            var m;
+            !function(e) {
+                e[e.pending = 0] = "pending",
+                e[e.allowed = 1] = "allowed",
+                e[e.blocked = 2] = "blocked"
+            }(m || (m = {}));
+            t.default = class ContentScriptService {
+                constructor() {
+                    this.mutationCallback = null,
+                    this.addListeners = () => {
+                        chrome.runtime.onMessage.addListener(this.onStandaloneMessage)
+                    }
+                    ,
+                    this.start = () => {
+                        if ((0,
+                        u.isDocumentPrerendered)()) {
+                            console.debug("Content script detected prerender - deferring execution until activation");
+                            const e = (0,
+                            u.onPrerenderActivation)(( () => {
+                                console.debug("Prerender activated - starting content script execution"),
+                                e(),
+                                this._startNormal()
+                            }
+                            ))
+                        } else
+                            this._startNormal()
+                    }
+                    ,
+                    this._startNormal = () => {
+                        if (chrome.storage.managed.get(["DocumentHiderExclusions"], (e => {
+                            if (void 0 === e || void 0 === e.DocumentHiderExclusions)
+                                return;
+                            const t = (0,
+                            c.generateUrlVariationsForLookup)(new URL(window.location.href));
+                            let o = !1;
+                            for (const n of e.DocumentHiderExclusions.split(",")) {
+                                if (0 === n.trim().length)
+                                    continue;
+                                const e = this._sanitiseUrl(n.trim()).toLowerCase();
+                                for (const n of t) {
+                                    if (this._sanitiseUrl(n).toLowerCase() === e) {
+                                        o = !0;
+                                        break
+                                    }
+                                }
+                                if (o)
+                                    break
+                            }
+                            o || this.hidePage()
+                        }
+                        )),
+                        "loading" !== document.readyState)
+                            this.startRepeatedlySendingContentToExtension();
+                        else {
+                            const callback = () => {
+                                "loading" !== document.readyState && (this.startRepeatedlySendingContentToExtension(),
+                                document.removeEventListener("readystatechange", callback))
+                            }
+                            ;
+                            document.addEventListener("readystatechange", callback)
+                        }
+                    }
+                    ,
+                    this.startRepeatedlySendingContentToExtension = (e=5e3) => {
+                        this.stopRepeatedlySendingContentToExtension(),
+                        this.sendContentToExtension(),
+                        this._contentSendInterval = setInterval(( () => {
+                            this.sendContentToExtension()
+                        }
+                        ), e)
+                    }
+                    ,
+                    this.stopRepeatedlySendingContentToExtension = () => {
+                        void 0 !== this._contentSendInterval && (clearInterval(this._contentSendInterval),
+                        this._contentSendInterval = void 0)
+                    }
+                    ,
+                    this.sendContentToExtension = (e=null) => {
+                        var t, o;
+                        try {
+                            const n = null !== e ? e : null !== (o = null === (t = document.querySelector("html")) || void 0 === t ? void 0 : t.outerHTML.substring(0, 256e3)) && void 0 !== o ? o : "";
+                            chrome.runtime.sendMessage(chrome.runtime.id, new l.default(window.location.href,n,document.title), this.handleMessageFromExtension)
+                        } catch (e) {
+                            console.error("Failed to send content to extension"),
+                            console.error(e)
+                        }
+                    }
+                    ,
+                    this.hidePage = (e=5) => {
+                        if (window.location.origin.includes("testfiltering.com")) {
+                            const e = setTimeout(";");
+                            for (let t = 0; t < e; t++)
+                                clearTimeout(t);
+                            const t = document.querySelector("body > ul");
+                            null != t && t.remove()
+                        } else
+                            e <= 0 || window.requestAnimationFrame(( () => {
+                                var t;
+                                if (this._contentStatus !== m.allowed) {
+                                    try {
+                                        null === (t = document.getElementById(this._documentHiderId)) || void 0 === t || t.remove()
+                                    } catch (e) {}
+                                    try {
+                                        this._documentHider = document.createElement("div"),
+                                        this._documentHider.style.position = "fixed",
+                                        this._documentHider.style.width = "100%",
+                                        this._documentHider.style.height = "100%",
+                                        this._documentHider.style.zIndex = "2147483647",
+                                        this._documentHider.style.background = "rgba(255,255,255,1)",
+                                        this._documentHider.style.display = "block",
+                                        this._documentHider.style.left = "0",
+                                        this._documentHider.style.top = "0",
+                                        this._documentHider.id = this._documentHiderId,
+                                        document.body.appendChild(this._documentHider),
+                                        console.debug("Page content hidden")
+                                    } catch (t) {
+                                        console.error(`Failed to hide page content: ${JSON.stringify(t)}`),
+                                        this._documentHider = void 0,
+                                        this.hidePage(e - 1)
+                                    }
+                                }
+                            }
+                            ))
+                    }
+                    ,
+                    this.unhidePage = () => {
+                        window.requestAnimationFrame(( () => {
+                            if (this._contentStatus !== m.blocked) {
+                                try {
+                                    void 0 !== this._documentHider && (this._documentHider.remove(),
+                                    console.debug("Page content unhidden"))
+                                } catch (e) {
+                                    console.error(`Error while unhiding page content: ${JSON.stringify(e)}`)
+                                }
+                                this._documentHider = void 0;
+                                try {
+                                    document.querySelectorAll(`[id=${this._documentHiderId}]`).forEach((e => {
+                                        e.remove(),
+                                        console.debug("Page content unhidden")
+                                    }
+                                    ))
+                                } catch (e) {
+                                    console.debug("An error occurred while unhiding the page content.", e)
+                                }
+                            }
+                        }
+                        ))
+                    }
+                    ,
+                    this.handleMessageFromExtension = e => {
+                        const t = a.default.load(e);
+                        if (t instanceof r.default) {
+                            console.log("Content allowed", {
+                                enabledContentMods: t.contentModIds
+                            }),
+                            this._contentStatus = m.allowed,
+                            this._enabledContentMods.clear();
+                            const e = new Set;
+                            return t.contentModIds.forEach((t => {
+                                const o = parseInt(t)
+                                  , n = h.jsBodyMods.getContentModScriptById(o);
+                                void 0 === n ? e.add(t) : this._enabledContentMods.set(o, n)
+                            }
+                            )),
+                            e.size > 0 && console.debug("Discarding unrecognised content mod(s): ", [...e]),
+                            this._enabledContentMods.size > 0 ? (this._executeContentMods(),
+                            this._executeContentModsOnDomChange()) : this._stopExecutingContentModsOnDomChange(),
+                            this.unhidePage(),
+                            setTimeout(( () => {
+                                this.unhidePage()
+                            }
+                            ), 1e3),
+                            this.stopRepeatedlySendingContentToExtension(),
+                            !0
+                        }
+                        return t instanceof i.default ? (console.log("Content blocked"),
+                        this._contentStatus = m.blocked,
+                        this.hidePage(),
+                        this.stopRepeatedlySendingContentToExtension(),
+                        this._stopExecutingContentModsOnDomChange(),
+                        !0) : t instanceof d.default && ("loading" !== document.readyState && this.sendContentToExtension(),
+                        !0)
+                    }
+                    ,
+                    this._executeContentMods = () => {
+                        let e = !1;
+                        const t = new Set;
+                        this._enabledContentMods.forEach(( (o, n) => {
+                            if (!this._suppressedContentModIds.has(n))
+                                try {
+                                    const s = o();
+                                    if (s.length > 0 && s.every((e => null === e)))
+                                        return void t.add(n);
+                                    e = !0
+                                } catch (e) {
+                                    console.error(`Content mod ${n} failed with an error: `, e),
+                                    t.add(n),
+                                    this._suppressedContentModIds.add(n)
+                                }
+                        }
+                        )),
+                        t.size > 0 && (console.debug("Suppressing content mods which failed or are not relevant: ", [...t]),
+                        t.forEach((e => {
+                            this._suppressedContentModIds.add(e)
+                        }
+                        ))),
+                        e || this._stopExecutingContentModsOnDomChange()
+                    }
+                    ,
+                    this._onDOMChanged = () => {
+                        const e = Date.now();
+                        e - this._contentModsLastExecutedAt > 200 && (this._contentModsLastExecutedAt = e,
+                        this._executeContentMods())
+                    }
+                    ,
+                    this._executeContentModsOnDomChange = () => {
+                        this._contentModMutationObserver.disconnect(),
+                        this._enabledContentMods.size > 0 && this._contentModMutationObserver.observe(document.body, {
+                            childList: !0,
+                            subtree: !0
+                        })
+                    }
+                    ,
+                    this._stopExecutingContentModsOnDomChange = () => {
+                        this._contentModMutationObserver.disconnect()
+                    }
+                    ,
+                    this._sanitiseUrl = e => e.replace(/^(\w*:\/\/)?(www\.)?/, "").replace(/\/+$/, ""),
+                    this.onStandaloneMessage = (e, t, o) => {
+                        this.handleMessageFromExtension(e) && o(new s.default)
+                    }
+                    ,
+                    this._contentStatus = m.pending,
+                    this._documentHiderId = "smoothwall-protect",
+                    this._enabledContentMods = new Map,
+                    this._suppressedContentModIds = new Set,
+                    this._contentModMutationObserver = new MutationObserver(this._onDOMChanged),
+                    this._contentModsLastExecutedAt = 0
+                }
+            }
+        },
+        8237: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(5227))
+              , r = n(o(3674));
+            class AllowContentMessage extends s.default {
+                constructor(e=[]) {
+                    super(AllowContentMessage.type),
+                    this.contentModIds = [],
+                    this.contentModIds = e
+                }
+            }
+            AllowContentMessage.load = e => {
+                if ((null == e ? void 0 : e.type) !== AllowContentMessage.type)
+                    throw new Error(`Missing or invalid message type. Expected ${AllowContentMessage.type}.`);
+                const t = new AllowContentMessage;
+                return t.contentModIds = null == e ? void 0 : e.contentModIds,
+                t
+            }
+            ,
+            AllowContentMessage.type = r.default.AllowContent,
+            t.default = AllowContentMessage,
+            s.default.registerMessageType(AllowContentMessage)
+        },
+        9360: (e, t) => {
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            }),
+            t.isPrerenderDetectionSupported = t.onPrerenderActivation = t.isDocumentPrerendered = void 0;
+            t.isDocumentPrerendered = () => "prerendering"in document ? !0 === document.prerendering : "hidden" === document.visibilityState && !document.hidden;
+            t.onPrerenderActivation = e => {
+                if ("onprerenderingchange"in document) {
+                    const handler = () => {
+                        !0 !== document.prerendering && e()
+                    }
+                    ;
+                    return document.addEventListener("prerenderingchange", handler),
+                    () => {
+                        document.removeEventListener("prerenderingchange", handler)
+                    }
+                }
+                const visibilityHandler = () => {
+                    "visible" === document.visibilityState && e()
+                }
+                ;
+                return document.addEventListener("visibilitychange", visibilityHandler),
+                () => {
+                    document.removeEventListener("visibilitychange", visibilityHandler)
+                }
+            }
+            ;
+            t.isPrerenderDetectionSupported = () => "prerendering"in document || "onprerenderingchange"in document
+        }
+        ,
+        9493: function(e, t, o) {
+            var n = this && this.__importDefault || function(e) {
+                return e && e.__esModule ? e : {
+                    default: e
+                }
+            }
+            ;
+            Object.defineProperty(t, "__esModule", {
+                value: !0
+            });
+            const s = n(o(5227))
+              , r = n(o(3674));
+            class BlockContentMessage extends s.default {
+                constructor() {
+                    super(BlockContentMessage.type)
+                }
+            }
+            BlockContentMessage.type = r.default.BlockContent,
+            t.default = BlockContentMessage,
+            s.default.registerMessageType(BlockContentMessage)
+        }
+    }
+      , t = {};
+    (function __webpack_require__(o) {
+        var n = t[o];
+        if (void 0 !== n)
+            return n.exports;
+        var s = t[o] = {
+            exports: {}
+        };
+        return e[o].call(s.exports, s, s.exports, __webpack_require__),
+        s.exports
+    }
+    )(3454)
+}
+)();
