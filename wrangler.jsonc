@@ -1,14 +1,21 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ada",
-  "compatibility_date": "2026-04-17",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "directory": "."
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "ada",
+	"compatibility_date": "2026-04-17",
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "."
+	},
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"d1_databases": [
+		{
+			"binding": "_120_db",
+			"database_name": "120_db",
+			"database_id": "7e84aaf8-3639-4511-b7e9-3d04219eed1e"
+		}
+	]
 }
