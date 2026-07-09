@@ -856,6 +856,318 @@
         /* HIDDEN / MISC */
         .hidden { display: none !important; }
     </style>
+
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           PROFILE PAGE — Retro Win95/Dark Overrides
+           Page-specific layout/containers still using the original
+           modern rounded style. Sits AFTER the retro overlay so
+           same-specificity overrides take effect. The body background
+           is left alone — JS sets it inline from the user's profile.
+           ═══════════════════════════════════════════════════════════════ */
+
+        /* Page body — retro font/color (background stays user-set) */
+        body {
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px;
+            color: var(--win-text);
+            transition: none;
+        }
+
+        /* Sidebar */
+        .sidebar { gap: 12px; }
+
+        .avatar-lg {
+            width: 320px; height: 320px;
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            object-fit: cover;
+            background: #0d1117;
+            margin-bottom: 5px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+
+        .status-dot { width: 10px; height: 10px; }
+        .online { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+        .offline { background: #8b949e; }
+
+        /* Sidebar search panel */
+        .search-area {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 10px;
+            margin-top: 10px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+
+        .suggest-box {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 2px 2px 0 0 #000;
+        }
+
+        .suggest-item {
+            background: var(--win-bg);
+            border-radius: 0;
+            border-bottom: 1px solid var(--win-border-dark);
+            color: var(--win-text);
+        }
+        .suggest-item:hover {
+            background: var(--win-text-blue);
+            color: var(--win-bg-darker);
+        }
+
+        /* Bio container (main right pane) */
+        .bio-container {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 16px;
+            min-height: 600px;
+            position: relative;
+            box-shadow: 1px 1px 0 0 #000;
+            backdrop-filter: none;
+        }
+
+        /* Bio display/edit/raw (sunken field) */
+        #bio-edit, #bio-raw, #bio-display {
+            background: #0d1117;
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 12px;
+            color: var(--win-text);
+        }
+
+        /* Toolbar buttons (select already retro via overlay) */
+        .toolbar button {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 5px 10px;
+            box-shadow: none;
+            font-size: 12px;
+        }
+        .toolbar button:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            background: #161b22;
+        }
+        .toolbar select {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-radius: 0;
+        }
+
+        /* Color picker wrapper */
+        .color-picker-wrapper {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            height: auto;
+            padding: 4px 8px;
+        }
+        .color-preview {
+            border-radius: 0;
+            border: 1px solid var(--win-border-dark);
+        }
+
+        /* Badges — square retro bg (border + text color stay dynamic) */
+        .badge {
+            background: var(--win-bg);
+            border-radius: 0;
+        }
+
+        /* Page settings button (admin) */
+        #page-settings-btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000;
+            transition: none;
+        }
+        #page-settings-btn:hover {
+            background: #232a33;
+            color: var(--win-text);
+        }
+        #page-settings-btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+        }
+
+        /* Modal boxes — Win95 dialog chrome */
+        #lb-modal-box, #lbmgr-box, .modal-box {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 2px 2px 0 0 #000;
+            color: var(--win-text);
+        }
+
+        .modal-title { color: var(--win-text); }
+        .modal-close {
+            color: var(--win-text);
+            border-radius: 0;
+        }
+        .modal-close:hover {
+            background: var(--win-text-blue);
+            color: var(--win-bg-darker);
+        }
+
+        .modal-section-title {
+            color: var(--win-text);
+            border-bottom: 1px solid var(--win-border-dark);
+        }
+
+        .modal-row label { color: var(--win-text); }
+
+        /* Sunken cards inside modals */
+        .lb-game-block, .lbmgr-entry, .lbmgr-add-form {
+            background: #0d1117;
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            color: var(--win-text);
+        }
+
+        .lb-game-img, .lbmgr-entry img {
+            border-radius: 0;
+            border: 1px solid var(--win-border-light);
+        }
+
+        .lb-game-title, .lbmgr-entry-id { color: #8b949e; }
+
+        .lbmgr-del {
+            color: var(--win-text);
+            border-radius: 0;
+        }
+        .lbmgr-del:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        /* Comments */
+        .comments-section {
+            border-top: 1px solid var(--win-border-dark);
+            margin-top: 20px;
+            padding-top: 12px;
+        }
+
+        .comments-title {
+            color: var(--win-text);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding-bottom: 6px;
+        }
+
+        .comment-input-row img, .comment-item img {
+            border-radius: 0;
+            border: 1px solid var(--win-border-light);
+        }
+
+        .comment-body {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            color: var(--win-text);
+        }
+
+        .comment-delete {
+            color: var(--win-text);
+            border-radius: 0;
+        }
+        .comment-delete:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        #comments-off-msg {
+            background: var(--win-bg);
+            border-radius: 0;
+            border: none;
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            color: var(--win-text);
+        }
+
+        .comment-author { color: var(--win-text-blue); }
+
+        /* Name heading */
+        #name-view {
+            font-size: 15px;
+            color: var(--win-text);
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* Toggle switch (Win95 square) */
+        .toggle { border-radius: 0; }
+        .toggle-slider {
+            background: #30363d;
+            border-radius: 0;
+            border: 1px solid var(--win-border-light);
+        }
+        .toggle-slider:before {
+            border-radius: 0;
+            background: white;
+        }
+        .toggle input:checked + .toggle-slider {
+            background: var(--btn-green);
+            border-color: var(--btn-green);
+        }
+    </style>
 </head>
 <body id="p-body">
 
