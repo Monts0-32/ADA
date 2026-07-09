@@ -2,593 +2,462 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in — ADA</title>
 
+    <!-- MASTER SCRIPTS -->
+    <script src="/config.js"></script>
+    <script src="/uplink.js"></script>
+
     <style>
+        /* ──────────────────────────────────────────────────────────
+           ADA OS — Retro Windows 95 / 2000 chrome (Dark Mode)
+           ────────────────────────────────────────────────────────── */
         :root {
-            --bg: #0d1117;
-            --bg-elevated: #010409;
-            --panel: #161b22;
-            --panel-2: #1c2128;
-            --panel-3: #22272e;
-            --btn-bg: #21262d;
-            --btn-hover: #30363d;
-            --border: #30363d;
-            --border-soft: #21262d;
-            --border-strong: #444c56;
-            --text: #e6edf3;
-            --text-2: #c9d1d9;
-            --muted: #8b949e;
-            --muted-2: #6e7681;
-
-            --blue: #58a6ff;
-            --blue-dim: #1f6feb;
-            --blue-deep: #0d419d;
-            --green: #3fb950;
-            --green-dim: #238636;
-            --red: #f85149;
-            --red-dim: #da3633;
-            --orange: #d29922;
-            --purple: #a371f7;
-            --cyan: #39c5cf;
-
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-            --shadow: 0 4px 12px rgba(0,0,0,0.4);
-            --shadow-lg: 0 12px 40px rgba(0,0,0,0.55);
+            --bg-desktop:        #0a0e14;
+            --bg-desktop-accent: #141a22;
+            --win-bg:            #1c2128;
+            --win-bg-light:      #2a313c;
+            --win-bg-dark:       #11151b;
+            --win-bg-darker:     #0a0d12;
+            --win-title:         #0d1117;
+            --win-title-active:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            --win-title-inactive:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+            --win-text:          #e6edf3;
+            --win-text-light:    #ffffff;
+            --win-border-light:  #4a525e;
+            --win-border-dark:   #080a0e;
+            --win-text-blue:     #58a6ff;
+            --taskbar-bg:        #161b22;
+            --btn-green:         #238636;
+            --blue:              #58a6ff;
+            --red:               #f85149;
         }
 
         * { box-sizing: border-box; }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+        /* THEMED SCROLLBAR */
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--win-bg-light); border-top: 1px solid var(--win-border-light); border-left: 1px solid var(--win-border-light); border-right: 1px solid var(--win-border-dark); border-bottom: 1px solid var(--win-border-dark); }
+        ::-webkit-scrollbar-button { background: var(--win-bg-light); display: block; }
 
-        body {
-            margin: 0; min-height: 100vh; overflow: hidden;
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            background-image:
-                radial-gradient(ellipse 700px 500px at 20% 25%, rgba(88,166,255,0.10), transparent 55%),
-                radial-gradient(ellipse 600px 400px at 80% 75%, rgba(163,113,247,0.07), transparent 55%);
-        }
-
-        /* ============== BOOT SCREEN (matches dash.html) ============== */
-        .boot-screen {
-            position: fixed; inset: 0; z-index: 100000;
-            background: var(--bg-elevated);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
-        }
-        .boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        .boot-glyph {
-            width: 88px; height: 88px;
-            background: var(--panel-2);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: 800; color: var(--blue);
-            letter-spacing: -1px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            opacity: 0; transform: scale(0.8) translateY(8px);
-            animation: boot-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes boot-in {
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .boot-title {
-            font-size: 14px; font-weight: 600; letter-spacing: 6px;
-            color: var(--text); margin: 24px 0 4px;
-            opacity: 0; animation: boot-fade 0.4s ease 0.4s forwards;
-        }
-        .boot-sub {
-            font-size: 10px; color: var(--muted);
-            letter-spacing: 3px; text-transform: uppercase;
-            opacity: 0; animation: boot-fade 0.4s ease 0.5s forwards;
-        }
-        @keyframes boot-fade { to { opacity: 1; } }
-        .boot-progress {
-            width: 200px; height: 2px; background: var(--border);
-            border-radius: 2px; margin-top: 32px; overflow: hidden;
-            opacity: 0; animation: boot-fade 0.3s ease 0.6s forwards;
-        }
-        .boot-progress-fill {
-            height: 100%; background: linear-gradient(90deg, var(--blue), var(--purple));
-            transform: translateX(-100%);
-            animation: boot-slide 1.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
-        }
-        @keyframes boot-slide { to { transform: translateX(0); } }
-        .boot-status {
-            margin-top: 14px;
-            font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
-            font-size: 10px; color: var(--muted); letter-spacing: 1.5px;
-            min-height: 14px; min-width: 200px; text-align: center;
-            opacity: 0; animation: boot-fade 0.3s ease 0.8s forwards;
-        }
-        .boot-status::after {
-            content: '_';
-            animation: blink 1s steps(2) infinite;
-            margin-left: 2px;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* ============== RIGHT-SIDE SYSTEM TRAY ============== */
-        .login-right {
-            position: fixed; right: 0; top: 0; bottom: 0; width: 48px;
-            display: flex; flex-direction: column; align-items: center;
-            padding: 18px 0; gap: 6px; z-index: 10;
-        }
-        .tray-icon {
-            width: 36px; height: 36px;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--muted); cursor: pointer; transition: 0.1s;
-            border-radius: 6px;
-        }
-        .tray-icon:hover { background: var(--btn-bg); color: var(--text); }
-        .tray-icon svg { width: 16px; height: 16px; }
-        .tray-clock-strip {
-            position: absolute; bottom: 24px; right: 8px;
-            writing-mode: vertical-rl; text-orientation: mixed;
-            font-family: 'SFMono-Regular', ui-monospace, Consolas, monospace;
-            font-size: 11px; color: var(--muted); letter-spacing: 2px;
-        }
-
-        /* ============== STAGE ============== */
-        .login-stage {
-            position: relative; z-index: 1;
-            min-height: 100vh; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 40px 20px;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-        .login-stage.visible { opacity: 1; }
-
-        /* ============== LOGIN CARD ============== */
-        .login-card {
-            width: 380px; max-width: calc(100vw - 48px);
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px;
+            color: var(--win-text);
             overflow: hidden;
-            animation: card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes card-in {
-            from { opacity: 0; transform: translateY(8px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        .card-header {
-            display: flex; align-items: center; gap: 12px;
-            padding: 14px 18px;
-            background: var(--panel-2);
-            border-bottom: 1px solid var(--border);
+        /* ── DESKTOP ───────────────────────────────────────────── */
+        #desktop {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(88,166,255,0.06), transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.30), transparent 50%),
+                var(--bg-desktop);
+            overflow: hidden;
         }
-        .card-header-glyph {
-            width: 28px; height: 28px;
-            background: var(--panel-3);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+
+        /* ── WINDOWS ───────────────────────────────────────────── */
+        .window {
+            position: absolute;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000, 0 0 0 1px #000;
+            display: flex; flex-direction: column;
+            min-width: 220px; min-height: 140px;
+        }
+
+        .titlebar {
+            background: var(--win-title-active);
+            color: var(--win-text-light);
+            padding: 3px 4px 3px 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 12px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .titlebar-text { display: flex; align-items: center; gap: 5px; }
+        .titlebar-text .tb-icon { font-size: 13px; }
+        .titlebar-buttons { display: flex; gap: 2px; }
+
+        .titlebar-btn {
+            width: 18px; height: 16px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
             display: flex; align-items: center; justify-content: center;
-            color: var(--blue);
-        }
-        .card-header-glyph svg { width: 15px; height: 15px; }
-        .card-header-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-        .card-header-title {
-            font-size: 13px; font-weight: 600; color: var(--text);
-            letter-spacing: 0.2px;
-        }
-        .card-header-sub {
-            font-size: 10px; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500;
-        }
-        .card-header-status {
-            margin-left: auto;
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 10px; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500;
-        }
-        .card-header-status::before {
-            content: ''; width: 6px; height: 6px; border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
+            font-family: "Marlett", "MS Sans Serif", monospace;
+            font-size: 10px; line-height: 1; cursor: pointer;
+            color: var(--win-text); padding: 0;
         }
 
-        .card-body {
-            padding: 24px 24px 22px;
+        .menubar {
+            display: flex; gap: 0;
+            background: var(--win-bg);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 1px 2px;
+            flex-shrink: 0;
+        }
+        .menubar span {
+            padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+        }
+        .menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+
+        .window-body {
+            flex: 1;
+            padding: 14px;
+            overflow: auto;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
         }
 
-        /* ============== USER TILE (inside the card) ============== */
+        .statusbar {
+            padding: 3px 6px; font-size: 11px; color: var(--win-text);
+            background: var(--win-bg);
+            border-top: 1px solid var(--win-border-dark);
+            display: flex; justify-content: space-between; gap: 4px;
+            flex-shrink: 0;
+        }
+        .statusbar-cell {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 1px 6px; flex: 1;
+            color: var(--win-text);
+        }
+
+        /* ── BUTTONS (chiseled chrome) ─────────────────────────── */
+        .btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 5px 16px;
+            font-family: inherit; font-size: 12px;
+            cursor: pointer; min-width: 90px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 6px 15px 4px 17px;
+        }
+        .btn:disabled { color: var(--win-bg-light); text-shadow: 1px 1px 0 #000; cursor: not-allowed; }
+        .btn-primary  { font-weight: bold; }
+
+        .field {
+            background: #0d1117; color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 4px 6px; font-family: inherit; font-size: 12px;
+            outline: none; width: 100%; box-sizing: border-box;
+        }
+        .field:focus { background: #161b22; border-right-color: var(--win-text-blue); border-bottom-color: var(--win-text-blue); }
+        input.field::placeholder { color: var(--win-bg-light); font-style: italic; }
+
+        /* ── WINDOW-INTERNAL CONTENT ───────────────────────────── */
+        .window h2 {
+            margin: 0 0 8px 0; font-size: 13px; color: var(--win-text-blue);
+            font-weight: bold;
+        }
+        .window p { margin: 0 0 10px 0; line-height: 1.45; }
+        .window p.subtle { color: #8b949e; font-style: italic; font-size: 11px; }
+
+        .field-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+        .field-group label { font-size: 11px; font-weight: bold; color: var(--win-text); }
+
+        /* ── USER TILE / PROFILE PICTURE ───────────────────────── */
         .user-tile {
             display: flex; flex-direction: column; align-items: center;
-            gap: 14px; margin-bottom: 22px;
+            gap: 8px; margin-bottom: 14px; padding: 8px 0 4px;
         }
         .user-avatar {
-            width: 88px; height: 88px; border-radius: 50%;
-            background: var(--panel-2);
-            border: 1px solid var(--border);
+            width: 96px; height: 96px;
+            background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
             display: flex; align-items: center; justify-content: center;
             overflow: hidden; position: relative;
-            transition: 0.15s;
         }
-        .user-avatar:hover { border-color: var(--blue); }
         .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .user-avatar .avatar-letter {
-            font-size: 36px; font-weight: 600; color: var(--muted);
-            text-transform: uppercase; letter-spacing: -0.5px;
+            font-size: 40px; font-weight: bold; color: var(--win-text-blue);
+            text-transform: uppercase;
         }
         .user-name {
-            font-size: 18px; font-weight: 600; color: var(--text);
-            letter-spacing: 0.2px;
+            font-size: 15px; font-weight: bold; color: var(--win-text);
+            letter-spacing: 0.2px; margin-top: 4px;
         }
         .user-email {
-            font-size: 11px; color: var(--muted);
-            margin-top: -8px;
+            font-size: 11px; color: #8b949e;
+            font-family: "Courier New", monospace;
         }
 
-        /* ============== FORM FIELDS ============== */
-        .field {
-            display: flex; flex-direction: column; gap: 6px;
-            margin-bottom: 12px;
-        }
-        .field-label {
-            font-size: 10px; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-        }
-        .input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text);
-            font-size: 13px; font-family: inherit;
-            outline: none;
-            transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
-        }
-        .input:focus {
-            border-color: var(--blue);
-            background: var(--bg-elevated);
-            box-shadow: 0 0 0 3px rgba(88,166,255,0.15);
-        }
-        .input::placeholder { color: var(--muted-2); }
+        /* Welcome-back / row of two buttons */
+        .row-buttons { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+        .row-buttons .btn { flex: 1; }
 
-        /* ============== BUTTONS ============== */
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--btn-bg);
-            color: var(--text);
-            font-size: 13px; font-weight: 600; font-family: inherit;
-            cursor: pointer;
-            transition: 0.12s;
-            text-decoration: none;
-        }
-        .btn:hover { background: var(--border); border-color: var(--border-strong); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn svg { width: 14px; height: 14px; }
-
-        .btn-primary {
-            background: var(--green-dim);
-            border-color: var(--green-dim);
-            color: white;
-        }
-        .btn-primary:hover {
-            background: var(--green);
-            border-color: var(--green);
-        }
-        .btn-block { width: 100%; }
-
-        /* ============== ERROR ============== */
+        /* ── ERROR BANNER ──────────────────────────────────────── */
         .login-msg {
-            margin-top: 12px;
+            margin-top: 10px;
             color: var(--red);
-            font-size: 12px;
-            padding: 8px 12px;
-            background: rgba(248,81,73,0.08);
-            border: 1px solid rgba(248,81,73,0.3);
-            border-radius: 6px;
+            font-size: 11px;
+            padding: 4px 8px;
+            background: rgba(248,81,73,0.10);
+            border-top:    1px solid rgba(248,81,73,0.5);
+            border-left:   1px solid rgba(248,81,73,0.5);
+            border-right:  1px solid #600;
+            border-bottom: 1px solid #600;
             display: none;
             text-align: center;
+            font-weight: bold;
         }
         .login-msg.show { display: block; }
 
-        /* ============== SWITCH USER LINK ============== */
+        /* ── SWITCH-USER LINK ──────────────────────────────────── */
         .switch-user {
             display: block; text-align: center;
-            margin-top: 16px;
-            color: var(--blue);
-            font-size: 12px; font-weight: 500;
-            cursor: pointer; padding: 6px 10px; border-radius: 6px;
-            transition: 0.1s;
-            text-decoration: none;
+            margin-top: 12px;
+            color: var(--win-text-blue);
+            font-size: 11px; font-weight: bold;
+            cursor: pointer; padding: 4px 8px;
         }
-        .switch-user:hover {
-            background: rgba(88,166,255,0.08);
-            text-decoration: underline;
-        }
+        .switch-user:hover { text-decoration: underline; color: var(--win-text-light); }
 
-        /* ============== LOCK HINT (above the card) ============== */
-        .lock-hint {
-            display: inline-flex; align-items: center; gap: 8px;
-            margin-bottom: 18px;
-            padding: 6px 12px;
-            color: var(--muted);
-            font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
-            font-weight: 500;
-            background: rgba(22,27,34,0.6);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .lock-hint svg { width: 12px; height: 12px; color: var(--orange); }
+        /* ── MISC ──────────────────────────────────────────────── */
+        .hidden { display: none !important; }
 
-        /* ============== BOTTOM OPTIONS (left side) ============== */
-        .login-options {
-            position: fixed; bottom: 24px; left: 24px;
-            display: flex; gap: 8px; z-index: 5;
-        }
-        .login-option {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 12px; border-radius: 6px;
-            color: var(--muted); font-size: 12px; font-weight: 500;
-            cursor: pointer; transition: 0.1s;
-            background: rgba(22,27,34,0.6);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            text-decoration: none;
-        }
-        .login-option:hover {
-            background: var(--btn-bg);
-            border-color: var(--border-strong);
-            color: var(--text);
-        }
-        .login-option svg { width: 13px; height: 13px; }
-
-        /* ============== STATUS PILL (top right) ============== */
-        .status-pill {
-            position: fixed; top: 16px; right: 16px;
-            display: inline-flex; align-items: center; gap: 8px;
-            color: var(--muted); font-size: 11px; font-weight: 500;
-            padding: 5px 12px; border-radius: 20px;
-            background: rgba(22,27,34,0.85);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 5;
-        }
-        .status-pill-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
-        }
-
-        @media (max-width: 520px) {
-            .login-card { width: 100%; }
-            .login-right { display: none; }
+        /* Back link (bottom-left) */
+        #back-option {
+            position: fixed; left: 12px; bottom: 12px; z-index: 10;
         }
     </style>
 </head>
 <body>
 
-<!-- ============== BOOT SCREEN ============== -->
+<!-- ═════════════ DESKTOP ═════════════ -->
+<div id="desktop">
 
-
-<div class="status-pill">
-    <span class="status-pill-dot"></span>
-    <span>ADA · Online</span>
-</div>
-
-<div class="login-right">
-	<div class="tray-clock-strip" id="clock-strip">--:--:--</div>
-</div>
-
-<div class="login-stage" id="login-stage">
-
-    <div class="lock-hint" id="lock-hint" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/></svg>
-        <span>Locked</span>
-    </div>
-
-    <!-- Saved user tile (Windows 10/11 style) -->
-    <div id="saved-tile-section"></div>
-
-    <!-- Other-user form (default) -->
-    <div id="other-user-section" style="display:none;">
-        <div class="login-card">
-            <div class="card-header">
-                <div class="card-header-glyph">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
-                <div class="card-header-text">
-                    <div class="card-header-title">ADA Archive</div>
-                    <div class="card-header-sub">Sign in to continue</div>
-                </div>
-                <div class="card-header-status">Online</div>
+    <!-- ── WINDOW: Sign in ── -->
+    <div class="window" id="win-login" data-win="login" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px;">
+        <div class="titlebar">
+            <div class="titlebar-text"><span class="tb-icon">🔐</span><span id="tb-title">Sign in to ADA OS</span></div>
+            <div class="titlebar-buttons">
+                <button class="titlebar-btn" title="Help">?</button>
+                <button class="titlebar-btn" onclick="window.location.href='/index.html'" title="Close">×</button>
             </div>
-            <div class="card-body">
+        </div>
+        <div class="menubar">
+            <span>File</span>
+            <span>Edit</span>
+            <span>Help</span>
+        </div>
+        <div class="window-body">
+
+            <!-- ═══ ALREADY LOGGED IN: Welcome-back card ═══ -->
+            <div id="resume-section" class="hidden">
                 <div class="user-tile">
                     <div class="user-avatar">
-                        <span class="avatar-letter">?</span>
+                        <img id="resume-avatar-img" src="" alt="">
+                        <span class="avatar-letter" id="resume-avatar-letter"></span>
                     </div>
-                    <div class="user-name">Sign in</div>
+                    <div class="user-name" id="resume-name">User</div>
+                    <div class="user-email" id="resume-email">user@example.com</div>
                 </div>
+                <p class="subtle" style="text-align:center; margin-bottom:4px;">You are already signed in.</p>
+                <div class="row-buttons">
+                    <button class="btn" id="btn-switch-user">Switch user</button>
+                    <button class="btn btn-primary" id="btn-continue">Continue to dash</button>
+                </div>
+            </div>
 
+            <!-- ═══ SAVED-USER TILE: password prompt ═══ -->
+            <div id="saved-tile-section" class="hidden">
+                <div class="user-tile">
+                    <div class="user-avatar">
+                        <img id="saved-avatar-img" src="" alt="">
+                        <span class="avatar-letter" id="saved-avatar-letter"></span>
+                    </div>
+                    <div class="user-name" id="saved-name">User</div>
+                    <div class="user-email" id="saved-email">user@example.com</div>
+                </div>
+                <form id="login-form-saved">
+                    <div class="field-group">
+                        <label for="password-saved">PASSWORD</label>
+                        <input type="password" id="password-saved" class="field" placeholder="••••••••" required autocomplete="current-password" autofocus>
+                    </div>
+                    <div class="row-buttons" style="margin-top:14px;">
+                        <button type="button" class="btn" id="btn-saved-cancel">Switch user</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-saved">Sign in</button>
+                    </div>
+                    <div class="login-msg" id="msg-saved"></div>
+                </form>
+            </div>
+
+            <!-- ═══ OTHER-USER FORM: full email + password ═══ -->
+            <div id="other-user-section" class="hidden">
+                <h2>ADA Archive</h2>
+                <p class="subtle">Sign in to continue.</p>
                 <form id="login-form-other">
-                    <div class="field">
-                        <label class="field-label" for="email-other">Email</label>
-                        <input type="email" id="email-other" class="input" placeholder="you@example.com" required autocomplete="email">
+                    <div class="field-group">
+                        <label for="email-other">EMAIL</label>
+                        <input type="email" id="email-other" class="field" placeholder="you@example.com" required autocomplete="email">
                     </div>
-                    <div class="field">
-                        <label class="field-label" for="password-other">Password</label>
-                        <input type="password" id="password-other" class="input" placeholder="••••••••" required autocomplete="current-password">
+                    <div class="field-group">
+                        <label for="password-other">PASSWORD</label>
+                        <input type="password" id="password-other" class="field" placeholder="••••••••" required autocomplete="current-password">
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block" id="btn-submit-other">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                        Sign in
-                    </button>
+                    <div class="row-buttons" style="margin-top:14px;">
+                        <button type="button" class="btn" id="btn-other-cancel">Back</button>
+                        <button type="submit" class="btn btn-primary" id="btn-submit-other">Sign in</button>
+                    </div>
                     <div class="login-msg" id="msg-other"></div>
                 </form>
             </div>
+
+        </div>
+        <div class="statusbar">
+            <div class="statusbar-cell" id="status-stage">Ready</div>
+            <div class="statusbar-cell" id="status-user">guest</div>
         </div>
     </div>
 
-</div>
+</div><!-- /#desktop -->
 
-<div class="login-options">
-    <div class="login-option" id="switch-back" style="display:none;" onclick="location.reload()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        <span>Back</span>
-    </div>
-    <div class="login-option" id="sign-in-options" onclick="showOtherUser()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Sign-in options</span>
-    </div>
+<div id="back-option" class="hidden">
+    <button class="btn" onclick="window.location.href='/index.html'">← Back</button>
 </div>
-
-<script src="/config.js"></script>
-<script src="/page-transition.js"></script>
 
 <script>
     const API = (window.ADA_CONFIG && window.ADA_CONFIG.API) || "/api";
     const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzhCOTRBRSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij48cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTREOCAzLjM0IDgtNy4zNCA4LTQgMTQuMjEgMTIgMTJ6bTAgMmMtMi42NyAwLTggMS4zNC04IDR2MmgxNnYtMmMwLTIuNjYtNS4zMy00LTggNHoiLz48L3N2Zz4=`;
 
-    /* Right-side clock */
-    function tickClock() {
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2,'0');
-        const mm = String(now.getMinutes()).padStart(2,'0');
-        const ss = String(now.getSeconds()).padStart(2,'0');
-        const el = document.getElementById('clock-strip');
-        if (el) el.textContent = `${hh}:${mm}:${ss}`;
-    }
-    tickClock(); setInterval(tickClock, 1000);
-
-    /* Reveal the login stage. If the boot screen is present,
-       stage its status text and fade it out before showing. */
-    (function boot() {
-        const bootEl = document.getElementById('boot-screen');
-        const statusEl = document.getElementById('boot-status');
-        const stage = document.getElementById('login-stage');
-        if (!stage) return;
-
-        if (!bootEl || !statusEl) {
-            stage.classList.add('visible');
-            return;
+    function showSection(id) {
+        ['resume-section', 'saved-tile-section', 'other-user-section'].forEach(s => {
+            const el = document.getElementById(s);
+            if (el) el.classList.add('hidden');
+        });
+        const target = document.getElementById(id);
+        if (target) target.classList.remove('hidden');
+        const stage = document.getElementById('status-stage');
+        if (stage) {
+            if (id === 'resume-section') stage.textContent = 'Session active';
+            else if (id === 'saved-tile-section') stage.textContent = 'Enter password';
+            else stage.textContent = 'Sign in';
         }
+    }
 
-        const stages = ['UPLINKING', 'LOADING MODULES', 'ESTABLISHING LINK', 'READY'];
-        const step = Math.floor(1600 / stages.length);
-        let i = 0;
-        const tick = setInterval(() => {
-            i++;
-            if (i < stages.length) statusEl.textContent = stages[i];
-        }, step);
-        setTimeout(() => {
-            clearInterval(tick);
-            bootEl.classList.add('hidden');
-            stage.classList.add('visible');
-        }, 1800);
-    })();
+    function applyAvatar(imgEl, letterEl, savedPic, fallbackName) {
+        if (savedPic) {
+            imgEl.src = savedPic;
+            imgEl.style.display = '';
+            letterEl.style.display = 'none';
+        } else {
+            imgEl.src = DEFAULT_AVATAR;
+            letterEl.textContent = (fallbackName || '?')[0].toUpperCase();
+            imgEl.style.display = 'none';
+            letterEl.style.display = '';
+        }
+        imgEl.onerror = () => {
+            imgEl.style.display = 'none';
+            letterEl.style.display = '';
+            letterEl.textContent = (fallbackName || '?')[0].toUpperCase();
+        };
+    }
 
-    /* Render saved user as a Windows-style tile */
     function renderSavedTile() {
-        const savedName = localStorage.getItem('ada_user_name');
+        const savedName  = localStorage.getItem('ada_user_name');
         const savedEmail = localStorage.getItem('ada_user_email');
-        const savedPic = localStorage.getItem('ada_user_pic');
+        const savedPic   = localStorage.getItem('ada_user_pic');
+        const session    = localStorage.getItem('ada_session');
 
-        const section = document.getElementById('saved-tile-section');
-        const otherSection = document.getElementById('other-user-section');
+        // Update the statusbar "user" cell to whoever we have.
+        const statusUser = document.getElementById('status-user');
+        if (statusUser) statusUser.textContent = savedEmail ? savedEmail.split('@')[0] : 'guest';
 
-        if (!savedEmail) {
-            // No saved user — show other-user form
-            otherSection.style.display = 'block';
+        if (session === 'active' && savedEmail) {
+            // ── Already signed in: show welcome-back card, NOT auto-redirect.
+            document.getElementById('resume-name').textContent  = savedName || savedEmail.split('@')[0];
+            document.getElementById('resume-email').textContent = savedEmail;
+            applyAvatar(
+                document.getElementById('resume-avatar-img'),
+                document.getElementById('resume-avatar-letter'),
+                savedPic,
+                savedName || savedEmail
+            );
+            document.getElementById('tb-title').textContent = 'Welcome back — ADA OS';
+            showSection('resume-section');
+
+            document.getElementById('btn-continue').onclick = () => {
+                window.location.href = '/dash.html';
+            };
+            document.getElementById('btn-switch-user').onclick = () => {
+                // Log them out and show the full email+password form
+                localStorage.removeItem('ada_session');
+                document.getElementById('tb-title').textContent = 'Sign in to ADA OS';
+                showSection('other-user-section');
+            };
             return;
         }
 
-        // Has saved user — show the user tile
-        const initial = (savedName || savedEmail)[0].toUpperCase();
-        section.innerHTML = `
-            <div class="login-card">
-                <div class="card-header">
-                    <div class="card-header-glyph">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <div class="card-header-text">
-                        <div class="card-header-title">${savedName || savedEmail.split('@')[0]}</div>
-                        <div class="card-header-sub">${savedEmail}</div>
-                    </div>
-                    <div class="card-header-status">Online</div>
-                </div>
-                <div class="card-body">
-                    <div class="user-tile">
-                        <div class="user-avatar" id="user-avatar">
-                            <img id="user-avatar-img" src="${savedPic || DEFAULT_AVATAR}" onerror="this.style.display='none'">
-                        </div>
-                        <div class="user-name">${savedName || savedEmail.split('@')[0]}</div>
-                    </div>
+        if (savedEmail) {
+            // ── Saved user, but session cleared: show password prompt.
+            document.getElementById('saved-name').textContent  = savedName || savedEmail.split('@')[0];
+            document.getElementById('saved-email').textContent = savedEmail;
+            applyAvatar(
+                document.getElementById('saved-avatar-img'),
+                document.getElementById('saved-avatar-letter'),
+                savedPic,
+                savedName || savedEmail
+            );
+            showSection('saved-tile-section');
 
-                    <form id="login-form-saved">
-                        <div class="field">
-                            <label class="field-label" for="password-saved">Password</label>
-                            <input type="password" id="password-saved" class="input" placeholder="••••••••" required autocomplete="current-password" autofocus>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-saved">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                            Sign in
-                        </button>
-                        <div class="login-msg" id="msg-saved"></div>
-                    </form>
-
-                    <div class="switch-user" id="switch-user">Switch user</div>
-                </div>
-            </div>
-        `;
-
-        // Auto-resume if already signed in
-        if (localStorage.getItem('ada_session') === 'active') {
-            fetch(`${API}/sync?email=${encodeURIComponent(savedEmail)}`)
-                .then(r => r.json())
-                .then(data => { if (data && data.user) location.href = '/dash.html'; })
-                .catch(() => {});
+            document.getElementById('login-form-saved').addEventListener('submit', (e) => {
+                e.preventDefault();
+                doLogin(savedEmail, document.getElementById('password-saved').value, 'msg-saved', 'btn-submit-saved');
+            });
+            document.getElementById('btn-saved-cancel').onclick = () => {
+                localStorage.removeItem('ada_user_name');
+                localStorage.removeItem('ada_user_email');
+                localStorage.removeItem('ada_user_pic');
+                showSection('other-user-section');
+            };
+            return;
         }
 
-        // Submit saved-user form
-        document.getElementById('login-form-saved').addEventListener('submit', (e) => {
-            e.preventDefault();
-            doLogin(savedEmail, document.getElementById('password-saved').value, 'msg-saved', 'btn-submit-saved');
-        });
-
-        // Switch user — show the other-user form
-        document.getElementById('switch-user').addEventListener('click', () => {
-            section.style.display = 'none';
-            otherSection.style.display = 'block';
-            document.getElementById('switch-back').style.display = 'inline-flex';
-        });
-    }
-
-    function showOtherUser() {
-        document.getElementById('saved-tile-section').style.display = 'none';
-        document.getElementById('other-user-section').style.display = 'block';
-        document.getElementById('switch-back').style.display = 'inline-flex';
+        // ── Nothing saved: show the full login form.
+        showSection('other-user-section');
     }
 
     /* Shared login flow */
     async function doLogin(email, pass, msgId, btnId) {
         const msg = document.getElementById(msgId);
         const btn = document.getElementById(btnId);
-        msg.classList.remove('show');
+        if (msg) { msg.classList.remove('show'); msg.textContent = ''; }
         btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Signing in…';
 
         try {
             const response = await fetch(`${API}/auth`, {
@@ -607,23 +476,29 @@
                     const profileData = await profileRes.json();
                     if (profileData && profileData.user) {
                         if (profileData.user.profile_picture) localStorage.setItem('ada_user_pic', profileData.user.profile_picture);
-                        if (profileData.user.display_name) localStorage.setItem('ada_user_name', profileData.user.display_name);
+                        if (profileData.user.display_name)    localStorage.setItem('ada_user_name', profileData.user.display_name);
                     }
                 } catch (e) {}
-                location.href = '/dash.html';
+                window.location.href = '/dash.html';
             } else {
-                msg.textContent = 'Incorrect password.';
-                msg.classList.add('show');
+                if (msg) {
+                    msg.textContent = 'Incorrect password.';
+                    msg.classList.add('show');
+                }
                 btn.disabled = false;
+                btn.textContent = originalText;
             }
         } catch (err) {
-            msg.textContent = 'Connection error.';
-            msg.classList.add('show');
+            if (msg) {
+                msg.textContent = 'Connection error.';
+                msg.classList.add('show');
+            }
             btn.disabled = false;
+            btn.textContent = originalText;
         }
     }
 
-    /* Other-user form submit */
+    /* Other-user form wiring */
     const otherForm = document.getElementById('login-form-other');
     otherForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -634,6 +509,15 @@
             'btn-submit-other'
         );
     });
+    document.getElementById('btn-other-cancel').onclick = () => {
+        // If we have a saved user, go back to saved-tile form; else just clear fields.
+        if (localStorage.getItem('ada_user_email')) {
+            renderSavedTile();
+        } else {
+            document.getElementById('email-other').value = '';
+            document.getElementById('password-other').value = '';
+        }
+    };
 
     renderSavedTile();
 </script>

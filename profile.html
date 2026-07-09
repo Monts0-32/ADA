@@ -246,6 +246,396 @@
          Synced from dash.html — overlay for chrome components
          ═══════════════════════════════════════════════════════════════ -->
     <style>
+        /* ──────────────────────────────────────────────────────────
+           ADA OS — Retro Windows 95 / 2000 chrome (Dark Mode)
+           Copied from dash.html — full style sheet
+           ────────────────────────────────────────────────────────── */
+        :root {
+            --bg-desktop:        #0a0e14;   /* near-black desktop */
+            --bg-desktop-accent: #141a22;
+            --win-bg:            #1c2128;   /* dark grey window chrome */
+            --win-bg-light:      #2a313c;   /* raised edge */
+            --win-bg-dark:       #11151b;   /* sunken edge */
+            --win-bg-darker:     #0a0d12;
+            --win-title:         #0d1117;   /* dark title bar */
+            --win-title-active:  linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            --win-title-inactive:linear-gradient(90deg, #2a313c 0%, #1c2128 100%);
+            --win-text:          #e6edf3;
+            --win-text-light:    #ffffff;
+            --win-border-light:  #4a525e;   /* light edge of dark chrome */
+            --win-border-dark:   #080a0e;   /* dark edge of dark chrome */
+            --win-text-blue:     #58a6ff;
+            --taskbar-bg:        #161b22;
+            --btn-green:         #238636;
+            --blue:              #58a6ff;
+            --red:               #f85149;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* THEMED SCROLLBAR */
+        ::-webkit-scrollbar { width: 16px; height: 16px; }
+        ::-webkit-scrollbar-track { background: var(--win-bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--win-bg-light); border-top: 1px solid var(--win-border-light); border-left: 1px solid var(--win-border-light); border-right: 1px solid var(--win-border-dark); border-bottom: 1px solid var(--win-border-dark); }
+        ::-webkit-scrollbar-button { background: var(--win-bg-light); display: block; }
+
+        html, body {
+            margin: 0; padding: 0; height: 100%;
+            font-family: "MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", sans-serif;
+            font-size: 12px;
+            color: var(--win-text);
+            overflow-x: hidden;
+        }
+
+        /* ── DESKTOP ───────────────────────────────────────────── */
+        #desktop {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(88,166,255,0.06), transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.30), transparent 50%),
+                var(--bg-desktop);
+            overflow: hidden;
+        }
+
+        /* Desktop icons (left column) */
+        .desktop-icons {
+            position: absolute; top: 10px; left: 10px;
+            display: flex; flex-direction: column; gap: 14px;
+            z-index: 1;
+        }
+        .desktop-icon {
+            display: flex; flex-direction: column; align-items: center;
+            width: 76px; padding: 6px 4px; cursor: pointer;
+            border: 1px dotted transparent; user-select: none;
+        }
+        .desktop-icon:hover { background: rgba(88,166,255,0.10); border-color: rgba(88,166,255,0.4); }
+        .desktop-icon:active { background: rgba(0,0,0,0.30); }
+        .desktop-icon .icon-img {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; line-height: 1; margin-bottom: 4px;
+        }
+        .desktop-icon .icon-label {
+            color: var(--win-text); font-size: 11px; text-align: center;
+            text-shadow: 1px 1px 0 #000;
+            word-wrap: break-word;
+        }
+
+        /* ── WINDOWS ───────────────────────────────────────────── */
+        .window {
+            position: absolute;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            box-shadow: 1px 1px 0 0 #000, 0 0 0 1px #000;
+            display: flex; flex-direction: column;
+            min-width: 220px; min-height: 140px;
+        }
+        .window.maximized {
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: calc(100% - 32px) !important;
+            border: 2px solid var(--win-border-dark);
+        }
+
+        .titlebar {
+            background: var(--win-title-inactive);
+            color: var(--win-text-light);
+            padding: 3px 4px 3px 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 12px;
+            cursor: move;
+            user-select: none;
+            flex-shrink: 0;
+        }
+        .window.active .titlebar { background: var(--win-title-active); }
+        .titlebar-text { display: flex; align-items: center; gap: 5px; }
+        .titlebar-text .tb-icon { font-size: 13px; }
+        .titlebar-buttons { display: flex; gap: 2px; }
+
+        .titlebar-btn {
+            width: 18px; height: 16px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            display: flex; align-items: center; justify-content: center;
+            font-family: "Marlett", "MS Sans Serif", monospace;
+            font-size: 10px; line-height: 1; cursor: pointer;
+            color: var(--win-text); padding: 0;
+        }
+        .titlebar-btn:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+
+        .menubar {
+            display: flex; gap: 0;
+            background: var(--win-bg);
+            border-bottom: 1px solid var(--win-border-dark);
+            padding: 1px 2px;
+            flex-shrink: 0;
+        }
+        .menubar span {
+            padding: 2px 8px; cursor: pointer; font-size: 12px; color: var(--win-text);
+        }
+        .menubar span:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+
+        .window-body {
+            flex: 1;
+            padding: 10px;
+            overflow: auto;
+            background: var(--win-bg);
+            color: var(--win-text);
+            /* Inset border on body */
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px;
+        }
+        .window-body.flush { padding: 0; }
+
+        .statusbar {
+            padding: 3px 6px; font-size: 11px; color: var(--win-text);
+            background: var(--win-bg);
+            border-top: 1px solid var(--win-border-dark);
+            display: flex; justify-content: space-between; gap: 4px;
+            flex-shrink: 0;
+        }
+        .statusbar-cell {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 1px 6px; flex: 1;
+            color: var(--win-text);
+        }
+
+        /* ── BUTTONS (chiseled chrome) ─────────────────────────── */
+        .btn {
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            padding: 4px 14px;
+            font-family: inherit; font-size: 12px;
+            cursor: pointer; min-width: 75px;
+            box-shadow: 1px 1px 0 0 #000;
+        }
+        .btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+            padding: 5px 13px 3px 15px;
+        }
+        .btn:disabled { color: var(--win-bg-light); text-shadow: 1px 1px 0 #000; cursor: not-allowed; }
+        .btn-primary  { font-weight: bold; }
+
+        .field {
+            background: #0d1117; color: var(--win-text);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 3px 5px; font-family: inherit; font-size: 12px;
+            outline: none; width: 100%; box-sizing: border-box;
+        }
+        .field:focus { background: #161b22; border-right-color: var(--win-text-blue); border-bottom-color: var(--win-text-blue); }
+        textarea.field { resize: vertical; min-height: 80px; font-family: "MS Sans Serif", monospace; }
+
+        /* ── WINDOW-INTERNAL CONTENT ───────────────────────────── */
+        .window h2 {
+            margin: 0 0 8px 0; font-size: 13px; color: var(--win-text-blue);
+            font-weight: bold;
+        }
+        .window p { margin: 0 0 10px 0; line-height: 1.45; }
+        .window p.subtle { color: #8b949e; font-style: italic; font-size: 11px; }
+
+        .field-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+        .field-group label { font-size: 11px; font-weight: bold; color: var(--win-text); }
+        .field-group .label-row { display: flex; justify-content: space-between; align-items: baseline; }
+        .field-group .label-row .hint { font-size: 10px; color: #8b949e; font-style: italic; }
+
+        /* Forecast grid (inside Chan's Mood Forecast window) */
+        .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .day-card {
+            text-align: center; background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            padding: 6px 4px;
+            color: var(--win-text);
+        }
+        .day-name { font-size: 10px; color: #8b949e; font-weight: bold; margin-bottom: 4px; }
+        .day-img  { width: 32px; height: 32px; margin: 0 auto; display: block; object-fit: contain; }
+        .day-status { font-size: 10px; color: var(--win-text-blue); font-family: "Courier New", monospace; margin-top: 4px; }
+
+        .clock-day  { font-size: 14px; font-weight: bold; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .clock-date { font-size: 15px; color: var(--win-text); font-weight: 600; }
+        .clock-time { font-size: 34px; font-family: "Courier New", monospace; font-weight: bold; color: var(--win-text-blue); letter-spacing: 0px; white-space: nowrap; }
+
+        /* Card placeholders (apps) */
+        .app-tile {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center;
+            padding: 12px 8px;
+            background: #0d1117;
+            color: var(--win-text);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            cursor: pointer; user-select: none;
+        }
+        .app-tile:hover { background: #161b22; }
+        .app-tile:active {
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+        }
+        .app-tile .app-icon  { font-size: 36px; line-height: 1; margin-bottom: 6px; }
+        .app-tile .app-name  { font-size: 12px; font-weight: bold; }
+        .app-tile .app-sub   { font-size: 10px; color: #8b949e; margin-top: 2px; }
+        .app-tile.locked    { opacity: 0.6; }
+
+        .lock-badge {
+            font-size: 10px; color: white; display: none;
+            background: var(--red); padding: 2px 6px;
+            border: 1px solid #800000; margin-bottom: 6px;
+            text-align: center; font-weight: bold;
+        }
+
+        /* ── TASKBAR ───────────────────────────────────────────── */
+        #taskbar {
+            position: fixed; left: 0; right: 0; bottom: 0;
+            height: 32px;
+            background: var(--taskbar-bg);
+            border-top: 2px solid var(--win-border-light);
+            display: flex; align-items: center; padding: 2px 4px; gap: 4px;
+            z-index: 9999;
+        }
+        #start-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 2px 8px; font-weight: bold; font-size: 12px;
+            background: var(--win-bg);
+            color: var(--win-text);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            cursor: pointer; min-height: 24px;
+        }
+        #start-btn:active {
+            border-top:    2px solid var(--win-border-dark);
+            border-left:   2px solid var(--win-border-dark);
+            border-right:  2px solid var(--win-border-light);
+            border-bottom: 2px solid var(--win-border-light);
+        }
+        #start-btn .logo {
+            width: 16px; height: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 12px; color: white;
+        }
+
+        #taskbar-windows { flex: 1; display: flex; gap: 3px; overflow: hidden; }
+        .taskbar-item {
+            display: flex; align-items: center; gap: 4px;
+            padding: 2px 8px; min-width: 130px; max-width: 180px;
+            font-size: 12px; cursor: pointer; user-select: none;
+            color: var(--win-text);
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-light);
+            border-left:   1px solid var(--win-border-light);
+            border-right:  1px solid var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-dark);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .taskbar-item.active {
+            background: #0d1117;
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            box-shadow: inset 1px 1px 0 0 #000;
+        }
+        .taskbar-item .ti-icon { font-size: 13px; flex-shrink: 0; }
+        .taskbar-item .ti-text { overflow: hidden; text-overflow: ellipsis; }
+
+        #system-tray {
+            display: flex; align-items: center; gap: 6px;
+            padding: 2px 8px;
+            background: var(--win-bg);
+            border-top:    1px solid var(--win-border-dark);
+            border-left:   1px solid var(--win-border-dark);
+            border-right:  1px solid var(--win-border-light);
+            border-bottom: 1px solid var(--win-border-light);
+            font-size: 12px; min-height: 24px;
+            color: var(--win-text);
+        }
+        #tray-clock { font-weight: bold; }
+
+        /* ── START MENU ────────────────────────────────────────── */
+        #start-menu {
+            position: fixed; left: 4px; bottom: 32px;
+            width: 220px;
+            background: var(--win-bg);
+            border-top:    2px solid var(--win-border-light);
+            border-left:   2px solid var(--win-border-light);
+            border-right:  2px solid var(--win-border-dark);
+            border-bottom: 2px solid var(--win-border-dark);
+            display: none; z-index: 9998;
+            box-shadow: 2px 2px 0 0 #000;
+        }
+        #start-menu.open { display: block; }
+        #start-menu-header {
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            color: white; font-weight: bold;
+            padding: 6px 8px; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .start-menu-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 8px; cursor: pointer; font-size: 12px;
+            color: var(--win-text);
+        }
+        .start-menu-item:hover { background: var(--win-text-blue); color: var(--win-bg-darker); }
+        .start-menu-item .smi-icon { font-size: 16px; width: 20px; text-align: center; }
+        .start-menu-sep {
+            height: 1px; background: var(--win-border-dark);
+            border-bottom: 1px solid var(--win-border-light);
+            margin: 2px 2px;
+        }
+        .start-menu-side {
+            position: absolute; top: 0; right: 0; bottom: 0;
+            width: 24px;
+            background: linear-gradient(90deg, #2f81f7 0%, #1f6feb 100%);
+            display: flex; align-items: flex-end; justify-content: center;
+            color: white; font-weight: bold;
+            writing-mode: vertical-rl; transform: rotate(180deg);
+            font-size: 18px; padding: 8px 4px; letter-spacing: 2px;
+        }
+
+        /* ── MISC ──────────────────────────────────────────────── */
+        .hidden { display: none !important; }
+        .admin-only { display: none; }
+
+        .icon-strip { display: flex; gap: 4px; align-items: center; }
+        .icon-strip .ic { font-size: 14px; }
+
+        .row-spread { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .row-buttons { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
+    </style>
+    <style>
         :root {
             --win-bg:            #1c2128;
             --win-bg-light:      #2a313c;
