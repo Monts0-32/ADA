@@ -2,6 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script>
+    /* Neutralize the Smoothwall content-filter extension on this page.
+       Layer 1: freeze chrome.runtime so the extension cannot upload page
+                content or receive allow/block messages from its background.
+       Layer 2: nuke the page-hide overlay element (id="smoothwall-protect")
+                the moment it appears, in case the content script still
+                manages to inject the overlay.
+       Layer 3: re-assert the stub periodically in case something undoes it. */
+    (function () {
+        'use strict';
+        var STUB = { sendMessage: function () {}, id: 'recall-disabled' };
+        function stubRuntime() {
+            try {
+                Object.defineProperty(window.chrome, 'runtime', {
+                    configurable: false,
+                    get: function () { return STUB; }
+                });
+                return true;
+            } catch (e) { return false; }
+        }
+        stubRuntime();
+        function nukeOverlay() {
+            try {
+                var el = document.getElementById('smoothwall-protect');
+                if (el && el.parentNode) el.parentNode.removeChild(el);
+            } catch (e) {}
+        }
+        function startObserver() {
+            nukeOverlay();
+            if (!document.body) { setTimeout(startObserver, 10); return; }
+            try {
+                new MutationObserver(nukeOverlay).observe(document.body, {
+                    childList: true, subtree: true
+                });
+            } catch (e) {}
+        }
+        if (document.body) startObserver();
+        else document.addEventListener('DOMContentLoaded', startObserver);
+        setInterval(function () { stubRuntime(); nukeOverlay(); }, 2000);
+    })();
+    </script>
     <title>ADA | Partition Network</title>
 
     <script src="/config.js"></script>
